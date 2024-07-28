@@ -1,0 +1,20 @@
+import '../ServicesResponse/resquest.dart';
+
+class StatusUtils {
+  static Status getStatusById(String id) {
+    switch (id) {
+      case "available":
+        return Status(id: "available", name: "Disponible");
+      case "assigned":
+        return Status(id: "assigned", name: "Asignado");
+      case "in_progress":
+        return Status(id: "in_progress", name: "En curso");
+      case "completed":
+        return Status(id: "completed", name: "Completado");
+      case "cancelled":
+        return Status(id: "cancelled", name: "Cancelado");
+      default:
+        return Status(id: "unknown", name: "Desconocido");
+    }
+  }
+}
