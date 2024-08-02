@@ -83,6 +83,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,  // Evitar mostrar la flecha de retroceso
         backgroundColor: Color(0xFF6AB8D6),
         title: Text(
           'Categorías',
@@ -92,7 +93,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
           Stack(
             children: <Widget>[
               IconButton(
-                icon: Icon(Icons.notifications),
+                icon: Icon(Icons.notifications, color: Colors.white), // Icono de notificación blanco
                 onPressed: () {
                   _showNotifications(context);
                 },
@@ -199,6 +200,14 @@ class _ServiceScreenState extends State<ServiceScreen> {
                             child: Image.network(
                               service.image,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -224,19 +233,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       0.5), // Color de fondo del círculo (puedes ajustar la opacidad)
                 ),
                 child: IconButton(
-                  icon: _currentPage == services.length - 1
-                      ? Icon(Icons.arrow_back,
-                          color: Colors.white) // Flecha hacia atrás blanca
-                      : Icon(Icons.arrow_forward,
-                          color: Colors.white), // Flecha hacia adelante blanca
+                  icon: Icon(
+                    Icons.arrow_forward,
+                    color: Colors.white,
+                  ), // Flecha hacia adelante blanca
                   onPressed: () {
                     if (_currentPage < services.length - 1) {
                       _pageController.nextPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.ease,
-                      );
-                    } else {
-                      _pageController.previousPage(
                         duration: Duration(milliseconds: 300),
                         curve: Curves.ease,
                       );

@@ -19,7 +19,9 @@ dependencies:
   firebase_core: ^3.1.0
   google_sign_in: ^6.1.5
   google_fonts: ^6.2.1
-  flutter_facebook_auth: ^7.0.0
+  app_tracking_transparency: ^2.0.5
+  flutter_screenutil: ^5.9.3
+  
   firebase_messaging: ^15.0.1
   firebase_auth: ^5.1.0
   flutter_launcher_icons: ^0.13.1
@@ -50,7 +52,7 @@ dependencies:
   intl: ^0.19.0
   firebase_storage: ^12.0.1
   uuid: ^4.1.0
-  flutter_screenutil: ^5.9.0
+
   flutter_rating_bar: ^4.0.1
   flutter_wizard: ^2.0.5
   geolocator: ^12.0.0

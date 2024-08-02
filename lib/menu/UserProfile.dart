@@ -284,7 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 10),
                 _buildProfileInfoRow(
-                    'Número de Teléfono:', profileData.phoneNumber),
+                    'Correo electronico:', profileData.email),
                 const SizedBox(height: 10),
                 // Boton de documentos debajo del cuadro
               ],

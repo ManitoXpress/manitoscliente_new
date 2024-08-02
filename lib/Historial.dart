@@ -234,9 +234,10 @@ class _HistorialState extends State<Historial> {
           'Historial',
           style: MyTextStyles.buttonTextStyle,
         ),
+        iconTheme: IconThemeData(color: Colors.white), // Color blanco para el icono de retroceso
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: Colors.white), // Color blanco para el icono de refrescar
             onPressed: _refreshHistorial,
           ),
         ],
@@ -310,8 +311,6 @@ class _HistorialState extends State<Historial> {
     );
   }
 
-
-
   String truncateDescription(String description) {
     // Divide la descripción en palabras
     final words = description.split(' ');
@@ -328,8 +327,6 @@ class _HistorialState extends State<Historial> {
       return firstWord;
     }
   }
-
-
 
   Color _getTextColorByStatus(String statusId) {
     // Obtener el estado usando el ID en lugar del nombre
