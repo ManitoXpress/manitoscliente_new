@@ -49,7 +49,6 @@ class ApiService2 {
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
-
   Future<List<ServiceResponse>> getOffers(String serviceId) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
@@ -63,12 +62,14 @@ class ApiService2 {
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
-        final List<ServiceResponse> offers =
-            responseData.map((data) => ServiceResponse.fromJson(data)).toList();
+        final List<ServiceResponse> offers = responseData
+            .map((data) => ServiceResponse.fromJson(data))
+            .toList();
         return offers;
       } else {
         throw Exception(
-            'Error al obtener las ofertas. Código de estado: ${response.statusCode}');
+            'Error al obtener las ofertas. Código de estado: ${response
+                .statusCode}');
       }
     } catch (e) {
       print('Error en la solicitud HTTP para obtener las ofertas: $e');
@@ -146,19 +147,16 @@ class ApiService2 {
 
         return imageUrl;
       } else {
-        print(
-            'No se encontraron imágenes de perfil en la carpeta del usuario.');
+        print('No se encontraron imágenes de perfil en la carpeta del usuario.');
         return null;
       }
     } catch (e) {
       print('Error al obtener la URL de la imagen desde Firebase Storage: $e');
-      throw Exception(
-          'Error al obtener la URL de la imagen desde Firebase Storage: $e');
+      throw Exception('Error al obtener la URL de la imagen desde Firebase Storage: $e');
     }
   }
 
-  Future<http.Response> getByUserId(String userId, String authToken,
-      String column, String value, String type) async {
+  Future<http.Response> getByUserId(String userId, String authToken, String column, String value, String type) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
       final response = await http.get(
@@ -180,8 +178,7 @@ class ApiService2 {
     }
   }
 
-  Future<http.Response> fetchServiceDetailsFromBackend(
-      String userId, String serviceId) async {
+  Future<http.Response> fetchServiceDetailsFromBackend(String userId, String serviceId) async {
     try {
       final String? token = await AuthUtils.getToken();
       final response = await http.get(
@@ -214,9 +211,7 @@ class ApiService2 {
   }
 
   // Método para cargar las imágenes desde el backend
-  Future<String> getImage(
-    String userId,
-  ) async {
+  Future<String> getImage(String userId,) async {
     try {
       final FirebaseStorage storage = FirebaseStorage.instance;
 
@@ -242,8 +237,7 @@ class ApiService2 {
     }
   }
 
-  Future<List<ServiceResponse>> fetchServicesFromBackend2(
-      String token, String parentId) async {
+  Future<List<ServiceResponse>> fetchServicesFromBackend2(String token, String parentId) async {
     try {
       final String? authToken = await AuthUtils.getToken();
       final response = await http.get(
@@ -276,8 +270,7 @@ class ApiService2 {
     }
   }
 
-  Future<List<ServiceResponse>> fetchServicesParent1(
-      String token, String parentId) async {
+  Future<List<ServiceResponse>> fetchServicesParent1(String token, String parentId) async {
     try {
       final String? authToken = await AuthUtils.getToken();
       final response = await http.get(
@@ -310,7 +303,6 @@ class ApiService2 {
     }
   }
 }
-
 class ServiceResponse {
   final String id;
   final String name;
@@ -338,11 +330,11 @@ class ServiceResponse {
     final List<dynamic> serviceTypesData = json['serviceTypes'] ?? [];
     final List<ServiceType> serviceTypes = serviceTypesData
         .map((data) => ServiceType(
-              id: data['id'] ?? '',
-              name: data['name'] ?? '',
-              selectedDate: data['selectedDate'] ?? '',
-              selectedTime: data['selectedTime'] ?? '',
-            ))
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      selectedDate: data['selectedDate'] ?? '',
+      selectedTime: data['selectedTime'] ?? '',
+    ))
         .toList();
     return ServiceResponse(
       id: json['id'] ?? '',
@@ -350,14 +342,9 @@ class ServiceResponse {
       image: json['image'] ?? '',
       description: json['description'] ?? '',
       serviceTypes: serviceTypes,
-      parentId: json['parentId'] ??
-          '', // Asegúrate de proporcionar un valor por defecto si es nulo
-      buttonTexts: json['buttonTexts'] != null
-          ? List<String>.from(json['buttonTexts'])
-          : [],
-      priceRanges: json['priceRanges'] != null
-          ? List<dynamic>.from(json['priceRanges'])
-          : [],
+      parentId: json['parentId'] ?? '', // Asegúrate de proporcionar un valor por defecto si es nulo
+      buttonTexts: json['buttonTexts'] != null ? List<String>.from(json['buttonTexts']) : [],
+      priceRanges: json['priceRanges'] != null ? List<dynamic>.from(json['priceRanges']) : [],
       typeName: json['typeName'] ?? '', // Corregido el nombre del campo
     );
   }

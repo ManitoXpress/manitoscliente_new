@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'package:rive/rive.dart' as rive;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,16 +9,20 @@ import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/menu/Register.dart';
 import 'package:manitoscliente_new/metodos/animationcontroller.dart';
 import 'package:manitoscliente_new/metodos/logincontroller.dart';
-import 'package:rive/rive.dart';
+import 'package:rive/rive.dart' as rive;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../ServicesResponse/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../home.dart';
 import '../metodos/RegisController.dart';
 import '../widgets/welcome.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 class LoginScreen extends StatefulWidget {
   LoginScreen({Key? key}) : super(key: key);
 
@@ -54,6 +56,7 @@ class _LoginFormState extends State<LoginScreen> {
     );
   }
 
+  // Función para obtener los servicios del backend
   Future<void> fetchData(String userId, String token) async {
     try {
       String column = "serviceType";
@@ -182,7 +185,28 @@ class _LoginFormState extends State<LoginScreen> {
     }
   }
 
-@override
+  Future<void> signInWithApple() async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+
+      _navigateToCardScreenPage(); // Redirige al perfil si la autenticación es exitosa
+    } catch (e) {
+      print('Error al iniciar sesión con Apple: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffd6e2ea),
@@ -237,110 +261,139 @@ class _LoginFormState extends State<LoginScreen> {
                   style: MyTextStyles.buttonTextStyle3,
                 ),
                 SizedBox(height: 10.h),
-                TextButton(
-                  onPressed: () {
-                    launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
-                  },
-                  child: Text(
-                    'Términos y Condiciones de Manitos Xpress',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 15.sp,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30.h),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.email),
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                SizedBox(height: 20.h),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !isPasswordVisible,
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.lock),
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Botón de Google
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF1A819A),
+                        shape: CircleBorder(),
+                        padding: EdgeInsets.all(8.w),
                       ),
                       onPressed: () {
-                        setState(() {
-                          isPasswordVisible = !isPasswordVisible;
-                        });
+                        try {
+                          LoginScreenController.signInWithGoogle(context);
+                        } catch (e) {
+                          print('Error al iniciar sesión con Google: $e');
+                        }
                       },
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20.h),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: false,
-                          onChanged: (value) {},
-                        ),
-                        const Text("Recuerdame"),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF1A819A),
-                            padding: EdgeInsets.all(7.w),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 40.r,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white,
+                          radius: 37.r,
+                          child: CircleAvatar(
+                            radius: 35.r,
+                            backgroundColor: Colors.white,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  FontAwesomeIcons.google,
+                                  color: Color(0xFF1A819A),
+                                ),
+                                Text(
+                                  'Inicio',
+                                  style: GoogleFonts.lato(
+                                    color: Color(0xFF1A819A),
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: const Text("INGRESAR"),
                         ),
-                        SizedBox(width: 20.w),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => RegisterScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF1A819A),
-                            padding: EdgeInsets.all(7.w),
+                      ),
+                    ),
+                    SizedBox(width: 10.w), // Espacio entre los botones
+                    // Botón de Apple
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF1A819A),
+                        shape: CircleBorder(),
+                        padding: EdgeInsets.all(8.w),
+                      ),
+                      onPressed: () {
+                        try {
+                          LoginScreenController.signInWithApple(context);
+                        } catch (e) {
+                          print('Error al iniciar sesión con Apple: $e');
+                        }
+                      },
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 40.r,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white,
+                          radius: 37.r,
+                          child: CircleAvatar(
+                            radius: 35.r,
+                            backgroundColor: Colors.white,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  FontAwesomeIcons.apple,
+                                  color: Color(0xFF1A819A),
+                                ),
+                                Text(
+                                  'Apple',
+                                  style: GoogleFonts.lato(
+                                    color: Color(0xFF1A819A),
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Text("Registrarse"),
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-                SizedBox(height: 10.h),
                 
-                TextButton(
-                  onPressed: () async {
-                    final url = 'https://manitoxpress-cf855.web.app/#/DeletePage';
-                    if (await canLaunch(url)) {
-                      await launch(url);
-                    } else {
-                      print('No se pudo abrir el enlace: $url');
-                    }
+                SizedBox(height: 70.h),
+                
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Acción de borrar cuenta
                   },
-                  child: Text(
-                    'Borrar Cuenta',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 20.sp,
+                  icon: Icon(Icons.delete, color: Colors.white),
+                  label: Text(
+                    "Solicitar eliminación de cuenta",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12.h, horizontal: 25.w),
+                  ),
                 ),
+                SizedBox(height: 40.h),
+                TextButton(
+                  onPressed: () {
+                    launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
+                      },
+                  child: Text(
+                    'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
+                    style: TextStyle(
+                    color: Color.fromARGB(255, 20, 20, 149),
+                    fontSize: 6.sp,
+                    decoration: TextDecoration.underline, // Agrega subrayado al texto
+                    ),
+                  ),
+                ),
+              SizedBox(height: 30.h),
+
               ],
             ),
           ),

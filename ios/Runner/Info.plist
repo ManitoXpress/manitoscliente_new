@@ -47,6 +47,8 @@
     <string>AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSAppleIDUsageDescription</key>
+    <string>Este descriptor se utiliza para iniciar sesión con Apple.</string>
     <key>NSCameraUsageDescription</key>
     <string>Esta aplicación necesita acceso a la cámara.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

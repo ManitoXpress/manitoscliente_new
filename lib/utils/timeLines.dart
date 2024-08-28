@@ -15,7 +15,6 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final String initialStatus;
   final ValueChanged<String> onComplete;
   final Function(String) onStatusChanged;
-
   final UserData userData;
 
   const ServiceFormWithTimeline({
@@ -47,39 +46,41 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Cancelar Trabajo'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Coloque su motivo de cancelación de trabajo:'),
-              SizedBox(height: 10),
-              TextField(
-                controller: _cancelReasonController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Escriba su motivo aquí',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Coloque su motivo de cancelación de trabajo:'),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _cancelReasonController,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Escriba su motivo aquí',
+                  ),
                 ),
-              ),
-              SizedBox(height: 10),
-              Text('Ejemplos de cancelación de servicio:'),
-              ElevatedButton(
-                onPressed: () {
-                  _cancelJobWithReason('No puedo continuar con el trabajo');
-                },
-                child: Text('No puedo continuar con el trabajo'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _cancelJobWithReason('Emergencia inesperada');
-                },
-                child: Text('Emergencia inesperada'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _cancelJobWithReason('Otro motivo');
-                },
-                child: Text('Otro motivo'),
-              ),
-            ],
+                SizedBox(height: 10),
+                Text('Ejemplos de cancelación de servicio:'),
+                ElevatedButton(
+                  onPressed: () {
+                    _cancelJobWithReason('No puedo continuar con el trabajo');
+                  },
+                  child: Text('No puedo continuar con el trabajo'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _cancelJobWithReason('Emergencia inesperada');
+                  },
+                  child: Text('Emergencia inesperada'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _cancelJobWithReason('Otro motivo');
+                  },
+                  child: Text('Otro motivo'),
+                ),
+              ],
+            ),
           ),
           actions: [
             ElevatedButton(
@@ -97,28 +98,17 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   Future<void> _viewProposal() async {
     try {
       final String serviceId = widget.serviceRequest.id;
-
-      // Obtener una instancia de ApiService2
       final ApiService2 apiService = ApiService2();
+      final List<ServiceResponse> offers = await apiService.getOffers(serviceId);
 
-      // Llamar al método _getOffers
-      final List<ServiceResponse> offers =
-          await apiService.getOffers(serviceId);
-
-      // Verificar si el widget aún está montado antes de mostrar el cuadro de diálogo
       if (mounted) {
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            return OfferDialog(
-                offers:
-                    offers); // Pasar la lista de ofertas al cuadro de diálogo
+            return OfferDialog(offers: offers);
           },
         );
       }
-
-      // Aquí puedes hacer lo que necesites con la lista de ofertas
-      // Por ejemplo, mostrarlas en un diálogo o procesarlas de alguna otra manera
     } catch (e) {
       print('Error al obtener las ofertas: $e');
     }
@@ -127,25 +117,18 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   void _cancelJobWithReason(String reason) async {
     try {
       print('Trabajo cancelado por la razón: $reason');
-
-      // Obtén el objeto Status correspondiente al estado 'Cancelado'
       final Status cancelledStatus = Status(id: 'cancelled', name: 'Cancelado');
-
-      // Cambia el estado local a 'Cancelado'
       setState(() {
-        status = cancelledStatus
-            .name; // Usa el nombre del estado en lugar del objeto Status
+        status = cancelledStatus.name;
       });
 
-      // Actualiza el estado en el backend
       await ApiService().updateServiceStatus(
         widget.serviceRequest,
-        cancelledStatus.id, // Envía el id del estado
+        cancelledStatus.id,
         widget.userData.getToken!,
       );
 
-      // Llama al callback onComplete con el nuevo estado
-      widget.onComplete(cancelledStatus.id); // Envía el id del estado
+      widget.onComplete(cancelledStatus.id);
       Navigator.of(context).pop();
     } catch (e) {
       print('Error al cancelar el trabajo: $e');
@@ -156,8 +139,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text('Detalles del Servicio'),
-      contentPadding: EdgeInsets.symmetric(
-          vertical: 20, horizontal: 40), // Ajuste del padding
+      contentPadding: EdgeInsets.symmetric(vertical: 20, horizontal: 40),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,14 +155,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             SizedBox(height: 20),
             Container(
               height: 280,
-              child: TimelineTile(
-                axis: TimelineAxis.vertical,
-                alignment: TimelineAlign.start,
-                indicatorStyle: IndicatorStyle(
-                  width: 40,
-                  color: _getTextColorByStatus(widget.serviceRequest.status.id),
-                ),
-                endChild: Column(
+              child: SingleChildScrollView(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -198,9 +174,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     if (widget.serviceRequest.offeredPrice > 0)
                       ElevatedButton(
                         onPressed: () {
-                          _viewProposal(); // Llama a la función al presionar el botón
-                          Navigator.of(context)
-                              .pop(); // Cierra el cuadro de diálogo después de aceptar la propuesta
+                          _viewProposal();
+                          Navigator.of(context).pop();
                         },
                         child: Text('Mostrar Propuestas'),
                       ),
@@ -222,20 +197,19 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
   Color _getTextColorByStatus(String statusId) {
     final status = StatusUtils.getStatusById(statusId);
-
     switch (status.id) {
       case "available":
-        return Colors.green; // Color del texto para "Disponible"
+        return Colors.green;
       case "assigned":
-        return Colors.orange; // Color del texto para "Asignado"
+        return Colors.orange;
       case "in_progress":
-        return Colors.black; // Color del texto para "En curso"
+        return Colors.black;
       case "completed":
-        return Colors.blue; // Color del texto para "Completado"
+        return Colors.blue;
       case "cancelled":
-        return Color(0xFF84090D); // Color del texto para "Cancelado"
+        return Color(0xFF84090D);
       default:
-        return Colors.grey; // Color del texto para cualquier otro estado
+        return Colors.grey;
     }
   }
 }

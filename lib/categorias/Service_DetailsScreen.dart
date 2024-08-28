@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +33,7 @@ class ServiceFormPage extends StatefulWidget {
     required this.serviceRequests,
     required this.selectedDate,
     required this.selectedServiceTitle,
-    required this.token,
-    required String selectedTime,
+    required this.token, required String selectedTime,
     required this.categoryId, // Definir esta variable en el constructor
     required this.subcategoryId, // Definir esta variable en el constructor
   }) : super(key: key);
@@ -79,73 +79,75 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
 
     return true;
   }
-
   void onSubmit() async {
-    if (widget.acceptTerms && token != null) {
-      final apiService = ApiService();
-      User? user = FirebaseAuth.instance.currentUser;
+  if (widget.acceptTerms && token != null) {
+    final apiService = ApiService();
+    User? user = FirebaseAuth.instance.currentUser;
 
-      if (user != null) {
-        widget.serviceRequest.userId = user.uid;
-        widget.serviceRequest.status = StatusUtils.getStatusById('available');
+    if (user != null) {
+      widget.serviceRequest.userId = user.uid;
+      widget.serviceRequest.status = StatusUtils.getStatusById('available');
 
-        try {
-          final response = await apiService.sendDataToBackend(
-            widget.serviceRequest,
-            token!,
-            widget
-                .serviceRequest.status.id, // Pasa el ID del estado como String
-            widget.serviceRequest.expertises,
-            widget.categoryId,
-            widget.subcategoryId,
-            widget
-                .serviceRequest.status, // Pasa el objeto Status como argumento
-          );
-          if (response.statusCode == 200) {
-            for (var image in widget.serviceRequest.images) {
-              final file = File(image);
-              await apiService.uploadImageToFirebaseStorage(file, user.uid);
-              print('Imagen cargada con éxito en Firebase Storage');
-            }
+      try {
+        // Convierte la lista de expertises a JSON si es necesario
+        final expertisesJson = jsonEncode(
+          widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
+        );
 
-            // Primero navega a la ventana de historial
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => Historial()),
-            );
-
-            // Después muestra el cuadro de diálogo indicando que el servicio se creó con éxito
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('¡Servicio creado con éxito!'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Cierra el cuadro de diálogo
-                      },
-                      child: Text('Cerrar'),
-                    ),
-                  ],
-                );
-              },
-            );
-          } else {
-            Navigator.pop(context);
-            print('Error en la respuesta del servidor: ${response.statusCode}');
+        final response = await apiService.sendDataToBackend(
+          widget.serviceRequest,
+          token!,
+          widget.serviceRequest.status.id, // Pasa el ID del estado como String
+          expertisesJson, // Pasa la cadena JSON en lugar de la lista
+          widget.categoryId,
+          widget.subcategoryId,
+          widget.serviceRequest.status, // Pasa el objeto Status como argumento
+        );
+        if (response.statusCode == 200) {
+          for (var image in widget.serviceRequest.images) {
+            final file = File(image);
+            await apiService.uploadImageToFirebaseStorage(file, user.uid);
+            print('Imagen cargada con éxito en Firebase Storage');
           }
-        } catch (error) {
-          print('Error durante la comunicación con el backend: $error');
-          // Manejar el error según tus necesidades
+
+          // Primero navega a la ventana de historial
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => Historial()),
+          );
+
+          // Después muestra el cuadro de diálogo indicando que el servicio se creó con éxito
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('¡Servicio creado con éxito!'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Cierra el cuadro de diálogo
+                    },
+                    child: Text('Cerrar'),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          Navigator.pop(context);
+          print('Error en la respuesta del servidor: ${response.statusCode}');
         }
+      } catch (error) {
+        print('Error durante la comunicación con el backend: $error');
+        // Manejar el error según tus necesidades
       }
     }
   }
+}
+
 
   Future<void> fetchDataForUserId() async {
-    final List<ServiceRequest> data =
-        await apiDataProvider.fetchDataForUserId();
+    final List<ServiceRequest> data = await apiDataProvider.fetchDataForUserId();
     setState(() {
       widget.serviceRequests = data;
     });
@@ -231,7 +233,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
       onNextStep: () {
         // Aquí puedes definir qué hacer cuando se avance al siguiente paso.
       },
-      location: widget.serviceRequest.location, // Pasa la ubicación aquí
+      location: widget.serviceRequest.location,  // Pasa la ubicación aquí
     );
 
     termsWizard = TermsAndConditionsWizard(
@@ -251,8 +253,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
       onPressed: onPressed,
       child: Text(label),
       style: TextButton.styleFrom(
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
+        foregroundColor: Colors.white, shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30.0),
         ),
         backgroundColor: Color(0xFF1A819A),
@@ -265,34 +266,29 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Formulario de Servicio',
-          style: MyTextStyles.buttonTextStyle,
-        ),
+        title: const Text('Formulario de Servicio',
+          style: MyTextStyles.buttonTextStyle,),
       ),
       body: Form(
         key: _formKey,
         child: Stepper(
           currentStep: currentStep,
-          controlsBuilder:
-              (BuildContext context, ControlsDetails controlsDetails) {
+          controlsBuilder: (BuildContext context, ControlsDetails controlsDetails) {
             return Row(
               children: <Widget>[
                 _customStepperButton(
                   label: 'Cancelar',
                   onPressed: currentStep > 0
                       ? () {
-                          setState(() {
-                            currentStep -= 1;
-                          });
-                        }
+                    setState(() {
+                      currentStep -= 1;
+                    });
+                  }
                       : () {},
                 ),
                 SizedBox(width: 8.0),
                 _customStepperButton(
-                  label: currentStep < 3
-                      ? 'Continuar'
-                      : 'Enviar', // Cambio de etiqueta en el último paso
+                  label: currentStep < 3 ? 'Continuar' : 'Enviar', // Cambio de etiqueta en el último paso
                   onPressed: () {
                     setState(() {
                       if (currentStep == 0 && !validateServiceData()) {
@@ -314,24 +310,21 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           },
           steps: [
             Step(
-              title: const Text(
-                'Datos del Servicio',
+              title: const Text('Datos del Servicio',
                 style: MyTextStyles.servicesButtonTextStyle,
               ),
               content: dataWizard,
               isActive: currentStep == 0,
             ),
             Step(
-              title: const Text(
-                'Fecha y Hora',
+              title: const Text('Fecha y Hora',
                 style: MyTextStyles.servicesButtonTextStyle,
               ),
               content: dateTimeWizard,
               isActive: currentStep == 1,
             ),
             Step(
-              title: const Text(
-                'Ubicación y Favoritos',
+              title: const Text('Ubicación y Favoritos',
                 style: MyTextStyles.servicesButtonTextStyle,
               ),
               content: locationAndFavoritesWizard,

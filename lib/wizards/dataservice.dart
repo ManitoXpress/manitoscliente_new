@@ -1,8 +1,7 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
@@ -12,8 +11,7 @@ class ServiceDataWizard extends StatefulWidget {
   final Function(File?) onImageSelected;
   final Function(String?) onPriceSelected;
   final Function()? onNextStep; // Cambio en el tipo de la función
-  final int
-      maxImageCount; // Nuevo atributo para definir la cantidad máxima de imágenes
+  final int maxImageCount; // Nuevo atributo para definir la cantidad máxima de imágenes
   final String selectedServiceTitle;
   final List<ServiceRequest> services; // Agregado el parámetro services
 
@@ -31,15 +29,14 @@ class ServiceDataWizard extends StatefulWidget {
   @override
   _ServiceDataWizardState createState() => _ServiceDataWizardState();
 }
-
 class _ServiceDataWizardState extends State<ServiceDataWizard> {
-  final List<File?> _images =
-      List.generate(3, (index) => null); // Lista para almacenar las imágenes
+  final List<File?> _images = List.generate(3, (index) => null); // Lista para almacenar las imágenes
   final List<File?> _image = []; // Lista para almacenar las imágenes
   late ServiceType selectedServiceType;
   TextEditingController detailController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   ApiService apiService = ApiService(); // Create an instance of ApiService
+
 
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
@@ -56,8 +53,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image =
-                      await _picker.pickImage(source: ImageSource.gallery);
+                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                   _processImage(image);
                 },
                 child: Text('Seleccionar desde Galería'),
@@ -65,8 +61,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image =
-                      await _picker.pickImage(source: ImageSource.camera);
+                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
                 child: Text('Tomar Foto'),
@@ -89,8 +84,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           });
 
           // Actualiza las imágenes en widget.serviceRequest
-          widget.serviceRequest.images =
-              _images.map((image) => image?.path ?? "").toList();
+          widget.serviceRequest.images = _images.map((image) => image?.path ?? "").toList();
 
           // Llama a la función para subir la imagen al backend
 
@@ -99,6 +93,9 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
       }
     }
   }
+
+
+
 
   Future<void> _showImagePreview(int index) async {
     await showDialog(
@@ -142,6 +139,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
     detailController.text = widget.serviceRequest.description;
     priceController.text = widget.serviceRequest.offeredPrice.toString();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -223,12 +221,13 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
                       color: Color(0xA3C9D2D2),
                     ),
                   ),
-                ..._images.asMap().entries.map((entry) {
+                ..._images
+                    .asMap()
+                    .entries
+                    .map((entry) {
                   int idx = entry.key;
                   File? imageFile = entry.value;
-                  double imageWidth = 200 /
-                      widget
-                          .maxImageCount; // Distribuye en base al máximo de imágenes
+                  double imageWidth = 200 / widget.maxImageCount; // Distribuye en base al máximo de imágenes
                   return Positioned(
                     left: imageWidth * idx,
                     child: GestureDetector(
@@ -239,18 +238,19 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
                       },
                       child: imageFile != null
                           ? Image.file(
-                              imageFile,
-                              width: imageWidth,
-                              height: 200,
-                              fit: BoxFit.cover,
-                            )
+                        imageFile,
+                        width: imageWidth,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      )
                           : Container(
-                              width: imageWidth,
-                              height: 200,
-                            ),
+                        width: imageWidth,
+                        height: 200,
+                      ),
                     ),
                   );
-                }).toList(),
+                })
+                    .toList(),
               ],
             ),
           ),

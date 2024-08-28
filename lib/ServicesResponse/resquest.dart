@@ -1,7 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ServiceRequest {
   String serviceDateTime;
   String id;
@@ -15,15 +12,15 @@ class ServiceRequest {
   String? selectedDate;
   String? selectedTime;
   bool acceptedTerms;
-  String expertises;
+  List<Expertises> expertises; // Cambiado a una lista de Expertises
   late Status status;
 
   bool isServiceNameEmpty() {
-    return description.isEmpty;
+    return (description == null || description.isEmpty);
   }
 
   bool isServiceTypeEmpty() {
-    return serviceType == null;
+    return (serviceType == null);
   }
 
   ServiceRequest({
@@ -39,7 +36,7 @@ class ServiceRequest {
     this.selectedDate,
     this.selectedTime,
     required this.acceptedTerms,
-    required this.expertises,
+    required this.expertises, // Cambiado para recibir una lista de Expertises
     required this.status,
   });
 
@@ -57,7 +54,7 @@ class ServiceRequest {
     String? selectedDate,
     String? selectedTime,
     bool? acceptedTerms,
-    String? expertises,
+    List<Expertises>? expertises, // Cambiado a una lista de Expertises
   }) {
     return ServiceRequest(
       serviceDateTime: dateTime ?? this.serviceDateTime,
@@ -73,7 +70,7 @@ class ServiceRequest {
       selectedDate: selectedDate ?? this.selectedDate,
       selectedTime: selectedTime ?? this.selectedTime,
       acceptedTerms: acceptedTerms ?? this.acceptedTerms,
-      expertises: expertises ?? this.expertises,
+      expertises: expertises ?? this.expertises, // Cambiado a una lista de Expertises
     );
   }
 
@@ -82,7 +79,7 @@ class ServiceRequest {
       'serviceDateTime': serviceDateTime,
       'id': id,
       'description': description,
-      'status': status.toMap(),
+      'status': status.toMap(), // Utiliza toMap en lugar de toJson
       'images': images,
       'location': location,
       'offeredPrice': offeredPrice,
@@ -92,44 +89,79 @@ class ServiceRequest {
       'selectedDate': selectedDate,
       'selectedTime': selectedTime,
       'acceptedTerms': acceptedTerms,
-      'expertises': expertises,
+      'expertises': expertises.map((e) => e.toMap()).toList(), // Convierte la lista de Expertises a Map
     };
   }
 
   factory ServiceRequest.fromSnapshot(DocumentSnapshot snapshot) {
-    final data = snapshot.data() as Map<String, dynamic>;
-    return ServiceRequest(
-      serviceDateTime: data['serviceDateTime'] ?? '',
-      id: data['id'] ?? '',
-      description: data['description'] ?? '',
-      images: List<String>.from(data['images'] ?? []),
-      location: Map<String, double>.from(data['location'] ?? {}),
-      offeredPrice: _parseOfferedPrice(data['offeredPrice']),
-      serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
-      userId: data['userId'] ?? '',
-      isFavorite: data['isFavorite'] ?? false,
-      selectedDate: data['selectedDate'],
-      selectedTime: data['selectedTime'],
-      acceptedTerms: data['acceptedTerms'] ?? false,
-      expertises: data['expertises'] ?? '',
-      status: Status.fromMap(data['status'] ?? {}),
-    );
-  }
+  final data = snapshot.data() as Map<String, dynamic>;
+  return ServiceRequest(
+    serviceDateTime: data['serviceDateTime'] ?? '',
+    id: data['id'] ?? '',
+    description: data['description'] ?? '',
+    images: List<String>.from(data['images'] ?? []),
+    location: Map<String, double>.from(data['location'] ?? {}),
+    offeredPrice: _parseOfferedPrice(data['offeredPrice']),
+    serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
+    userId: data['userId'] ?? '',
+    isFavorite: data['isFavorite'] ?? false,
+    selectedDate: data['selectedDate'],
+    selectedTime: data['selectedTime'],
+    acceptedTerms: data['acceptedTerms'] ?? false,
+    expertises: data['expertises'] != null 
+        ? List<Expertises>.from(
+            (data['expertises'] as List).map((e) => Expertises.fromMap(e))
+          )
+        : [],  // Garantiza que expertises sea siempre una lista válida
+    status: Status(
+      id: data['status'] ?? '',
+      name: Status.getNameById(data['status'] ?? ''),
+    ),
+  );
+}
 
+
+  // Función para convertir el precio ofrecido a un número decimal
   static double _parseOfferedPrice(dynamic value) {
     if (value is String) {
       try {
         return double.parse(value);
       } catch (e) {
         print('Error al convertir el precio ofrecido a double: $e');
-        return 0.0;
+        return 0.0; // Devuelve un valor predeterminado en caso de error
       }
     } else if (value is num) {
       return value.toDouble();
     }
-    return 0.0;
+    return 0.0; // Devuelve un valor predeterminado si el valor no es String ni num
+  }
+}
+
+class Expertises {
+  String id;
+  String name;
+  
+
+  Expertises({
+    required this.id,
+    required this.name,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      
+    };
   }
 
+  factory Expertises.fromMap(Map<String, dynamic> map) {
+    return Expertises(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      
+    );
+  }
 }
 
 class ServiceType {
@@ -163,21 +195,23 @@ class ServiceType {
     );
   }
 }
-
 class Status {
   final String id;
   final String name;
 
   Status({required this.id, required this.name});
 
+  // Mapa inverso para buscar el nombre por ID
   static final Map<String, String> _nameById = {
     "available": "Disponible",
     "assigned":"Asignado",
     "in_progress":"En curso",
     "completed": "Completado",
     "cancelled": "Cancelado",
+    // Agrega más asignaciones de ID a nombre según sea necesario
   };
 
+  // Método estático para obtener el nombre por ID
   static String getNameById(String id) {
     return _nameById[id] ?? 'Desconocido';
   }
@@ -187,12 +221,5 @@ class Status {
       'id': id,
       'name': name,
     };
-  }
-
-  factory Status.fromMap(Map<String, dynamic> map) {
-    return Status(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-    );
   }
 }

@@ -11,9 +11,11 @@ import 'menu/Login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Firebase App Check
+  // Inicializar Firebase App Check
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
@@ -33,7 +35,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // No hagas nada aquí que dependa del contexto.
+    _requestTrackingPermission(); // Llamar a la función para solicitar el permiso de App Tracking Transparency
     Future.delayed(const Duration(seconds: 10), () {
       setState(() {
         isLoading = false;
@@ -41,18 +43,8 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _initializeApp();
-  }
-
-  Future<void> _initializeApp() async {
-    await _requestTrackingPermission(); // Solicitar permiso de ATT
-  }
-
+  // Función para solicitar permiso de App Tracking Transparency
   Future<void> _requestTrackingPermission() async {
-    // Solicitar el permiso de App Tracking Transparency
     final TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
     if (status == TrackingStatus.notDetermined) {
       await Future.delayed(const Duration(milliseconds: 200));

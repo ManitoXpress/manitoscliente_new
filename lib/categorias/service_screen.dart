@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
@@ -7,6 +8,8 @@ import 'package:manitoscliente_new/metodos/service_screen_functions.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:searchbar_animation/searchbar_animation.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
+
+import 'package:flutter/material.dart';
 
 class ServiceScreen extends StatefulWidget {
   static int notificationCount = 0;
@@ -38,7 +41,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
       if (token != null) {
         final List<ServiceResponse> serviceResponses =
-            await _apiService2.fetchServicesFromBackend(token);
+        await _apiService2.fetchServicesFromBackend(token);
 
         // Ordenar los servicios para que HomeServices aparezca primero
         serviceResponses.sort((a, b) {
@@ -81,174 +84,175 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,  // Evitar mostrar la flecha de retroceso
-        backgroundColor: Color(0xFF6AB8D6),
-        title: Text(
+    return WillPopScope(
+      onWillPop: () async {
+        // Aquí se define lo que sucede al presionar el botón "Atrás"
+        // Retorna "false" para evitar que la app se cierre
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Color(0xFF6AB8D6),
+          automaticallyImplyLeading: false,
+          title: Text(
           'Categorías',
           style: MyTextStyles.CategoriaButtonTextStyle,
-        ),
-        actions: [
-          Stack(
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.notifications, color: Colors.white), // Icono de notificación blanco
+         ),
+      actions: [
+        Stack(
+          children: <Widget>[
+            IconButton(
+              icon: Icon(Icons.notifications),
                 onPressed: () {
-                  _showNotifications(context);
+                _showNotifications(context);
                 },
-              ),
-              Positioned(
-                right: 11,
-                top: 11,
-                child: Container(
+                ),
+                Positioned(
+                  right: 11,
+                  top: 11,
+                  child: Container(
                   padding: EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     color: Colors.red,
                     borderRadius: BorderRadius.circular(6.5),
-                  ),
-                  constraints: BoxConstraints(
-                    minWidth: 13,
-                    minHeight: 13,
-                  ),
-                  child: Text(
-                    notificationCount.toString(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    constraints: BoxConstraints(
+                      minWidth: 13,
+                      minHeight: 13,
+                      ),
+                      child: Text(
+                      notificationCount.toString(),
+                        style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        ),
+                        textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            ],
-          ),
-        ],
-      ),
-      body: Container(
-        color: Color(0xFF6AB8D6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: 15),
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: services.length,
-                onPageChanged: (page) {
-                  setState(() {
-                    _currentPage = page;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final service = services[index];
-                  return GestureDetector(
-                    onTap: () {
-                      switch (index) {
-                        case 0:
-                          navigateToProfessionalServices(context);
-                          break;
-                        case 1:
-                          final String statusName = 'En Proceso';
-                          final Status status =
-                              StatusUtils.getStatusById(statusName);
-                          ServiceRequest serviceRequest = ServiceRequest(
-                            serviceDateTime: '',
-                            id: '',
-                            description: '',
-                            images: ['', ''],
-                            location: {'lat': 0.0, 'lng': 0.0},
-                            offeredPrice: 100.0,
-                            serviceType: ServiceType(
-                              id: '1',
-                              name: '',
+              ],  
+            ),
+
+        body: Container(
+          color: Color(0xFF6AB8D6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(height: 15),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: services.length,
+                  onPageChanged: (page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final service = services[index];
+                    return GestureDetector(
+                      onTap: () {
+                        switch (index) {
+                          case 0:
+                            navigateToProfessionalServices(context);
+                            break;
+                          case 1:
+                            final String statusName = 'En Proceso';
+                            final Status status = StatusUtils.getStatusById(statusName);
+                            ServiceRequest serviceRequest = ServiceRequest(
+                              serviceDateTime: '',
+                              id: '',
+                              description: '',
+                              images: ['', ''],
+                              location: {'lat': 0.0, 'lng': 0.0},
+                              offeredPrice: 100.0,
+                              serviceType: ServiceType(
+                                id: '1',
+                                name: '',
+                                selectedDate: '',
+                                selectedTime: '',
+                              ),
+                              userId: '',
+                              isFavorite: false,
                               selectedDate: '',
                               selectedTime: '',
+                              acceptedTerms: true,
+                              expertises: [],
+                              status: status,
+                            );
+                            navigateToHomeServices(context, serviceRequest);
+                            break;
+                        }
+                      },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            height: MediaQuery.of(context).size.height * 0.5, // Aumenta la altura del contenedor
+                            decoration: BoxDecoration(
+                              color: Color(0xFF145073),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF145073),
+                                  blurRadius: 10,
+                                  spreadRadius: -3,
+                                ),
+                              ],
                             ),
-                            userId: '',
-                            isFavorite: false,
-                            selectedDate: '',
-                            selectedTime: '',
-                            acceptedTerms: true,
-                            expertises: '',
-                            status: status,
-                          );
-                          navigateToHomeServices(context, serviceRequest);
-                          break;
-                      }
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.8,
-                          height: MediaQuery.of(context).size.height *
-                              0.5, // Aumenta la altura del contenedor
-                          decoration: BoxDecoration(
-                            color: Color(0xFF145073),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0xFF145073),
-                                blurRadius: 10,
-                                spreadRadius: -3,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.network(
+                                service.image,
+                                fit: BoxFit.cover,
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.network(
-                              service.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.white,
-                                  ),
-                                );
-                              },
                             ),
                           ),
-                        ),
-                        SizedBox(height: 5),
-                        // Ajusta la distancia entre la imagen y el texto
-                        Text(
-                          service.name,
-                          style: MyTextStyles.buttonTextStyle,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey.withOpacity(
-                      0.5), // Color de fondo del círculo (puedes ajustar la opacidad)
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.arrow_forward,
-                    color: Colors.white,
-                  ), // Flecha hacia adelante blanca
-                  onPressed: () {
-                    if (_currentPage < services.length - 1) {
-                      _pageController.nextPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.ease,
-                      );
-                    }
+                          SizedBox(height: 5),
+                          // Ajusta la distancia entre la imagen y el texto
+                          Text(
+                            service.name,
+                            style: MyTextStyles.buttonTextStyle,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 ),
               ),
-            ),
-          ],
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey.withOpacity(0.5), // Color de fondo del círculo (puedes ajustar la opacidad)
+                  ),
+                  child: IconButton(
+                    icon: _currentPage == services.length - 1
+                        ? Icon(Icons.arrow_back, color: Colors.white) // Flecha hacia atrás blanca
+                        : Icon(Icons.arrow_forward, color: Colors.white), // Flecha hacia adelante blanca
+                    onPressed: () {
+                      if (_currentPage < services.length - 1) {
+                        _pageController.nextPage(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.ease,
+                        );
+                      } else {
+                        _pageController.previousPage(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.ease,
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

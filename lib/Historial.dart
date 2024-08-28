@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:intl/intl.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
 import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
 
@@ -14,9 +16,7 @@ import 'package:manitoscliente_new/metodos/RegisController.dart';
 import 'package:manitoscliente_new/metodos/ticketController.dart';
 import 'package:manitoscliente_new/utils/cacheLocal.dart';
 import 'package:manitoscliente_new/utils/status.dart';
-
 import 'package:manitoscliente_new/utils/timeLines.dart';
-import 'package:timeline_tile/timeline_tile.dart';
 
 class Historial extends StatefulWidget {
   final VoidCallback? onTabTapped;
@@ -27,27 +27,30 @@ class Historial extends StatefulWidget {
   _HistorialState createState() => _HistorialState();
 }
 
-class _HistorialState extends State<Historial> {
+class _HistorialState extends State<Historial> with SingleTickerProviderStateMixin {
   List<ServiceRequest> serviceRequests = [];
-  List<String> statuses = []; // Lista para almacenar los estados
+  List<String> statuses = [];
   late final UserData userData;
   int unreadMessagesCount = 0;
-  late final RegistrationData registrationData = RegistrationData(
-    userId: '',
-    displayName: '',
-    phoneNumber: '',
-    paymentType: '',
-    selectedCountryCode: '',
-    location: {},
-    email: '',
-  );
+  late final RegistrationData registrationData;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+
+    registrationData = RegistrationData(
+      userId: '',
+      displayName: '',
+      phoneNumber: '',
+      paymentType: '',
+      selectedCountryCode: '',
+      location: {},
+      email: '',
+    );
+
     userData = UserData(
       displayName: '',
-      // Puedes proporcionar valores iniciales aquí
       email: '',
       phoneNumber: '',
       userId: '',
@@ -57,105 +60,110 @@ class _HistorialState extends State<Historial> {
       registrationData: registrationData,
       getToken: '',
     );
+
+    _tabController = TabController(length: 5, vsync: this);
     fetchDataForUserId();
     calculateUnreadMessagesCount();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> fetchDataForUserId() async {
     try {
-      final user = firebase_auth.FirebaseAuth.instance.currentUser;
+      final user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
         final userId = user.uid;
         final token = await user.getIdToken();
 
-        // Intentar obtener los datos del caché primero
-        final cachedRequest =
-            await LocalCacheService.getCachedServiceRequest(userId);
+        final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
         if (cachedRequest != null) {
           print('Datos del caché encontrados. Mostrando datos del caché...');
           setState(() {
             serviceRequests = [cachedRequest];
-            // Usa el estado almacenado en caché en lugar del estado en el objeto ServiceRequest
             statuses = [cachedRequest.status.name];
           });
         }
 
-        // Si no se encuentran en caché, obtener datos del servidor
         if (cachedRequest == null) {
           final column = "";
           final value = "";
           final type = "";
 
-          final serviceResponse = await ApiService2()
-              .getByUserId(userId, token!, column, value, type);
+          final serviceResponse = await ApiService2().getByUserId(userId, token!, column, value, type);
 
           print('Respuesta del servidor: ${serviceResponse.body}');
 
           if (serviceResponse.statusCode == 200) {
             try {
-              final List<dynamic> jsonDataList =
-                  json.decode(serviceResponse.body);
+              final List<dynamic> jsonDataList = json.decode(serviceResponse.body);
 
-              final List<ServiceRequest> serviceRequestsList =
-                  jsonDataList.map((item) {
-                final statusName = item['status'] as String? ?? '';
-                final status = statusName != null
-                    ? Status(
-                        id: statusName, name: Status.getNameById(statusName))
-                    : Status(id: "unknown", name: 'Desconocido');
+              final List<ServiceRequest> serviceRequestsList = jsonDataList.map((item) {
+              final statusName = item['status'] as String? ?? '';
+              final status = statusName.isNotEmpty
+                  ? Status(id: statusName, name: Status.getNameById(statusName))
+                  : Status(id: "unknown", name: 'Desconocido');
 
-                return ServiceRequest(
-                  expertises: item['expertises'],
-                  id: item['id'],
-                  serviceDateTime: item['serviceDateTime'],
-                  description: item['description'],
-                  images: List<String>.from(item['images']),
-                  location: Map<String, double>.from(
-                    item['location']?.map((key, value) {
-                          if (value is int) {
-                            return MapEntry(key, value.toDouble());
-                          } else {
-                            return MapEntry(key, value);
-                          }
-                        }) ??
-                        {},
-                  ),
-                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                  userId: item['userId'],
-                  status: status,
-                  isFavorite: item['isFavorite'] as bool? ?? false,
-                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                  serviceType: ServiceType(
-                    name: item['serviceType'],
-                    id: '',
-                    selectedDate: '',
-                    selectedTime: '',
-                  ),
-                );
-              }).toList();
+              final List<dynamic> expertisesArray = item['expertises'] as List<dynamic>? ?? [];
+              final Map<String, dynamic> expertiseItem = expertisesArray.isNotEmpty ? expertisesArray.first : {};
+
+              return ServiceRequest(
+                expertises: [
+                  Expertises(
+                    id: expertiseItem['id'] ?? '', // Verifica si el valor es null
+                    name: expertiseItem['name'] ?? '', // Verifica si el valor es null
+                  )
+                ],
+                id: item['id'] ?? '', // Verifica si el valor es null
+                serviceDateTime: item['serviceDateTime'] ?? '', // Verifica si el valor es null
+                description: item['description'] ?? '', // Verifica si el valor es null
+                images: (item['images'] as List<dynamic>?)
+                    ?.map((image) => image ?? '') // Verifica si cada imagen es null
+                    .cast<String>()
+                    .toList() ?? [],
+                location: Map<String, double>.from(
+                  (item['location']?.map((key, value) {
+                    if (value is int) {
+                      return MapEntry(key, value.toDouble());
+                    } else {
+                      return MapEntry(key, value);
+                    }
+                  }) ?? {}),
+                ),
+                offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                userId: item['userId'] ?? '', // Verifica si el valor es null
+                status: status,
+                isFavorite: item['isFavorite'] as bool? ?? false,
+                acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                serviceType: ServiceType(
+                  name: item['serviceType'] ?? '', // Verifica si el valor es null
+                  id: '',
+                  selectedDate: '',
+                  selectedTime: '',
+                ),
+              );
+            }).toList();
+
 
               setState(() {
                 serviceRequests = serviceRequestsList;
-                // Utiliza el estado de cada solicitud obtenida del servidor
-                statuses = serviceRequestsList
-                    .map((request) => request.status.name)
-                    .toList();
+                statuses = serviceRequestsList.map((request) => request.status.name).toList();
               });
 
-              // Cachear los datos obtenidos del backend
               serviceRequests.forEach((request) {
                 LocalCacheService.cacheServiceRequest(request);
               });
 
-              print(
-                  'Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
+              print('Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
             } catch (e) {
               print('Error al decodificar la respuesta JSON: $e');
             }
           } else {
-            print(
-                'Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
+            print('Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
           }
         }
       } else {
@@ -166,10 +174,10 @@ class _HistorialState extends State<Historial> {
     }
   }
 
+
+
   void _openChatScreen() {
-    // Verificar si hay algún servicio seleccionado para iniciar el chat
     if (serviceRequests.isNotEmpty) {
-      // Abrir la pantalla de chat pasando el primer servicio de la lista
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -177,7 +185,6 @@ class _HistorialState extends State<Historial> {
         ),
       );
     } else {
-      // Mostrar un mensaje si no hay servicios disponibles
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('No hay servicios disponibles para iniciar el chat.'),
@@ -187,16 +194,13 @@ class _HistorialState extends State<Historial> {
   }
 
   void calculateUnreadMessagesCount() async {
-    // Calcular el número de mensajes sin leer en cada solicitud de servicio
     int count = 0;
     for (var request in serviceRequests) {
       final messages = await FirebaseFirestore.instance
           .collection('chats')
           .doc(request.id)
           .collection('messages')
-          .where('unread',
-              isEqualTo:
-                  true) // Suponiendo que hay un campo 'unread' en cada mensaje
+          .where('unread', isEqualTo: true)
           .get();
       count += messages.docs.length;
     }
@@ -219,10 +223,6 @@ class _HistorialState extends State<Historial> {
     return 0.0;
   }
 
-  void _refreshHistorial() {
-    fetchDataForUserId();
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -230,34 +230,83 @@ class _HistorialState extends State<Historial> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'Historial',
           style: MyTextStyles.buttonTextStyle,
         ),
-        iconTheme: IconThemeData(color: Colors.white), // Color blanco para el icono de retroceso
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white), // Color blanco para el icono de refrescar
+            icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: _refreshHistorial,
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabs: [
+            Tab(text: 'Disponible'),
+            Tab(text: 'Asignado'),
+            Tab(text: 'En curso'),
+            Tab(text: 'Completado'),
+            Tab(text: 'Cancelado'),
+          ],
+        ),
       ),
-      body: Container(
-        color: Colors.white,
-        padding: EdgeInsets.symmetric(horizontal: 10.0),
-        // Ajuste del margen horizontal
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildServiceListByStatus('available', screenWidth, screenHeight),
+          _buildServiceListByStatus('assigned', screenWidth, screenHeight),
+          _buildServiceListByStatus('in_progress', screenWidth, screenHeight),
+          _buildServiceListByStatus('completed', screenWidth, screenHeight),
+          _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceListByStatus(String statusId, double screenWidth, double screenHeight) {
+    final filteredRequests = serviceRequests.where((request) => request.status.id == statusId).toList();
+
+    return Padding(
+      padding: EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0), // Añadir espacio en la parte superior e izquierda/derecha
         child: ListView.builder(
-          itemCount: serviceRequests.length,
-          itemBuilder: (context, index) {
-            return Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.05),
-              // Espacio vertical entre elementos
+        itemCount: filteredRequests.length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () async {
+              final newStatus = await showDialog<String>(
+                context: context,
+                builder: (BuildContext context) {
+                  return ServiceFormWithTimeline(
+                    serviceRequest: filteredRequests[index],
+                    initialStatus: statuses[index],
+                    onComplete: (status) {
+                      setState(() {
+                        statuses[index] = status;
+                      });
+                    },
+                    userData: userData,
+                    onStatusChanged: (newStatus) {},
+                  );
+                },
+              );
+
+              if (newStatus != null && newStatus != statuses[index]) {
+                setState(() {
+                  statuses[index] = newStatus;
+                });
+              }
+            },
+            child: Container(
+              margin: EdgeInsets.only(bottom: screenHeight * 0.05), // Espacio vertical entre elementos
               child: CustomPaint(
                 size: Size(screenWidth, screenHeight * 0.05),
                 painter: CustomTicketShapePainter(
-                  status: serviceRequests[index].status.name,
+                  status: filteredRequests[index].status.name,
                 ),
-                // Utiliza el CustomClipper
                 child: Padding(
                   padding: EdgeInsets.all(20.0), // Ajuste del margen interno
                   child: Row(
@@ -267,85 +316,89 @@ class _HistorialState extends State<Historial> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                                height: 15), // Añadir espacio para el título
+                            SizedBox(height: 15), // Añadir espacio para el título
                             Text(
                               'Categoría: ',
                               style: MyTextStyles.ButtonTextStyle,
                             ),
                             Text(
-                              '${truncateDescription(serviceRequests[index].expertises)}',
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                              textAlign: TextAlign.left,
+                              truncateDescription(
+                                filteredRequests[index].expertises.map((e) => e.name).join(', '),
+                                ),
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
                             ),
+
                             SizedBox(height: screenHeight * 0.01),
                             Text(
                               'Servicio: ',
                               style: MyTextStyles.ButtonTextStyle,
                             ),
                             Text(
-                              '${serviceRequests[index].serviceType.name}',
+                              filteredRequests[index].serviceType.name,
                               style: MyTextStyles.drawerButtonTextStyle5,
                               textAlign: TextAlign.left,
                             ),
+                            Text(
+                              'Descripcion del problema',
+                              style: MyTextStyles.ButtonTextStyle,
+                            ),
+                            Text(
+                              truncateDescription(filteredRequests[index].description),
+                              style: MyTextStyles.drawerButtonTextStyle5,
+                            )
                           ],
                         ),
                       ),
-                      SizedBox(
-                          width: 40), // Espacio entre la imagen y el texto
+                      SizedBox(width: 40), // Espacio entre la imagen y el texto
                       Image.asset(
-                        'assets/animations/manito.png', // Ruta de la imagen en tus recursos
-                        width:
-                            84, // Ancho de la imagen (ajústalo según sea necesario)
-                        height:
-                            84, // Alto de la imagen (ajústalo según sea necesario)
+                        'assets/animations/manito.png',
+                        width: 84,
+                        height: 84,
                       ),
                     ],
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
   String truncateDescription(String description) {
-    // Divide la descripción en palabras
     final words = description.split(' ');
-
-    // Toma la primera palabra
     final firstWord = words.isNotEmpty ? words[0] : '';
 
-    // Verifica si hay más palabras después de la primera
     if (words.length > 1) {
-      // Devuelve la primera palabra seguida de puntos suspensivos
       return '$firstWord...';
     } else {
-      // Si solo hay una palabra, devuelve esa palabra
       return firstWord;
     }
   }
 
+  void _refreshHistorial() async {
+    await fetchDataForUserId();
+    setState(() {});
+  }
+
   Color _getTextColorByStatus(String statusId) {
-    // Obtener el estado usando el ID en lugar del nombre
     final status = StatusUtils.getStatusById(statusId);
 
-    // Devolver el color del texto basado en el estado
     switch (status.id) {
       case "available":
-        return Colors.green; // Color del texto para "Disponible"
+        return Colors.green;
       case "assigned":
-        return Colors.orange; // Color del texto para "Asignado"
+        return Colors.orange;
       case "in_progress":
-        return Colors.black; // Color del texto para "En curso"
+        return Colors.black;
       case "completed":
-        return Colors.blue; // Color del texto para "Completado"
+        return Colors.blue;
       case "cancelled":
-        return Color(0xFF84090D); // Color del texto para "Cancelado"
+        return Color(0xFF84090D);
       default:
-        return Colors.grey; // Color del texto para cualquier otro estado
+        return Colors.grey;
     }
   }
 }

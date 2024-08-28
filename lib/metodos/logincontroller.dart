@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/home.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../widgets/welcome.dart';
 import 'RegisController.dart';
@@ -167,6 +168,52 @@ class LoginScreenController {
       );
     }
     return null;
+  }
+  static Future<void> signInWithApple(BuildContext context) async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oAuthProvider = OAuthProvider("apple.com");
+      final credential = oAuthProvider.credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = authResult.user;
+
+      if (user != null) {
+        // Manejar la autenticación exitosa y redirigir a la pantalla principal
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      }
+    } catch (e) {
+      print('Error durante el inicio de sesión con Apple: $e');
+      // Manejar errores o mostrar un mensaje al usuario
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Error"),
+            content: Text("No se pudo iniciar sesión con Apple. Inténtelo de nuevo."),
+            actions: [
+              TextButton(
+                child: Text("Aceptar"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   static Future<bool> _checkIfUserIsRegistered(String userId) async {

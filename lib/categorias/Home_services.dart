@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
@@ -31,80 +32,86 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
   List<ServiceResponse> subcategoriesToShow = [];
   TextEditingController searchController = TextEditingController();
   String searchText = '';
-  late ApiService2 _apiService2 =
-      ApiService2(); // Crea una instancia de ApiService2
+  late ApiService2 _apiService2 = ApiService2(); // Crea una instancia de ApiService2
   String getFormattedDateTime() {
     DateTime now = DateTime.now().toUtc();
     String formattedDateTime = now.toIso8601String();
     return formattedDateTime;
   }
 
-  void openNewPage(ServiceType serviceType, String expertises,
-      String categoryId, String subcategoryId) {
-    print('Abriendo formulario para $expertises');
 
-    // Obtén el objeto Status basado en el nombre del estado
-    final status = StatusUtils.getStatusById(expertises);
+  void openNewPage(
+    ServiceType serviceType,
+    List<Expertises> expertises, // Cambia el tipo a List<Expertises>
+    String categoryId,
+    String subcategoryId,
+    BuildContext context) {
+  
+  print('Abriendo formulario para ${expertises.map((e) => e.name).join(', ')}');
 
-    // Formatea la fecha y hora actual en formato ISO 8601
-    final formattedDateTime = getFormattedDateTime();
+  // Obtén el objeto Status basado en el nombre del estado utilizando StatusUtils
+  final status = StatusUtils.getStatusById(expertises.isNotEmpty ? expertises.first.id : '');
 
-    // Formatea la fecha seleccionada en el formato requerido
-    String? formattedSelectedDate;
-    if (serviceType.selectedDate != null &&
-        serviceType.selectedDate.isNotEmpty) {
-      final selectedDateTime = DateTime.tryParse(serviceType.selectedDate);
+  // Formatea la fecha y hora actual en formato ISO 8601
+  final formattedDateTime = getFormattedDateTime();
 
-      if (selectedDateTime != null) {
-        formattedSelectedDate = selectedDateTime.toUtc().toIso8601String();
-      } else {
-        print('Fecha en formato incorrecto: ${serviceType.selectedDate}');
-        return;
-      }
+  // Formatea la fecha seleccionada en el formato requerido
+  String? formattedSelectedDate;
+  if (serviceType.selectedDate != null && serviceType.selectedDate.isNotEmpty) {
+    final selectedDateTime = DateTime.tryParse(serviceType.selectedDate);
+
+    if (selectedDateTime != null) {
+      formattedSelectedDate = selectedDateTime.toUtc().toIso8601String();
     } else {
-      // Si selectedDate es nulo o está vacío, asignar la fecha y hora actual en formato ISO 8601
-      final now = DateTime.now().toUtc();
-      formattedSelectedDate = now.toIso8601String();
+      print('Fecha en formato incorrecto: ${serviceType.selectedDate}');
+      return;
     }
-
-    // Crea una instancia de ServiceRequest con la información del servicio
-    final serviceRequest = ServiceRequest(
-      serviceDateTime: formattedDateTime,
-      description: '',
-      images: [],
-      location: {'lat': 0.0, 'lng': 0.0},
-      offeredPrice: 0.0,
-      serviceType: serviceType, // Pasa el objeto ServiceType directamente
-      userId: '', // Reemplaza con el usuario real
-      isFavorite: false,
-      selectedDate: formattedSelectedDate,
-      selectedTime: serviceType.selectedTime ?? '',
-      acceptedTerms: true,
-      id: '',
-      status: status,
-      expertises: expertises, // Usa el typename pasado como argumento
-    );
-
-    // Llama al formulario del servicio con el serviceRequest
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ServiceFormPage(
-          serviceRequest: serviceRequest,
-          acceptTerms: true,
-          selectedDate: DateTime.now(), // Usar una fecha predeterminada
-          token: '', // Proporciona un token válido
-          selectedServiceTitle: expertises,
-          selectedTime: '',
-          serviceRequests: [], // Agrega el título del servicio
-          categoryId: categoryId, // Pasa categoryId
-          subcategoryId: subcategoryId, // Pasa subcategoryId
-        ),
-      ),
-    );
-
-    print('Formulario abierto');
+  } else {
+    // Si selectedDate es nulo o está vacío, asignar la fecha y hora actual en formato ISO 8601
+    final now = DateTime.now().toUtc();
+    formattedSelectedDate = now.toIso8601String();
   }
+
+  // Crea una instancia de ServiceRequest con la información del servicio
+  final serviceRequest = ServiceRequest(
+    serviceDateTime: formattedDateTime,
+    description: '',
+    images: [],
+    location: {'lat': 0.0, 'lng': 0.0},
+    offeredPrice: 0.0,
+    serviceType: serviceType, // Pasa el objeto ServiceType directamente
+    userId: '', // Reemplaza con el usuario real
+    isFavorite: false,
+    selectedDate: formattedSelectedDate,
+    selectedTime: serviceType.selectedTime ?? '',
+    acceptedTerms: true,
+    id: '',
+    status: status, // Utiliza el objeto Status obtenido de StatusUtils
+    expertises: expertises, // Usa la lista de Expertises
+  );
+
+  // Llama al formulario del servicio con el serviceRequest y los ids de categoría y subcategoría
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ServiceFormPage(
+        serviceRequest: serviceRequest,
+        acceptTerms: true,
+        selectedDate: DateTime.now(), // Usar una fecha predeterminada
+        token: '', // Proporciona un token válido
+        selectedServiceTitle: expertises.map((e) => e.name).join(', '), // Agrega los nombres de expertises
+        selectedTime: '',
+        serviceRequests: [], // Agrega el título del servicio
+        categoryId: categoryId, // Pasa categoryId
+        subcategoryId: subcategoryId, // Pasa subcategoryId
+      ),
+    ),
+  );
+
+  print('Formulario abierto');
+}
+
+
 
   // Define una función para cargar los servicios
   Future<void> _loadServices() async {
@@ -121,7 +128,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
 
         // Llama a fetchServicesFromBackend2 con el token y parentId
         final List<ServiceResponse> serviceResponses =
-            await _apiService2.fetchServicesFromBackend2(token, parentId);
+        await _apiService2.fetchServicesFromBackend2(token, parentId);
 
         // Ordena las subcategorías alfabéticamente por nombre
         serviceResponses.sort((a, b) => a.name.compareTo(b.name));
@@ -192,47 +199,48 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Servicios Profesionales',
-          style: MyTextStyles.buttonTextStyle,
+  automaticallyImplyLeading: true,  // Elimina la flecha de retroceso
+  title: Text(
+    'Servicios Profesionales',
+    style: MyTextStyles.buttonTextStyle,
+  ),
+  actions: [
+    Stack(
+      children: <Widget>[
+        IconButton(
+          icon: Icon(Icons.notifications),
+          onPressed: () {
+            _showNotifications(context);
+          },
         ),
-        actions: [
-          Stack(
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.notifications),
-                onPressed: () {
-                  _showNotifications(context);
-                },
+        Positioned(
+          right: 11,
+          top: 11,
+          child: Container(
+            padding: EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(6.5),
+            ),
+            constraints: BoxConstraints(
+              minWidth: 13,
+              minHeight: 13,
+            ),
+            child: Text(
+              notificationCount.toString(), // Usa el valor actualizado del contador
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 8,
               ),
-              Positioned(
-                right: 11,
-                top: 11,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(6.5),
-                  ),
-                  constraints: BoxConstraints(
-                    minWidth: 13,
-                    minHeight: 13,
-                  ),
-                  child: Text(
-                    notificationCount
-                        .toString(), // Usa el valor actualizado del contador
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            ],
+              textAlign: TextAlign.center,
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
+    ),
+  ],
+),
+
       body: GestureDetector(
         onTap: () {
           // Cierra el cuadro deslizable al tocar fuera de él
@@ -253,10 +261,8 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
-                      mainAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
+                      crossAxisSpacing: 20.0, // Reduce el espacio entre las celdas
+                      mainAxisSpacing: 20.0, // Reduce el espacio entre las celdas
                     ),
                     itemCount: subcategoriesToShow.length,
                     itemBuilder: (context, index) {
@@ -271,8 +277,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    const Color(0xFF1A819A).withOpacity(0.15),
+                                color: const Color(0xFF1A819A).withOpacity(0.15),
                                 spreadRadius: 0.5,
                                 blurRadius: 2,
                                 offset: const Offset(0, 3),
@@ -286,25 +291,20 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white70,
-                                  borderRadius: BorderRadius.circular(
-                                      50), // Reducción del tamaño del contorno de la imagen
+                                  borderRadius: BorderRadius.circular(50), // Reducción del tamaño del contorno de la imagen
                                 ),
                                 padding: const EdgeInsets.all(4),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(50),
                                   child: Image.network(
                                     subcategory.image,
-                                    height:
-                                        80, // Reducción del tamaño de la imagen
-                                    width:
-                                        80, // Reducción del tamaño de la imagen
+                                    height: 80, // Reducción del tamaño de la imagen
+                                    width: 80, // Reducción del tamaño de la imagen
                                     fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
-                              const SizedBox(
-                                  height:
-                                      8), // Reducción del espacio entre la imagen y el texto
+                              const SizedBox(height: 8), // Reducción del espacio entre la imagen y el texto
                               Text(
                                 subcategory.name,
                                 textAlign: TextAlign.center,
@@ -329,11 +329,10 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                 alignment: Alignment.bottomCenter,
                 child: _selectedServiceIndex != -1
                     ? Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        // Ajusta el padding para el espacio adicional y márgenes laterales
-                        child: _buildServiceDetails(),
-                      )
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  // Ajusta el padding para el espacio adicional y márgenes laterales
+                  child: _buildServiceDetails(),
+                )
                     : null,
               ),
               if (selectedButtonType.isNotEmpty)
@@ -347,6 +346,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
       ),
     );
   }
+
 
   Widget _buildServiceDetails() {
     if (_selectedServiceIndex < 0 ||
@@ -399,28 +399,22 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
               Wrap(
                 spacing: 8.0,
                 runSpacing: 8.0,
-                alignment:
-                    WrapAlignment.center, // Alinear los botones al centro
-                direction: Axis
-                    .horizontal, // Asegurar que los botones se distribuyan horizontalmente
-                children:
-                    subcategory.serviceTypes.map((ServiceType serviceType) {
+                alignment: WrapAlignment.center, // Alinear los botones al centro
+                direction: Axis.horizontal, // Asegurar que los botones se distribuyan horizontalmente
+                children: subcategory.serviceTypes.map((ServiceType serviceType) {
                   return SizedBox(
-                    width: MediaQuery.of(context).size.width *
-                        0.8, // Ancho del botón (40% del ancho de la pantalla)
+                    width: MediaQuery.of(context).size.width * 0.8, // Ancho del botón (40% del ancho de la pantalla)
                     child: ElevatedButton(
                       onPressed: () {
                         // Obtén categoryId y subcategoryId de la subcategoría seleccionada
                         final categoryId = subcategory.parentId;
                         final subcategoryId = subcategory.id;
 
+                        // Asegúrate de tener una lista de Expertises, no una cadena
+                        final List<Expertises> expertises = []; // Aquí debes obtener los expertises correspondientes.
+
                         // Llama a openNewPage con todos los argumentos necesarios
-                        openNewPage(
-                          serviceType,
-                          subcategory.name,
-                          categoryId!,
-                          subcategoryId,
-                        );
+                        openNewPage(serviceType, expertises, categoryId!, subcategoryId, context);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF20819A),
@@ -429,19 +423,18 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                         ),
                         elevation: 4,
                         minimumSize: Size(0, 50), // Altura mínima del botón
-                        maximumSize: Size(double.infinity,
-                            50), // Altura máxima del botón (ancho completo)
+                        maximumSize: Size(double.infinity, 50), // Altura máxima del botón (ancho completo)
                       ),
                       child: Text(
                         serviceType.name,
-                        style: MyTextStyles.butServiceTextStyle,
-                        textAlign:
-                            TextAlign.center, // Alinear el texto al centro
+                        style: MyTextStyles.buttonTextStyle,
                       ),
                     ),
                   );
                 }).toList(),
               ),
+
+
             ],
           ),
         ),
@@ -449,24 +442,21 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
     );
   }
 
+
+
+
+
+
   void _onSubcategoryTap(ServiceResponse subcategory) {
-    if (subcategory.id.isNotEmpty) {
-      final index = subcategoriesToShow
-          .indexWhere((service) => service.id == subcategory.id);
+  if (subcategory.id.isNotEmpty) {
+    final index = subcategoriesToShow
+        .indexWhere((service) => service.id == subcategory.id);
 
-      if (index != -1) {
-        setState(() {
-          _selectedServiceIndex = index;
-        });
-
-        // Obtén categoryId y subcategoryId de la subcategoría seleccionada
-        final categoryId = subcategory.parentId;
-        final subcategoryId = subcategory.id;
-
-        // Llama a openNewPage con categoryId y subcategoryId
-        openNewPage(subcategory.serviceTypes as ServiceType, subcategory.name,
-            categoryId!, subcategoryId);
-      }
+    if (index != -1) {
+      setState(() {
+        _selectedServiceIndex = index;
+      });
     }
   }
+}
 }

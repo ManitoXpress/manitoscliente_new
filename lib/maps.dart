@@ -10,6 +10,7 @@ class FavoriteScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           'Trabajadores Favoritos',
           style: MyTextStyles.buttonTextStyle,

@@ -9,8 +9,8 @@ import 'package:manitoscliente_new/metodos/RegisController.dart';
 import 'package:manitoscliente_new/metodos/baseurl.dart';
 
 class ApiService {
-  final String baseUrl = ApiConfiguration
-      .baseUrl; // Utiliza la URL base desde la clase de configuración
+
+  final String baseUrl = ApiConfiguration.baseUrl; // Utiliza la URL base desde la clase de configuración
   String? getToken;
   final FirebaseAuth auth = FirebaseAuth.instance;
 
@@ -42,11 +42,9 @@ class ApiService {
     }
   }
 
-  Future<void> updateServiceStatus(
-      ServiceRequest serviceRequest, String newStatusId, String token) async {
+  Future<void> updateServiceStatus(ServiceRequest serviceRequest, String newStatusId, String token) async {
     try {
-      final String? refreshedToken =
-          await FirebaseAuth.instance.currentUser?.getIdToken(true);
+      final String? refreshedToken = await FirebaseAuth.instance.currentUser?.getIdToken(true);
 
       if (refreshedToken == null) {
         print('Token de autenticación nulo o vacío');
@@ -76,17 +74,19 @@ class ApiService {
       if (response.statusCode == 200) {
         print('Estado actualizado con éxito en el backend');
       } else {
-        print(
-            'Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
+        print('Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
         print('Cuerpo de la respuesta de error: ${response.body}');
-        throw Exception(
-            'Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
+        throw Exception('Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
       }
     } catch (e) {
       print('Error al realizar la solicitud HTTP de actualización: $e');
       throw Exception('Error al actualizar el estado en el backend: $e');
     }
   }
+
+
+
+
 
   Future<http.Response> sendTokenToServer(String? token) async {
     try {
@@ -95,6 +95,7 @@ class ApiService {
         headers: <String, String>{
           'Authorization': 'Bearer $token',
         },
+
       );
       return response;
     } catch (e) {
@@ -104,78 +105,87 @@ class ApiService {
   }
 
   Future<http.Response> sendDataToBackend(
-    ServiceRequest serviceRequest,
-    String token,
-    String id,
-    String expertises,
-    String categoryId,
-    String subcategoryId,
-    Status status,
-  ) async {
-    print('sendDataToBackend() called');
-    print('Enviando datos al backend:');
+  ServiceRequest serviceRequest,
+  String token,
+  String id,
+  String expertises,
+  String categoryId,
+  String subcategoryId,
+  Status status,
+) async {
+  print('sendDataToBackend() called');
+  print('Enviando datos al backend:');
 
-    // Convierte la latitud y longitud a double o usa 0.0 si son nulas
-    double latitude = serviceRequest.location['lat'] ?? 0.0;
-    double longitude = serviceRequest.location['lng'] ?? 0.0;
+  // Convierte la latitud y longitud a double o usa 0.0 si son nulas
+  double latitude = serviceRequest.location['lat'] ?? 0.0;
+  double longitude = serviceRequest.location['lng'] ?? 0.0;
 
-    // Convertir offeredPrice a double antes de asignarlo
-    double offeredPrice = serviceRequest.offeredPrice!.toDouble();
+  // Convertir offeredPrice a double antes de asignarlo
+  double offeredPrice = serviceRequest.offeredPrice!.toDouble();
 
-    // Crear una instancia de FormData
-    final formData = {
-      'serviceDateTime': serviceRequest.serviceDateTime,
-      'description': serviceRequest.description,
-      'images': serviceRequest.images.map((imagePath) {
-        // Extrae el nombre del archivo de la ruta completa
-        final imageFile = File(imagePath);
-        final imageName = imageFile.path.split('/').last;
-        return imageName;
-      }).toList(),
-      'location': {
-        'lat': latitude,
-        'lng': longitude,
-      },
-      'offeredPrice': offeredPrice.toInt(),
-      'serviceType': serviceRequest.serviceType.name,
-      'userId': serviceRequest.userId,
-      'status': status.id,
-      'expertises': serviceRequest.expertises,
-      'categoryId': categoryId, // Agregar categoryId al formData
-      'subcategoryId': subcategoryId, // Agregar subcategoryId al formData
-    };
-
-    print('FormData: $formData');
-    print('Token: $token');
-
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/services'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(formData),
-      );
-
-      if (response.statusCode == 200) {
-        print('Datos enviados al backend con éxito');
-      } else {
-        print('Solicitud HTTP: ${response.statusCode}');
-      }
-      return response;
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al enviar datos al backend');
+  // Construir expertises con el serviceType y el subcategoryId
+  final expertisesList = [
+    {
+      'id': subcategoryId,
+      'name': serviceRequest.serviceType.name,
     }
-  }
+  ];
 
-  Future<http.Response> updateUser(
-      String userId, RegistrationData registrationData, String token) async {
+  // Crear una instancia de FormData
+  final formData = {
+    'serviceDateTime': serviceRequest.serviceDateTime,
+    'description': serviceRequest.description,
+    'images': serviceRequest.images.map((imagePath) {
+      // Extrae el nombre del archivo de la ruta completa
+      final imageFile = File(imagePath);
+      final imageName = imageFile.path.split('/').last;
+      return imageName;
+    }).toList(),
+    'location': {
+      'lat': latitude,
+      'lng': longitude,
+    },
+    'offeredPrice': offeredPrice.toInt(),
+    'userId': serviceRequest.userId,
+    'status': status.id,
+    'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
+    'categoryId': categoryId,
+    
+  };
+
+  print('FormData: $formData');
+  print('Token: $token');
+
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/services'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(formData),
+    );
+
+    if (response.statusCode == 200) {
+      print('Datos enviados al backend con éxito');
+    } else {
+      print('Solicitud HTTP: ${response.statusCode}');
+    }
+    return response;
+  } catch (e) {
+    print('Error en la solicitud HTTP: $e');
+    throw Exception('Error al enviar datos al backend');
+  }
+}
+
+
+
+
+  Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
     try {
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,
-        'phoneNumber': FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
+        'phoneNumber':FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
         'location': registrationData.location ?? {},
         'paymentType': registrationData.paymentType,
       };
@@ -208,8 +218,7 @@ class ApiService {
       final FirebaseStorage storage = FirebaseStorage.instance;
       // Obtén la extensión del archivo desde la ruta del archivo original.
       final String extension = image.path.split('.').last;
-      String imageName =
-          'serviceID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      String imageName = 'serviceID_${DateTime.now().millisecondsSinceEpoch}.$extension';
       // Ruta de la carpeta del usuario
       String userFolderPath = '${user?.uid}/';
 
@@ -257,7 +266,6 @@ class ApiService {
     }
   }
 }
-
 class FormData {
   final String dateTime;
   final String description;
