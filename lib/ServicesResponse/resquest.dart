@@ -14,6 +14,7 @@ class ServiceRequest {
   bool acceptedTerms;
   List<Expertises> expertises; // Cambiado a una lista de Expertises
   late Status status;
+  final String subcategoryName;
 
   bool isServiceNameEmpty() {
     return (description == null || description.isEmpty);
@@ -38,6 +39,7 @@ class ServiceRequest {
     required this.acceptedTerms,
     required this.expertises, // Cambiado para recibir una lista de Expertises
     required this.status,
+    required this.subcategoryName,
   });
 
   ServiceRequest copyWith({
@@ -54,7 +56,8 @@ class ServiceRequest {
     String? selectedDate,
     String? selectedTime,
     bool? acceptedTerms,
-    List<Expertises>? expertises, // Cambiado a una lista de Expertises
+    List<Expertises>? expertises,
+    String? subcategoryName, // Cambiado a una lista de Expertises
   }) {
     return ServiceRequest(
       serviceDateTime: dateTime ?? this.serviceDateTime,
@@ -70,7 +73,8 @@ class ServiceRequest {
       selectedDate: selectedDate ?? this.selectedDate,
       selectedTime: selectedTime ?? this.selectedTime,
       acceptedTerms: acceptedTerms ?? this.acceptedTerms,
-      expertises: expertises ?? this.expertises, // Cambiado a una lista de Expertises
+      expertises: expertises ?? this.expertises,
+      subcategoryName: subcategoryName ?? this.subcategoryName, // Cambiado a una lista de Expertises
     );
   }
 
@@ -89,36 +93,38 @@ class ServiceRequest {
       'selectedDate': selectedDate,
       'selectedTime': selectedTime,
       'acceptedTerms': acceptedTerms,
-      'expertises': expertises.map((e) => e.toMap()).toList(), // Convierte la lista de Expertises a Map
+      'expertises': expertises.map((e) => e.toMap()).toList(),
+      'subcategoryName': subcategoryName, // Convierte la lista de Expertises a Map
     };
   }
 
   factory ServiceRequest.fromSnapshot(DocumentSnapshot snapshot) {
-  final data = snapshot.data() as Map<String, dynamic>;
-  return ServiceRequest(
-    serviceDateTime: data['serviceDateTime'] ?? '',
-    id: data['id'] ?? '',
-    description: data['description'] ?? '',
-    images: List<String>.from(data['images'] ?? []),
-    location: Map<String, double>.from(data['location'] ?? {}),
-    offeredPrice: _parseOfferedPrice(data['offeredPrice']),
-    serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
-    userId: data['userId'] ?? '',
-    isFavorite: data['isFavorite'] ?? false,
-    selectedDate: data['selectedDate'],
-    selectedTime: data['selectedTime'],
-    acceptedTerms: data['acceptedTerms'] ?? false,
-    expertises: data['expertises'] != null 
-        ? List<Expertises>.from(
-            (data['expertises'] as List).map((e) => Expertises.fromMap(e))
-          )
-        : [],  // Garantiza que expertises sea siempre una lista válida
-    status: Status(
-      id: data['status'] ?? '',
-      name: Status.getNameById(data['status'] ?? ''),
-    ),
-  );
-}
+    final data = snapshot.data() as Map<String, dynamic>;
+    return ServiceRequest(
+      serviceDateTime: data['serviceDateTime'] ?? '',
+      id: data['id'] ?? '',
+      description: data['description'] ?? '',
+      images: List<String>.from(data['images'] ?? []),
+      location: Map<String, double>.from(data['location'] ?? {}),
+      offeredPrice: _parseOfferedPrice(data['offeredPrice']),
+      serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
+      userId: data['userId'] ?? '',
+      isFavorite: data['isFavorite'] ?? false,
+      selectedDate: data['selectedDate'],
+      selectedTime: data['selectedTime'],
+      acceptedTerms: data['acceptedTerms'] ?? false,
+      expertises: data['expertises'] != null
+          ? List<Expertises>.from(
+          (data['expertises'] as List).map((e) => Expertises.fromMap(e))
+      )
+          : [],  // Garantiza que expertises sea siempre una lista válida
+      status: Status(
+        id: data['status'] ?? '',
+        name: Status.getNameById(data['status'] ?? ''),
+      ),
+      subcategoryName: data['subcategoryName'] ?? '',
+    );
+  }
 
 
   // Función para convertir el precio ofrecido a un número decimal
@@ -140,7 +146,7 @@ class ServiceRequest {
 class Expertises {
   String id;
   String name;
-  
+
 
   Expertises({
     required this.id,
@@ -151,7 +157,7 @@ class Expertises {
     return {
       'id': id,
       'name': name,
-      
+
     };
   }
 
@@ -159,7 +165,7 @@ class Expertises {
     return Expertises(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
-      
+
     );
   }
 }
@@ -218,8 +224,8 @@ class Status {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'name': name,
+    'id': id,
+    'name': name,
     };
-  }
+    }
 }

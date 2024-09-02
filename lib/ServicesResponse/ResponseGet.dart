@@ -157,26 +157,27 @@ class ApiService2 {
   }
 
   Future<http.Response> getByUserId(String userId, String authToken, String column, String value, String type) async {
-    try {
-      final String? authTokenValue = await AuthUtils.getToken();
-      final response = await http.get(
-        Uri.parse('$baseUrl/services?columns=$column&values=$value&type=$type'),
-        headers: <String, String>{
-          'Authorization': 'Bearer $authTokenValue',
-        },
-      );
+  try {
+    final String? authTokenValue = await AuthUtils.getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/services?userId=$userId&columns=$column&values=$value&type=$type'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $authTokenValue',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
-      } else {
-        print('Solicitud HTTP: ${response.statusCode}');
-      }
-      return response;
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al obtener datos del backend');
+    if (response.statusCode == 200) {
+      print('Datos recibidos del backend con éxito');
+    } else {
+      print('Solicitud HTTP fallida: ${response.statusCode}');
     }
+    return response;
+  } catch (e) {
+    print('Error en la solicitud HTTP: $e');
+    throw Exception('Error al obtener datos del backend');
   }
+}
+
 
   Future<http.Response> fetchServiceDetailsFromBackend(String userId, String serviceId) async {
     try {

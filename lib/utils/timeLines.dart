@@ -9,7 +9,6 @@ import 'package:timeline_tile/timeline_tile.dart';
 
 import 'cacheLocal.dart';
 import 'offers.dart';
-
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final String initialStatus;

@@ -47,7 +47,7 @@ class ApiDataProvider {
               userId: item['userId'],
               isFavorite: item['isFavorite'] as bool? ?? false,
               acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-              serviceType: ServiceType(name: item['serviceType'], id: '', selectedDate: '', selectedTime: ''), status: item['status'],
+              serviceType: ServiceType(name: item['serviceType'], id: '', selectedDate: '', selectedTime: ''), status: item['status'], subcategoryName: '',
             ))
                 .toList();
 

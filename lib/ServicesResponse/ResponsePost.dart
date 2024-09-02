@@ -103,7 +103,6 @@ class ApiService {
       throw Exception('Error al enviar token al servidor');
     }
   }
-
   Future<http.Response> sendDataToBackend(
   ServiceRequest serviceRequest,
   String token,
@@ -112,6 +111,7 @@ class ApiService {
   String categoryId,
   String subcategoryId,
   Status status,
+  String subcategoryName,
 ) async {
   print('sendDataToBackend() called');
   print('Enviando datos al backend:');
@@ -121,7 +121,7 @@ class ApiService {
   double longitude = serviceRequest.location['lng'] ?? 0.0;
 
   // Convertir offeredPrice a double antes de asignarlo
-  double offeredPrice = serviceRequest.offeredPrice!.toDouble();
+  
 
   // Construir expertises con el serviceType y el subcategoryId
   final expertisesList = [
@@ -133,6 +133,7 @@ class ApiService {
 
   // Crear una instancia de FormData
   final formData = {
+    'subcategoryName':subcategoryName,
     'serviceDateTime': serviceRequest.serviceDateTime,
     'description': serviceRequest.description,
     'images': serviceRequest.images.map((imagePath) {
@@ -145,7 +146,6 @@ class ApiService {
       'lat': latitude,
       'lng': longitude,
     },
-    'offeredPrice': offeredPrice.toInt(),
     'userId': serviceRequest.userId,
     'status': status.id,
     'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises

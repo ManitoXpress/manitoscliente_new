@@ -27,11 +27,14 @@ class Historial extends StatefulWidget {
   _HistorialState createState() => _HistorialState();
 }
 
-class _HistorialState extends State<Historial> with SingleTickerProviderStateMixin {
+class _HistorialState extends State<Historial>
+    with SingleTickerProviderStateMixin {
   List<ServiceRequest> serviceRequests = [];
   List<String> statuses = [];
   late final UserData userData;
   int unreadMessagesCount = 0;
+  int offerServiceCount = 0;
+
   late final RegistrationData registrationData;
   late TabController _tabController;
 
@@ -80,101 +83,122 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
         final userId = user.uid;
         final token = await user.getIdToken();
 
-        final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
+        // Verificar si hay datos en caché
+        final cachedRequest =
+            await LocalCacheService.getCachedServiceRequest(userId);
         if (cachedRequest != null) {
           print('Datos del caché encontrados. Mostrando datos del caché...');
           setState(() {
             serviceRequests = [cachedRequest];
             statuses = [cachedRequest.status.name];
           });
-        }
+        } else {
+          // Si no hay datos en caché, hacer la solicitud al backend
+          final column = ""; // Cambia según sea necesario
+          final value = ""; // Cambia según sea necesario
+          final type = ""; // Cambia según sea necesario
 
-        if (cachedRequest == null) {
-          final column = "";
-          final value = "";
-          final type = "";
-
-          final serviceResponse = await ApiService2().getByUserId(userId, token!, column, value, type);
-
-          print('Respuesta del servidor: ${serviceResponse.body}');
+          final serviceResponse = await ApiService2()
+              .getByUserId(userId, token!, column, value, type);
 
           if (serviceResponse.statusCode == 200) {
             try {
-              final List<dynamic> jsonDataList = json.decode(serviceResponse.body);
+              final List<dynamic> jsonDataList =
+                  json.decode(serviceResponse.body);
 
-              final List<ServiceRequest> serviceRequestsList = jsonDataList.map((item) {
-              final statusName = item['status'] as String? ?? '';
-              final status = statusName.isNotEmpty
-                  ? Status(id: statusName, name: Status.getNameById(statusName))
-                  : Status(id: "unknown", name: 'Desconocido');
+              // Filtrar los servicios que pertenecen al usuario actual
+              final List<dynamic> filteredJsonDataList =
+                  jsonDataList.where((item) {
+                return item['userId'] == userId;
+              }).toList();
 
-              final List<dynamic> expertisesArray = item['expertises'] as List<dynamic>? ?? [];
-              final Map<String, dynamic> expertiseItem = expertisesArray.isNotEmpty ? expertisesArray.first : {};
+              // Procesar cada item en la lista de respuestas filtradas
+              final List<ServiceRequest> serviceRequestsList =
+                  filteredJsonDataList.map((item) {
+                // Obtener y mapear el estado del servicio
+                final statusName = item['status'] as String? ?? 'unknown';
+                final status = Status(
+                    id: statusName, name: Status.getNameById(statusName));
 
-              return ServiceRequest(
-                expertises: [
-                  Expertises(
-                    id: expertiseItem['id'] ?? '', // Verifica si el valor es null
-                    name: expertiseItem['name'] ?? '', // Verifica si el valor es null
-                  )
-                ],
-                id: item['id'] ?? '', // Verifica si el valor es null
-                serviceDateTime: item['serviceDateTime'] ?? '', // Verifica si el valor es null
-                description: item['description'] ?? '', // Verifica si el valor es null
-                images: (item['images'] as List<dynamic>?)
-                    ?.map((image) => image ?? '') // Verifica si cada imagen es null
-                    .cast<String>()
-                    .toList() ?? [],
-                location: Map<String, double>.from(
-                  (item['location']?.map((key, value) {
-                    if (value is int) {
-                      return MapEntry(key, value.toDouble());
-                    } else {
-                      return MapEntry(key, value);
-                    }
-                  }) ?? {}),
-                ),
-                offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                userId: item['userId'] ?? '', // Verifica si el valor es null
-                status: status,
-                isFavorite: item['isFavorite'] as bool? ?? false,
-                acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                serviceType: ServiceType(
-                  name: item['serviceType'] ?? '', // Verifica si el valor es null
-                  id: '',
-                  selectedDate: '',
-                  selectedTime: '',
-                ),
-              );
-            }).toList();
+                // Obtener y mapear expertises
+                final List<dynamic> expertisesArray =
+                    item['expertises'] as List<dynamic>? ?? [];
+                final Map<String, dynamic> expertiseItem =
+                    expertisesArray.isNotEmpty ? expertisesArray.first : {};
 
+                return ServiceRequest(
+                  expertises: [
+                    Expertises(
+                      id: expertiseItem['id'] ??
+                          '', // Asegúrate de que no sea null
+                      name: expertiseItem['name'] ??
+                          '', // Asegúrate de que no sea null
+                    )
+                  ],
+                  id: item['id'] ?? '', // Asegúrate de que no sea null
+                  serviceDateTime: item['serviceDateTime'] ??
+                      '', // Asegúrate de que no sea null
+                  description:
+                      item['description'] ?? '', // Asegúrate de que no sea null
+                  images: (item['images'] as List<dynamic>?)
+                          ?.map((image) =>
+                              image as String? ?? '') // Verifica cada imagen
+                          .toList() ??
+                      [],
+                  location: Map<String, double>.from(
+                    (item['location'] as Map<String, dynamic>?)
+                            ?.map((key, value) {
+                          return MapEntry(
+                              key, (value is int) ? value.toDouble() : value);
+                        }) ??
+                        {},
+                  ),
+                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                  userId: item['userId'] ?? '', // Asegúrate de que no sea null
+                  status: status,
+                  isFavorite: item['isFavorite'] as bool? ?? false,
+                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                  serviceType: ServiceType(
+                    name: item['serviceType'] ??
+                        '', // Asegúrate de que no sea null
+                    id: '', // Si es necesario, asigna el ID
+                    selectedDate: '', // Puedes agregar si es relevante
+                    selectedTime: '', // Puedes agregar si es relevante
+                  ),
+                  subcategoryName: item['subcategoryName'] ?? '',
+                );
+              }).toList();
 
+              // Actualizar el estado de la UI
               setState(() {
                 serviceRequests = serviceRequestsList;
-                statuses = serviceRequestsList.map((request) => request.status.name).toList();
+                statuses = serviceRequestsList
+                    .map((request) => request.status.name)
+                    .toList();
               });
 
+              // Cachear cada servicio para uso posterior
               serviceRequests.forEach((request) {
                 LocalCacheService.cacheServiceRequest(request);
               });
 
-              print('Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
+              print(
+                  'Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
             } catch (e) {
               print('Error al decodificar la respuesta JSON: $e');
             }
           } else {
-            print('Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
+            print(
+                'Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
           }
         }
       } else {
         print('Usuario no autenticado');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      print('Error en la solicitud HTTP:$e');
     }
   }
-
-
 
   void _openChatScreen() {
     if (serviceRequests.isNotEmpty) {
@@ -245,12 +269,37 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          labelStyle: MyTextStyles.tabTextStyle,
+          unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
           tabs: [
-            Tab(text: 'Disponible'),
-            Tab(text: 'Asignado'),
-            Tab(text: 'En curso'),
-            Tab(text: 'Completado'),
-            Tab(text: 'Cancelado'),
+            Tab(text: 'Disponibles'),
+            Tab(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Text('Ofertados'),
+                  if (offerServiceCount > 0)
+                    Positioned(
+                      right: 7,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        child: Text(
+                          offerServiceCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            Tab(text: 'Asignados'),
+            Tab(text: 'Completados'),
+            Tab(text: 'Cancelados'),
           ],
         ),
       ),
@@ -258,7 +307,7 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
         controller: _tabController,
         children: [
           _buildServiceListByStatus('available', screenWidth, screenHeight),
-          _buildServiceListByStatus('assigned', screenWidth, screenHeight),
+          _buildServiceListByStatus('offer', screenWidth, screenHeight),
           _buildServiceListByStatus('in_progress', screenWidth, screenHeight),
           _buildServiceListByStatus('completed', screenWidth, screenHeight),
           _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
@@ -267,12 +316,20 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildServiceListByStatus(String statusId, double screenWidth, double screenHeight) {
-    final filteredRequests = serviceRequests.where((request) => request.status.id == statusId).toList();
+  Widget _buildServiceListByStatus(
+      String statusId, double screenWidth, double screenHeight) {
+    final filteredRequests = serviceRequests
+        .where((request) => request.status.id == statusId)
+        .toList();
+
+    if (statusId == 'offer') {
+      // Actualiza la cantidad de servicios ofertados
+      offerServiceCount = filteredRequests.length;
+    }
 
     return Padding(
-      padding: EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0), // Añadir espacio en la parte superior e izquierda/derecha
-        child: ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: ListView.builder(
         itemCount: filteredRequests.length,
         itemBuilder: (context, index) {
           return GestureDetector(
@@ -301,14 +358,14 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
               }
             },
             child: Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.05), // Espacio vertical entre elementos
+              margin: EdgeInsets.only(bottom: screenHeight * 0.02),
               child: CustomPaint(
                 size: Size(screenWidth, screenHeight * 0.05),
                 painter: CustomTicketShapePainter(
                   status: filteredRequests[index].status.name,
                 ),
                 child: Padding(
-                  padding: EdgeInsets.all(20.0), // Ajuste del margen interno
+                  padding: const EdgeInsets.all(20.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -316,37 +373,41 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 15), // Añadir espacio para el título
+                            SizedBox(height: 15), // Espacio para el título
                             Text(
                               'Categoría: ',
                               style: MyTextStyles.ButtonTextStyle,
                             ),
                             Text(
                               truncateDescription(
-                                filteredRequests[index].expertises.map((e) => e.name).join(', '),
-                                ),
-                                style: MyTextStyles.drawerButtonTextStyle5,
-                                textAlign: TextAlign.left,
+                                  filteredRequests[index].subcategoryName),
+                              style: MyTextStyles.drawerButtonTextStyle5,
+                              textAlign: TextAlign.left,
                             ),
-
                             SizedBox(height: screenHeight * 0.01),
                             Text(
                               'Servicio: ',
                               style: MyTextStyles.ButtonTextStyle,
                             ),
                             Text(
-                              filteredRequests[index].serviceType.name,
+                              truncateDescription(
+                                filteredRequests[index]
+                                    .expertises
+                                    .map((e) => e.name)
+                                    .join(', '),
+                              ),
                               style: MyTextStyles.drawerButtonTextStyle5,
                               textAlign: TextAlign.left,
                             ),
                             Text(
-                              'Descripcion del problema',
+                              'Descripción del problema',
                               style: MyTextStyles.ButtonTextStyle,
                             ),
                             Text(
-                              truncateDescription(filteredRequests[index].description),
+                              truncateDescription(
+                                  filteredRequests[index].description),
                               style: MyTextStyles.drawerButtonTextStyle5,
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -369,13 +430,10 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
 
   String truncateDescription(String description) {
     final words = description.split(' ');
-    final firstWord = words.isNotEmpty ? words[0] : '';
-
-    if (words.length > 1) {
-      return '$firstWord...';
-    } else {
-      return firstWord;
+    if (words.length > 6) {
+      return '${words.take(6).join(' ')}...';
     }
+    return description;
   }
 
   void _refreshHistorial() async {
@@ -396,7 +454,7 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
       case "completed":
         return Colors.blue;
       case "cancelled":
-        return Color(0xFF84090D);
+        return const Color(0xFF84090D);
       default:
         return Colors.grey;
     }

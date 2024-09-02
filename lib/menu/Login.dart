@@ -365,7 +365,7 @@ class _LoginFormState extends State<LoginScreen> {
                   },
                   icon: Icon(Icons.delete, color: Colors.white),
                   label: Text(
-                    "Solicitar eliminación de cuenta",
+                    "Eliminar cuenta",
                     style: GoogleFonts.karla(
                       color: Colors.white,
                       fontSize: 16.sp,

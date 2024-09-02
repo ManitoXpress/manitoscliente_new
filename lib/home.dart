@@ -12,13 +12,24 @@ import 'package:manitoscliente_new/menu/trabaja.dart';
 import 'package:manitoscliente_new/metodos/RegisController.dart';
 
 class HomeScreen extends StatefulWidget {
+  final int initialPageIndex; // Agregamos un parámetro para seleccionar la pestaña inicial.
+
+  HomeScreen({this.initialPageIndex = 0}); // Valor predeterminado para la primera pestaña.
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-  final PageController _pageController = PageController();
+  late int _currentIndex;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialPageIndex; // Inicializar con la página seleccionada.
+    _pageController = PageController(initialPage: widget.initialPageIndex); // Controlador de PageView.
+  }
 
   List<Widget> _buildScreens() {
     return [
@@ -88,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final displayName = user.displayName ?? '';
                     final email = user.email ?? '';
 
-                    // Ejemplo: Crear un objeto UserData con valores predeterminados si userData es nulo
+                    // Crear un objeto UserData
                     final userData =
                         UserData.fromJson(user.metadata.creationTime != null
                             ? {
@@ -142,112 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   elevation: 5,
                 ),
               ),
-              const SizedBox(height: 3.0),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ReferralScreen(
-                        referralCode: '12345',
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.share),
-                label: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Referidos",
-                    style: MyTextStyles.drawerButtonTextStyle4,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  shadowColor: Colors.grey.withOpacity(0.5),
-                  elevation: 5,
-                ),
-              ),
-              const SizedBox(height: 3.0),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HelpScreen()),
-                  );
-                },
-                icon: const Icon(Icons.help),
-                label: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Ayuda",
-                    style: MyTextStyles.drawerButtonTextStyle4,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  shadowColor: Colors.grey.withOpacity(0.5),
-                  elevation: 5,
-                ),
-              ),
-              const SizedBox(height: 3.0),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => TrabajeConNosotrosScreen()),
-                  );
-                },
-                icon: const Icon(Icons.trending_up),
-                label: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Trabaja Con Nosotros",
-                    style: MyTextStyles.drawerButtonTextStyle4,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  shadowColor: Colors.grey.withOpacity(0.5),
-                  elevation: 5,
-                ),
-              ),
-              const SizedBox(height: 10.0),
-              GestureDetector(
-                onTap: () {
-                  showAboutDialog(
-                    context: context,
-                    applicationName: "ManitoXpress",
-                    applicationVersion: "1.0.0",
-                    applicationIcon: Image.asset(
-                      'assets/images/manitoxpress_logo.png',
-                      width: 10,
-                      height: 10,
-                    ),
-                    children: const [
-                      Text(
-                        "Esta es una aplicación Demo",
-                        style: MyTextStyles.drawerButtonTextStyle,
-                      ),
-                    ],
-                  );
-                },
-                child: Text(
-                  "Versión",
-                  style: MyTextStyles.linkTextStyle2,
-                ),
-              ),
-              const SizedBox(height: 3.0),
+              // Más botones en el drawer...
             ],
           ),
         ),
@@ -267,17 +173,17 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _currentIndex = index;
           });
-          _pageController.jumpToPage(index);
+          _pageController.jumpToPage(index); // Navegar a la página seleccionada.
         },
         items: [
           BottomNavigationBarItem(
             icon: const Icon(Icons.account_circle),
-            label: 'Servicios',
+            label: 'SERVICIOS',
             backgroundColor: Color(0xFF1A819A),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.favorite),
-            label: 'Favoritos',
+            label: 'FAVORITOS',
             backgroundColor: Color(0xFF1A819A),
           ),
           BottomNavigationBarItem(

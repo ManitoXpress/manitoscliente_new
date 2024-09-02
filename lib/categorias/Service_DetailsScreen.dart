@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/Historial.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
+import 'package:manitoscliente_new/home.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:manitoscliente_new/wizards/dataservice.dart';
@@ -25,6 +26,7 @@ class ServiceFormPage extends StatefulWidget {
   final String token;
   final String categoryId; // Agregar esta variable
   final String subcategoryId; // Agregar esta variable
+  final String subcategoryName;
 
   ServiceFormPage({
     Key? key,
@@ -36,6 +38,7 @@ class ServiceFormPage extends StatefulWidget {
     required this.token, required String selectedTime,
     required this.categoryId, // Definir esta variable en el constructor
     required this.subcategoryId, // Definir esta variable en el constructor
+    required this.subcategoryName,
   }) : super(key: key);
 
   @override
@@ -51,6 +54,8 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? token; // Variable para almacenar el token de autenticación
   final ApiDataProvider apiDataProvider = ApiDataProvider();
+  bool isSubmitting = false;
+  
 
   bool validateServiceData() {
     final serviceRequest = widget.serviceRequest;
@@ -80,70 +85,112 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
     return true;
   }
   void onSubmit() async {
-  if (widget.acceptTerms && token != null) {
-    final apiService = ApiService();
-    User? user = FirebaseAuth.instance.currentUser;
+    if (widget.acceptTerms && token != null && !isSubmitting) {
+      setState(() {
+        isSubmitting = true; // Bloquear envío adicional
+      });
 
-    if (user != null) {
-      widget.serviceRequest.userId = user.uid;
-      widget.serviceRequest.status = StatusUtils.getStatusById('available');
+      final apiService = ApiService();
+      User? user = FirebaseAuth.instance.currentUser;
 
-      try {
-        // Convierte la lista de expertises a JSON si es necesario
-        final expertisesJson = jsonEncode(
-          widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
-        );
+      if (user != null) {
+        widget.serviceRequest.userId = user.uid;
+        widget.serviceRequest.status = StatusUtils.getStatusById('available');
 
-        final response = await apiService.sendDataToBackend(
-          widget.serviceRequest,
-          token!,
-          widget.serviceRequest.status.id, // Pasa el ID del estado como String
-          expertisesJson, // Pasa la cadena JSON en lugar de la lista
-          widget.categoryId,
-          widget.subcategoryId,
-          widget.serviceRequest.status, // Pasa el objeto Status como argumento
-        );
-        if (response.statusCode == 200) {
-          for (var image in widget.serviceRequest.images) {
-            final file = File(image);
-            await apiService.uploadImageToFirebaseStorage(file, user.uid);
-            print('Imagen cargada con éxito en Firebase Storage');
+        try {
+          final expertisesJson = jsonEncode(
+            widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
+          );
+
+          final formData = {
+            'Profesional': widget.subcategoryName,
+            'serviceDateTime': widget.serviceRequest.selectedDate ?? '',
+            'description': widget.serviceRequest.description ?? '',
+            'images': widget.serviceRequest.images ?? [],
+            'location': widget.serviceRequest.location ?? {},
+            'offeredPrice': widget.serviceRequest.offeredPrice ?? 0,
+            'userId': widget.serviceRequest.userId ?? '',
+            'status': widget.serviceRequest.status.id ?? '',
+            'expertises': expertisesJson,
+            'categoryId': widget.categoryId,
+            'subcategoryId': widget.subcategoryId,
+          };
+
+          final response = await apiService.sendDataToBackend(
+            widget.serviceRequest,
+            token!,
+            widget.serviceRequest.status.id,
+            expertisesJson,
+            widget.categoryId,
+            widget.subcategoryId,
+            widget.serviceRequest.status,
+            widget.subcategoryName,
+          );
+
+          if (response.statusCode == 200) {
+            for (var image in widget.serviceRequest.images) {
+              final file = File(image);
+              await apiService.uploadImageToFirebaseStorage(file, user.uid);
+            }
+
+            
+          } else {
+            // Mostrar el cuadro de diálogo de éxito
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('¡Servicio creado con éxito!'),
+                  content: const Text('Tu servicio ha sido creado con éxito.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreen(initialPageIndex: 2), 
+                          ),
+                          (route) => false,
+                        );
+                      },
+                      child: const Text('Ir a Historial'),
+                    ),
+                  ],
+                );
+              },
+            );
+            
           }
-
-          // Primero navega a la ventana de historial
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => Historial()),
-          );
-
-          // Después muestra el cuadro de diálogo indicando que el servicio se creó con éxito
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('¡Servicio creado con éxito!'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Cierra el cuadro de diálogo
-                    },
-                    child: Text('Cerrar'),
-                  ),
-                ],
-              );
-            },
-          );
-        } else {
-          Navigator.pop(context);
-          print('Error en la respuesta del servidor: ${response.statusCode}');
+        } catch (error) {
+          // Manejo de errores
+          // Mostrar un cuadro de diálogo de error en caso de fallo
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Error al crear el servicio'),
+                  content: const Text('Hubo un error al crear el servicio. Inténtalo nuevamente.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
+                );
+              },
+            );
+        } finally {
+          setState(() {
+            isSubmitting = false; // Desbloquear después de enviar
+          });
         }
-      } catch (error) {
-        print('Error durante la comunicación con el backend: $error');
-        // Manejar el error según tus necesidades
       }
     }
   }
-}
+
+
+
+
 
 
   Future<void> fetchDataForUserId() async {

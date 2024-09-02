@@ -180,7 +180,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                               selectedTime: '',
                               acceptedTerms: true,
                               expertises: [],
-                              status: status,
+                              status: status, subcategoryName: '',
                             );
                             navigateToHomeServices(context, serviceRequest);
                             break;

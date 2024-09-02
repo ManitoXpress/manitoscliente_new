@@ -34,7 +34,8 @@ class NavigationUtils {
         selectedDate: selectedDate?.toIso8601String(), // Convertimos DateTime a String ISO8601
         selectedTime: map['selectedTime'] ?? '',
         isFavorite: map['isFavorite'] ?? false,
-        acceptedTerms: true, id: '', status: map['status']?? '', // Establece acceptedTerms como ⁠ true ⁠
+        acceptedTerms: true, id: '', status: map['status']?? '',
+        subcategoryName: map['subcategoryName'] ?? '', // Establece acceptedTerms como ⁠ true ⁠
       );
 
       Navigator.push(
@@ -45,7 +46,7 @@ class NavigationUtils {
             acceptTerms: true,
             serviceRequests: [], // Cambia 'services' a 'serviceRequests'
             selectedDate: selectedDate,
-            token: token, selectedServiceTitle: '', selectedTime: '', categoryId: '', subcategoryId: '',
+            token: token, selectedServiceTitle: '', selectedTime: '', categoryId: '', subcategoryId: '', subcategoryName: '',
           ),
         ),
       );
