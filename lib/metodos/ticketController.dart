@@ -53,11 +53,12 @@ class CustomTicketShapePainter extends CustomPainter {
 
     // Mover 2 puntos a la izquierda modificando la posición de "left"
     final statusBoxRect = Rect.fromLTWH(
-      size.width - statusBoxSize - statusBoxPadding - 12, // Movido 2 puntos a la izquierda
-      size.height - statusBoxSize - statusBoxPadding - titleHeight - -10, // Ajusta la posición para estar más abajo dentro del ticket
+      size.width - statusBoxSize - statusBoxPadding - 12, // Mueve 2 puntos a la izquierda
+      size.height - statusBoxPadding - titleHeight - 8, // Ajusta para estar justo debajo de la imagen
       statusBoxSize,
       statusBoxSize,
     );
+
 
     final RRect statusBoxRRect = RRect.fromRectAndCorners(
       statusBoxRect,

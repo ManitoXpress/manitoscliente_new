@@ -32,11 +32,10 @@ class LocationAndFavoritesWizard extends StatefulWidget {
       _LocationAndFavoritesWizardState();
 }
 
-class _LocationAndFavoritesWizardState
-    extends State<LocationAndFavoritesWizard> {
+class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard> {
   LatLng? selectedLocation;
   bool isFavorite = false;
-  late GoogleMapController mapController;
+  GoogleMapController? mapController;
   Set<Marker> markers = {};
   TextEditingController locationController = TextEditingController();
   TextEditingController writtenLocationController = TextEditingController();
@@ -47,8 +46,8 @@ class _LocationAndFavoritesWizardState
   @override
   void initState() {
     super.initState();
-    _controller = Completer<GoogleMapController>();
     _getCurrentLocation();
+    
   }
 
   bool isLocationAndFavoritesValid() {
@@ -59,12 +58,10 @@ class _LocationAndFavoritesWizardState
     try {
       location.Location loc = location.Location();
 
-      // Verificar si los servicios de ubicación están habilitados
       bool serviceEnabled = await loc.serviceEnabled();
       if (!serviceEnabled) {
         serviceEnabled = await loc.requestService();
         if (!serviceEnabled) {
-          // Servicios de ubicación deshabilitados, puedes mostrar un mensaje al usuario
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Por favor, habilita los servicios de ubicación.'),
           ));
@@ -72,12 +69,10 @@ class _LocationAndFavoritesWizardState
         }
       }
 
-      // Verificar si se tienen permisos de ubicación
       location.PermissionStatus permissionGranted = await loc.hasPermission();
       if (permissionGranted == location.PermissionStatus.denied) {
         permissionGranted = await loc.requestPermission();
         if (permissionGranted != location.PermissionStatus.granted) {
-          // Permiso de ubicación denegado, puedes mostrar un mensaje al usuario
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Permiso de ubicación denegado.'),
           ));
@@ -85,7 +80,6 @@ class _LocationAndFavoritesWizardState
         }
       }
 
-      // Obtener la ubicación actual
       location.LocationData locationData = await loc.getLocation();
       LatLng currentLocation =
           LatLng(locationData.latitude!, locationData.longitude!);
@@ -103,7 +97,7 @@ class _LocationAndFavoritesWizardState
         );
       });
 
-      mapController.animateCamera(
+      mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: currentLocation,
@@ -122,14 +116,17 @@ class _LocationAndFavoritesWizardState
   }
 
   Future<void> _captureAndSaveMapSnapshot() async {
-    final Uint8List? snapshotBytes = await mapController.takeSnapshot();
-    setState(() {
-      mapSnapshot = snapshotBytes;
-    });
+    final Uint8List? snapshotBytes = await mapController?.takeSnapshot();
+    if (snapshotBytes != null) {
+      setState(() {
+        mapSnapshot = snapshotBytes;
+      });
+    }
   }
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
+    _controller.complete(controller);
     print("Mapa creado correctamente");
   }
 
@@ -166,7 +163,6 @@ class _LocationAndFavoritesWizardState
   Future<void> _showMapScreen() async {
     TextEditingController searchController = TextEditingController();
 
-    // Obtener la ubicación actual del usuario
     Position position;
     try {
       position = await Geolocator.getCurrentPosition(
@@ -199,7 +195,7 @@ class _LocationAndFavoritesWizardState
                     decoration: InputDecoration(
                       labelText: 'Buscar dirección',
                       suffixIcon: IconButton(
-                        icon: Icon(Icons.search),
+                        icon: Icon(Icons.maps_home_work),
                         onPressed: () async {
                           final query = searchController.text;
                           if (query.isNotEmpty) {
@@ -208,18 +204,22 @@ class _LocationAndFavoritesWizardState
                                   await locationFromAddress(query);
                               if (locations.isNotEmpty) {
                                 final location = locations.first;
-                                _handleTap(LatLng(location.latitude, location.longitude));
+                                _handleTap(LatLng(
+                                    location.latitude, location.longitude));
                               } else {
-                                print("No se encontró la dirección");
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text('No se encontró la dirección.'),
-                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('No se encontró la dirección.'),
+                                  ),
+                                );
                               }
                             } catch (e) {
-                              print("Error buscando dirección: $e");
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text('Error buscando dirección: $e'),
-                              ));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Error buscando dirección: $e'),
+                                ),
+                              );
                             }
                           }
                         },
@@ -230,8 +230,9 @@ class _LocationAndFavoritesWizardState
                     child: GoogleMap(
                       onMapCreated: (controller) {
                         _onMapCreated(controller);
-                        _controller.complete(controller);
-                        _handleTap(LatLng(position.latitude, position.longitude));
+                        _handleTap(
+                          LatLng(position.latitude, position.longitude),
+                        );
                       },
                       onTap: (LatLng loc) {
                         setStateDialog(() {
@@ -274,11 +275,11 @@ class _LocationAndFavoritesWizardState
                             widget.onLocationSelected(selectedLocation!);
                             await _captureAndSaveMapSnapshot();
                             Navigator.pop(context);
-                            setState(
-                                () {}); // Actualizar la interfaz de usuario
+                            setState(() {});
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Por favor, selecciona una ubicación.'),
+                              content: Text(
+                                  'Por favor, selecciona una ubicación.'),
                             ));
                           }
                         },
@@ -320,7 +321,7 @@ class _LocationAndFavoritesWizardState
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Paso 2: Coloque su ubicación en el mundo',
+              'Coloque su ubicación en el mapa',
               style: MyTextStyles.formServiceTextStyle,
               textAlign: TextAlign.left,
             ),
@@ -329,78 +330,104 @@ class _LocationAndFavoritesWizardState
         Card(
           elevation: 5.0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(50.0),
+            borderRadius: BorderRadius.circular(8.0),
           ),
-          child: InkWell(
-            onTap: _showMapScreen,
-            borderRadius: BorderRadius.circular(50.0),
-            child: CircleAvatar(
-              radius: 50.0,
-              backgroundImage: AssetImage('assets/images/mundo.png'),
+          margin: const EdgeInsets.all(8.0),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: _showMapScreen,
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8.0),
+                      color: Colors.grey[200],
+                    ),
+                    child: mapSnapshot != null
+                        ? Image.memory(
+                            mapSnapshot!,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            'assets/map.jpeg',
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
+
+                SizedBox(height: 10),
+                TextField(
+                  controller: writtenLocationController,
+                  decoration: InputDecoration(
+                    labelText: 'Ubicación seleccionada',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
         Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Container(
-            height: 60.0,
-            child: TextField(
-              controller: writtenLocationController,
-              decoration: InputDecoration(
-                labelText: 'Dirección seleccionada',
-                labelStyle: MyTextStyles.formsdetails,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(color: Color(0xFF1A819A)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(color: Color(0xFF1A819A)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(color: Color(0xFF1A819A)),
-                ),
-              ),
-              readOnly: true,
+          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '¿Quieres marcar esta ubicación como favorita?',
+              style: MyTextStyles.formServiceTextStyle,
+              textAlign: TextAlign.left,
             ),
           ),
         ),
-        SizedBox(height: 8.0),
+        SwitchListTile(
+          title: Text(
+            'Marcar como favorita',
+            style: MyTextStyles.formServiceTextStyle3,
+          ),
+          value: isFavorite,
+          onChanged: (bool value) {
+            setState(() {
+              isFavorite = value;
+              widget.onFavoritesSelected(value);
+            });
+          },
+        ),
         Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Container(
-            height: 60.0,
-            child: TextField(
-              controller: additionalInfoController,
-              decoration: InputDecoration(
-                labelText: 'Información adicional',
-                labelStyle: MyTextStyles.formsdetails,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(color: Color(0xFF1A819A)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(color: Color(0xFF1A819A)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(color: Color(0xFF1A819A)),
-                ),
-              ),
+          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Añadir información adicional',
+              style: MyTextStyles.formServiceTextStyle,
+              textAlign: TextAlign.left,
             ),
           ),
         ),
-        SizedBox(height: 8.0),
-        mapSnapshot != null
-            ? Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Image.memory(mapSnapshot!),
-              )
-            : Container(),
-        SizedBox(height: 8.0),
+        TextFormField(
+          
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: 'Detalles del servicio',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xA3C9D2D2)),
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF1A819A)),
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            labelStyle: MyTextStyles.formsdetails,
+          ),
+          onChanged: (value) {
+            
+          },
+        ),
       ],
     );
   }
 }
+

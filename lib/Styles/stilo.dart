@@ -158,9 +158,16 @@ class MyTextStyles {
   static const TextStyle formServiceTextStyle = TextStyle(
     color: Color(0xFF000405),
     fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.bold,
     fontStyle: FontStyle.italic,
     fontSize: 17.0,
+  );
+  static const TextStyle formServiceTextStyle3 = TextStyle(
+    color: Color(0xFF000405),
+    fontFamily: 'Xpress Heavy',
+    fontWeight: FontWeight.normal,
+    fontStyle: FontStyle.italic,
+    fontSize: 15.0,
   );
   static const TextStyle titleTextStyle = TextStyle(
     color: Color(0xFF000405),

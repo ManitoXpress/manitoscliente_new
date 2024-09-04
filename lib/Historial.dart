@@ -75,6 +75,31 @@ class _HistorialState extends State<Historial>
     super.dispose();
   }
 
+  Future<double?> fetchOfferedPrice(String serviceId) async {
+  try {
+    // Consultar Firestore en la colección 'offers'
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('offers')
+        .where('serviceId', isEqualTo: serviceId)
+        .limit(1)
+        .get();
+    
+    if (querySnapshot.docs.isNotEmpty) {
+      // Obtener el precio ofertado
+      final offerData = querySnapshot.docs.first.data();
+      final offeredPrice = offerData['offeredPrice'];
+
+      // Verificar si el precio ofertado es válido
+      return offeredPrice != null ? double.tryParse(offeredPrice) : null;
+    }
+  } catch (e) {
+    print('Error al obtener el precio ofertado: $e');
+  }
+  return null;
+}
+
+
+
   Future<void> fetchDataForUserId() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -175,6 +200,8 @@ class _HistorialState extends State<Historial>
                 statuses = serviceRequestsList
                     .map((request) => request.status.name)
                     .toList();
+                
+
               });
 
               // Cachear cada servicio para uso posterior
@@ -317,116 +344,119 @@ class _HistorialState extends State<Historial>
   }
 
   Widget _buildServiceListByStatus(
-      String statusId, double screenWidth, double screenHeight) {
-    final filteredRequests = serviceRequests
-        .where((request) => request.status.id == statusId)
-        .toList();
+    String statusId, double screenWidth, double screenHeight) {
+  final filteredRequests = serviceRequests
+      .where((request) => request.status.id == statusId)
+      .toList();
 
-    if (statusId == 'offer') {
-      // Actualiza la cantidad de servicios ofertados
-      offerServiceCount = filteredRequests.length;
-    }
+  if (statusId == 'offer') {
+    offerServiceCount = filteredRequests.length;
+  }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: filteredRequests.length,
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () async {
-              final newStatus = await showDialog<String>(
-                context: context,
-                builder: (BuildContext context) {
-                  return ServiceFormWithTimeline(
-                    serviceRequest: filteredRequests[index],
-                    initialStatus: statuses[index],
-                    onComplete: (status) {
-                      setState(() {
-                        statuses[index] = status;
-                      });
-                    },
-                    userData: userData,
-                    onStatusChanged: (newStatus) {},
-                  );
-                },
-              );
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    child: ListView.builder(
+      itemCount: filteredRequests.length,
+      itemBuilder: (context, index) {
+        return GestureDetector(
+          onTap: () async {
+            final newStatus = await showDialog<String>(
+              context: context,
+              builder: (BuildContext context) {
+                return ServiceFormWithTimeline(
+                  serviceRequest: filteredRequests[index],
+                  initialStatus: statuses[index],
+                  onComplete: (status) {
+                    setState(() {
+                      statuses[index] = status;
+                    });
+                  },
+                  userData: userData,
+                  onStatusChanged: (newStatus) {},
+                );
+              },
+            );
 
-              if (newStatus != null && newStatus != statuses[index]) {
-                setState(() {
-                  statuses[index] = newStatus;
-                });
-              }
-            },
-            child: Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.02),
-              child: CustomPaint(
-                size: Size(screenWidth, screenHeight * 0.05),
-                painter: CustomTicketShapePainter(
-                  status: filteredRequests[index].status.name,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 15), // Espacio para el título
-                            Text(
-                              'Categoría: ',
-                              style: MyTextStyles.ButtonTextStyle,
-                            ),
-                            Text(
-                              truncateDescription(
-                                  filteredRequests[index].subcategoryName),
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                              textAlign: TextAlign.left,
-                            ),
-                            SizedBox(height: screenHeight * 0.01),
-                            Text(
-                              'Servicio: ',
-                              style: MyTextStyles.ButtonTextStyle,
-                            ),
-                            Text(
-                              truncateDescription(
-                                filteredRequests[index]
-                                    .expertises
-                                    .map((e) => e.name)
-                                    .join(', '),
+            if (newStatus != null && newStatus != statuses[index]) {
+              setState(() {
+                statuses[index] = newStatus;
+              });
+            }
+          },
+          child: FutureBuilder<double?>(
+            future: fetchOfferedPrice(filteredRequests[index].id),
+            builder: (context, snapshot) {
+              final offeredPrice = snapshot.data ?? 0.0;
+
+              return Container(
+                margin: EdgeInsets.only(bottom: screenHeight * 0.02),
+                child: CustomPaint(
+                  size: Size(screenWidth, screenHeight * 0.05),
+                  painter: CustomTicketShapePainter(
+                    status: filteredRequests[index].status.name,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 15), // Espacio para el título
+                              Text(
+                                'Categoría: ',
+                                style: MyTextStyles.ButtonTextStyle,
                               ),
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                              textAlign: TextAlign.left,
-                            ),
-                            Text(
-                              'Descripción del problema',
-                              style: MyTextStyles.ButtonTextStyle,
-                            ),
-                            Text(
-                              truncateDescription(
-                                  filteredRequests[index].description),
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                            ),
-                          ],
+                              Text(
+                                truncateDescription(
+                                    filteredRequests[index].subcategoryName),
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
+                              ),
+                              SizedBox(height: screenHeight * 0.01),
+                              Text(
+                                'Servicio: ',
+                                style: MyTextStyles.ButtonTextStyle,
+                              ),
+                              Text(
+                                truncateDescription(
+                                  filteredRequests[index]
+                                      .expertises
+                                      .map((e) => e.name)
+                                      .join(', '),
+                                ),
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
+                              ),
+                              SizedBox(height: screenHeight * 0.01),
+                              Text(
+                                'Precio Ofertado: \$${offeredPrice.toStringAsFixed(2)}',
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 40), // Espacio entre la imagen y el texto
-                      Image.asset(
-                        'assets/animations/manito.png',
-                        width: 84,
-                        height: 84,
-                      ),
-                    ],
+                        SizedBox(width: 40), // Espacio entre la imagen y el texto
+                          Image.asset(
+                            'assets/animations/manito.png',
+                            width: 84,
+                            height: 84,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+              );
+            },
+          ),
+        );
+      },
+    ),
+  );
+}
+
 
   String truncateDescription(String description) {
     final words = description.split(' ');

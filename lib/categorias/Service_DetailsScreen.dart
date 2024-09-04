@@ -50,7 +50,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   late ServiceDataWizard dataWizard;
   late DateTimeSelectionWizard dateTimeWizard;
   late TermsAndConditionsWizard termsWizard;
-  late LocationAndFavoritesWizard locationAndFavoritesWizard;
+  late final LocationAndFavoritesWizard locationAndFavoritesWizard;
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? token; // Variable para almacenar el token de autenticación
   final ApiDataProvider apiDataProvider = ApiDataProvider();
@@ -208,6 +208,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   @override
   void initState() {
     super.initState();
+    
 
     // Llama a la función para obtener el token de autenticación
     AuthUtils.getToken().then((value) {

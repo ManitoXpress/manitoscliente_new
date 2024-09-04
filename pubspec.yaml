@@ -97,6 +97,7 @@ flutter:
     - assets/images/pexels.gif
     - assets/images/mundo.png
     - assets/animations/manito.png
+    - assets/map.jpeg
 
   fonts:
     - family: Xpress Heavy

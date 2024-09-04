@@ -210,7 +210,7 @@ class Status {
   // Mapa inverso para buscar el nombre por ID
   static final Map<String, String> _nameById = {
     "available": "Disponible",
-    "assigned":"Asignado",
+    "offer":"Ofertado",
     "in_progress":"En curso",
     "completed": "Completado",
     "cancelled": "Cancelado",

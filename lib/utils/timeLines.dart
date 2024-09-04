@@ -32,11 +32,31 @@ class ServiceFormWithTimeline extends StatefulWidget {
 class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late String status;
   final TextEditingController _cancelReasonController = TextEditingController();
+  List<ServiceResponse> offers = [];
 
   @override
   void initState() {
     super.initState();
     status = widget.initialStatus;
+
+    // Cargar ofertas si es necesario
+    if (widget.serviceRequest.offeredPrice > 0) {
+      _fetchOffers(); // Nueva función para obtener ofertas
+    }
+  }
+
+  void _fetchOffers() async {
+    try {
+      final String serviceId = widget.serviceRequest.id;
+      final ApiService2 apiService = ApiService2();
+      final List<ServiceResponse> fetchedOffers = await apiService.getOffers(serviceId);
+
+      setState(() {
+        offers = fetchedOffers; // Actualizar las ofertas
+      });
+    } catch (e) {
+      print('Error al obtener las ofertas: $e');
+    }
   }
 
   void _showCancelDialog(BuildContext context) {
@@ -44,39 +64,39 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Cancelar Trabajo'),
+          title: const Text('Cancelar Servicio'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Coloque su motivo de cancelación de trabajo:'),
-                SizedBox(height: 10),
+                const Text('Coloque su motivo de cancelación de trabajo:'),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _cancelReasonController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     hintText: 'Escriba su motivo aquí',
                   ),
                 ),
-                SizedBox(height: 10),
-                Text('Ejemplos de cancelación de servicio:'),
+                const SizedBox(height: 10),
+                const Text('Ejemplos de cancelación de servicio:'),
                 ElevatedButton(
                   onPressed: () {
                     _cancelJobWithReason('No puedo continuar con el trabajo');
                   },
-                  child: Text('No puedo continuar con el trabajo'),
+                  child: const Text('No puedo continuar con el trabajo'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     _cancelJobWithReason('Emergencia inesperada');
                   },
-                  child: Text('Emergencia inesperada'),
+                  child: const Text('Emergencia inesperada'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     _cancelJobWithReason('Otro motivo');
                   },
-                  child: Text('Otro motivo'),
+                  child: const Text('Otro motivo'),
                 ),
               ],
             ),
@@ -86,7 +106,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancelar'),
+              child: const Text('Cerrar'),
             ),
           ],
         );
@@ -96,11 +116,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
   Future<void> _viewProposal() async {
     try {
-      final String serviceId = widget.serviceRequest.id;
-      final ApiService2 apiService = ApiService2();
-      final List<ServiceResponse> offers = await apiService.getOffers(serviceId);
-
-      if (mounted) {
+      if (offers.isNotEmpty) {
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -134,65 +150,66 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Detalles del Servicio'),
-      contentPadding: EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Fecha y Hora: ${widget.serviceRequest.serviceDateTime}',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Descripción: ${widget.serviceRequest.description}',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-            Container(
-              height: 280,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Seguimiento del Servicio',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    Text('Estado: $status'),
-                    SizedBox(height: 10),
-                    Text(
-                      'Precio Ofertado: ${widget.serviceRequest.offeredPrice > 0 ? widget.serviceRequest.offeredPrice.toString() : 'No especificado'}',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    if (widget.serviceRequest.offeredPrice > 0)
-                      ElevatedButton(
-                        onPressed: () {
-                          _viewProposal();
-                          Navigator.of(context).pop();
-                        },
-                        child: Text('Mostrar Propuestas'),
-                      ),
+@override
+Widget build(BuildContext context) {
+  print('Precio ofertado: ${widget.serviceRequest.offeredPrice}');
+  
+  return AlertDialog(
+    title: const Text('Detalles del Servicio'),
+    contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+    content: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Fecha y Hora: ${widget.serviceRequest.serviceDateTime}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Descripción: ${widget.serviceRequest.description}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            height: 280,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Seguimiento del Servicio',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Estado: ${widget.serviceRequest.status.name}'),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Precio Ofertado: ${widget.serviceRequest.offeredPrice > 0 ? "\$${widget.serviceRequest.offeredPrice.toStringAsFixed(2)}" : 'No hay precio ofertado aún.'}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  if (offers.isNotEmpty)
                     ElevatedButton(
-                      onPressed: () {
-                        _showCancelDialog(context);
-                      },
-                      child: Text('Cancelar Trabajo'),
+                      onPressed: _viewProposal,
+                      child: const Text('Mostrar Propuestas'),
                     ),
-                  ],
-                ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _showCancelDialog(context);
+                    },
+                    child: const Text('Cancelar Trabajo'),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+
 
   Color _getTextColorByStatus(String statusId) {
     final status = StatusUtils.getStatusById(statusId);
@@ -206,7 +223,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       case "completed":
         return Colors.blue;
       case "cancelled":
-        return Color(0xFF84090D);
+        return const Color(0xFF84090D);
       default:
         return Colors.grey;
     }

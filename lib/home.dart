@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Container(
                     constraints:
-                        const BoxConstraints(maxWidth: 200, maxHeight: 200),
+                    const BoxConstraints(maxWidth: 200, maxHeight: 200),
                     child: Image.network("https://i.imgur.com/AWrWerE.png"),
                     margin: const EdgeInsets.only(top: 70, bottom: 40),
                   ),
@@ -99,17 +99,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     final displayName = user.displayName ?? '';
                     final email = user.email ?? '';
 
-                    // Crear un objeto UserData
-                    final userData =
-                        UserData.fromJson(user.metadata.creationTime != null
-                            ? {
-                                'userId': 'defaultId',
-                                'displayName': 'defaultName',
-                                'email': 'defaultEmail',
-                                'phoneNumber': 'defaultPhoneNumber',
-                                'imagePath': 'defaultImagePath'
-                              }
-                            : {});
+                    // Ejemplo: Crear un objeto UserData con valores predeterminados si userData es nulo
+                    final userData = UserData.fromJson(user.metadata.creationTime != null
+                        ? {'userId': 'defaultId', 'displayName': 'defaultName', 'email': 'defaultEmail', 'phoneNumber': 'defaultPhoneNumber', 'imagePath': 'defaultImagePath'}
+                        : {});
 
                     // Navegar a la página del perfil pasando los datos del usuario
                     Navigator.push(
@@ -123,14 +116,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             userId: userData.userId,
                             displayName: userData.displayName,
                             phoneNumber: userData.phoneNumber,
-                            email: userData.email,
-                            selectedCountryCode: '',
-                            location: {},
-                            paymentType: '',
-                          ),
-                          phoneNumber: '',
-                          imagePath: '',
-                          paymentType: '',
+
+
+
+                            email: userData.email, selectedCountryCode: '', location: {}, paymentType: '',
+
+                          ),  phoneNumber: '',  imagePath: '', paymentType: '',
                         ),
                       ),
                     );
@@ -153,7 +144,111 @@ class _HomeScreenState extends State<HomeScreen> {
                   elevation: 5,
                 ),
               ),
-              // Más botones en el drawer...
+              const SizedBox(height: 3.0),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReferralScreen(
+                        referralCode: '12345',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Referidos",
+                    style: MyTextStyles.drawerButtonTextStyle4,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  shadowColor: Colors.grey.withOpacity(0.5),
+                  elevation: 5,
+                ),
+              ),
+              const SizedBox(height: 3.0),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HelpScreen()),
+                  );
+                },
+                icon: const Icon(Icons.help),
+                label: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Ayuda",
+                    style: MyTextStyles.drawerButtonTextStyle4,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  shadowColor: Colors.grey.withOpacity(0.5),
+                  elevation: 5,
+                ),
+              ),
+              const SizedBox(height: 3.0),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => TrabajeConNosotrosScreen()),
+                  );
+                },
+                icon: const Icon(Icons.trending_up),
+                label: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Trabaja Con Nosotros",
+                    style: MyTextStyles.drawerButtonTextStyle4,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  shadowColor: Colors.grey.withOpacity(0.5),
+                  elevation: 5,
+                ),
+              ),
+              const SizedBox(height: 10.0),
+              GestureDetector(
+                onTap: () {
+                  showAboutDialog(
+                    context: context,
+                    applicationName: "ManitoXpress",
+                    applicationVersion: "1.0.0",
+                    applicationIcon: Image.asset(
+                      'assets/images/manitoxpress_logo.png',
+                      width: 10,
+                      height: 10,
+                    ),
+                    children: const [
+                      Text(
+                        "Esta es una aplicación Demo",
+                        style: MyTextStyles.drawerButtonTextStyle,
+                      ),
+                    ],
+                  );
+                },
+                child: Text(
+                  "Versión",
+                  style: MyTextStyles.linkTextStyle2,
+                ),
+              ),
+              const SizedBox(height: 3.0),
             ],
           ),
         ),
@@ -205,6 +300,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _refreshHistorial() {
     // Actualiza el historial aquí
-    // Puedes implementar la lógica para actualizar los datos desde el backend
-  }
+    // Puedes implementar la lógica para actualizar los datos desde el backend
+    }
 }
