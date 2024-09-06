@@ -269,23 +269,19 @@ class _LoginFormState extends State<LoginScreen> {
                   style: MyTextStyles.buttonTextStyle3,
                 ),
                 SizedBox(height: 10.h),
-                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Botón de Google
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1A819A),
                         shape: CircleBorder(),
                         padding: EdgeInsets.all(8.w),
                       ),
-                      onPressed: isLoadingGoogle
-                          ? null
-                          : () async {
-                              await signInWithGoogle();
-                            },
+                      onPressed: isLoadingGoogle ? null : signInWithGoogle,
                       child: isLoadingGoogle
-                          ? CircularProgressIndicator()
+                          ? CircularProgressIndicator() // Indicador de carga
                           : CircleAvatar(
                               backgroundColor: Colors.white,
                               radius: 40.r,
@@ -316,20 +312,17 @@ class _LoginFormState extends State<LoginScreen> {
                               ),
                             ),
                     ),
-                    SizedBox(width: 10.w), 
+                    SizedBox(width: 10.w), // Espacio entre los botones
+                    // Botón de Apple
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1A819A),
                         shape: CircleBorder(),
                         padding: EdgeInsets.all(8.w),
                       ),
-                      onPressed: isLoadingApple
-                          ? null
-                          : () async {
-                              await signInWithApple();
-                            },
+                      onPressed: isLoadingApple ? null : signInWithApple,
                       child: isLoadingApple
-                          ? CircularProgressIndicator()
+                          ? CircularProgressIndicator() // Indicador de carga
                           : CircleAvatar(
                               backgroundColor: Colors.white,
                               radius: 40.r,
@@ -347,7 +340,7 @@ class _LoginFormState extends State<LoginScreen> {
                                         color: Color(0xFF1A819A),
                                       ),
                                       Text(
-                                        'Inicio',
+                                        'Apple',
                                         style: GoogleFonts.lato(
                                           color: Color(0xFF1A819A),
                                           fontSize: 14.sp,
@@ -362,6 +355,41 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+                SizedBox(height: 70.h),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Acción de borrar cuenta
+                  },
+                  icon: Icon(Icons.delete, color: Colors.white),
+                  label: Text(
+                    "Eliminar cuenta",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12.h, horizontal: 25.w),
+                  ),
+                ),
+                SizedBox(height: 40.h),
+                TextButton(
+                  onPressed: () {
+                    launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
+                  },
+                  child: Text(
+                    'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 2, 8, 168),
+                      fontSize: 6.sp,
+                      decoration: TextDecoration.underline, // Agrega subrayado al texto
+                    ),
+                  ),
+                ),
+                SizedBox(height: 30.h),
               ],
             ),
           ),
