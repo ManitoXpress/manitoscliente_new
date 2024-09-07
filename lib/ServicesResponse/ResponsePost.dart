@@ -141,6 +141,7 @@ class ApiService {
     String subcategoryId,
     Status status,
     String subcategoryName,
+    List<String> imageUrls,
   ) async {
     print('sendDataToBackend() called');
     print('Enviando datos al backend:');
@@ -164,12 +165,7 @@ class ApiService {
       'subcategoryName': subcategoryName,
       'serviceDateTime': serviceRequest.serviceDateTime,
       'description': serviceRequest.description,
-      'images': serviceRequest.images.map((imagePath) {
-        // Extrae el nombre del archivo de la ruta completa
-        final imageFile = File(imagePath);
-        final imageName = imageFile.path.split('/').last;
-        return imageName;
-      }).toList(),
+      'images': imageUrls,
       'location': {
         'lat': latitude,
         'lng': longitude,

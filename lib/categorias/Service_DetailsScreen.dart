@@ -161,6 +161,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           widget.subcategoryId,
           widget.serviceRequest.status,
           widget.subcategoryName,
+          imageUrls,
         );
 
         print('Respuesta del backend: ${response.statusCode}');
