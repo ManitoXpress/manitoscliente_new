@@ -16,7 +16,6 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final Function(String) onStatusChanged;
   final UserData userData;
   final String workerId;
-
   final List<String> images;
 
   const ServiceFormWithTimeline({
@@ -53,15 +52,21 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+    _initializeServiceStream();
+    _fetchOfferedPrice();
+  }
+
+  void _initializeControllers() {
     _cancelReasonController = TextEditingController();
     _priceController = TextEditingController();
+  }
 
+  void _initializeServiceStream() {
     _serviceRequestStream = FirebaseFirestore.instance
         .collection('services')
         .doc(widget.serviceRequest.id)
         .snapshots();
-
-    _fetchOfferedPrice();
   }
 
   @override
@@ -70,41 +75,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
-
-  Future<void> _fetchOfferedPrice() async {
-    try {
-      final offeredPrice = await fetchOfferedPrice(widget.serviceRequest.id);
-      setState(() {
-        _fetchedOfferedPrice = offeredPrice;
-        _priceController.text =
-            offeredPrice != null ? offeredPrice.toString() : '';
-      });
-    } catch (e) {
-      print('Error al obtener el precio ofertado: $e');
-    }
-  }
-
-  Future<double?> fetchOfferedPrice(String serviceId) async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('offers')
-          .where('serviceId', isEqualTo: serviceId)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        final offerData = querySnapshot.docs.first.data();
-        final offeredPrice = offerData['offeredPrice'];
-        return offeredPrice != null
-            ? double.tryParse(offeredPrice.toString())
-            : null;
-      }
-    } catch (e) {
-      print('Error al obtener el precio ofertado: $e');
-    }
-    return null;
-  }
-
   // Confirmación de finalización del trabajo por el cliente
   void _confirmCompletion() async {
     try {
@@ -186,8 +156,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
-  // Método para aceptar la propuesta
-  void _acceptProposal() async {
+
+  
+void _acceptProposal() async {
     try {
       await FirebaseFirestore.instance
           .collection('services')
@@ -225,8 +196,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
-
-  void _blockUserParticipation() async {
+  Future<void> _blockUserParticipation() async {
     try {
       await FirebaseFirestore.instance
           .collection('services')
@@ -243,34 +213,77 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-  void _showNoParticipationDialog(BuildContext context) {
+  Future<void> _updateServiceStatus(String status, String errorMessage) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({'status': status});
+
+      widget.onStatusChanged(status);
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('$errorMessage: $e');
+    }
+  }
+
+  void _showDialog(
+    BuildContext context, 
+    String title, 
+    String content, 
+    VoidCallback onConfirm, 
+    String confirmText,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('No Participar en el Trabajo'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                  '¿Estás seguro de que no quieres participar en este trabajo?'),
-            ],
-          ),
+          title: Text(title),
+          content: Text(content),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: Text('Cancelar'),
             ),
             ElevatedButton(
-              onPressed: _blockUserParticipation,
-              child: Text('Confirmar No Participar'),
+              onPressed: onConfirm,
+              child: Text(confirmText),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _fetchOfferedPrice() async {
+    try {
+      final offeredPrice = await fetchOfferedPrice(widget.serviceRequest.id);
+      setState(() {
+        _fetchedOfferedPrice = offeredPrice;
+        _priceController.text =
+            offeredPrice != null ? offeredPrice.toString() : '';
+      });
+    } catch (e) {
+      print('Error al obtener el precio ofertado: $e');
+    }
+  }
+
+  Future<double?> fetchOfferedPrice(String serviceId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('offers')
+          .where('serviceId', isEqualTo: serviceId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final offerData = querySnapshot.docs.first.data();
+        return double.tryParse(offerData['offeredPrice'].toString());
+      }
+    } catch (e) {
+      print('Error al obtener el precio ofertado: $e');
+    }
+    return null;
   }
 
   @override
@@ -292,8 +305,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        List<String> imageFiles =
-            List<String>.from(serviceData['images'] ?? []);
+        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
 
         return Scaffold(
           appBar: AppBar(
@@ -308,8 +320,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 SizedBox(height: 16.0),
                 Text('Ubicación: ${serviceData['location'] ?? ''}'),
                 SizedBox(height: 16.0),
-                Text(
-                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
+                Text('Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
                 SizedBox(height: 16.0),
                 Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
                 SizedBox(height: 16.0),
@@ -318,8 +329,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   child: FutureBuilder<List<String>>(
                     future: _getImageUrls(imageFiles),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return CircularProgressIndicator();
                       }
 
@@ -338,28 +348,52 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   ),
                 ),
                 SizedBox(height: 16.0),
-
-                // Mostrar botones dependiendo del estado
-                if (_currentStatus == 'pending_confirmation') ...[
+                
+                if (_currentStatus == 'offer') ...[
                   ElevatedButton(
-                    onPressed: () {
-                      _showConfirmCompletionDialog(context);
-                    },
-                    child: Text('Confirmar Finalización'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _showAcceptProposalDialog(context);
-                    },
+                    onPressed: () => _showDialog(
+                      context,
+                      'Aceptar Propuesta',
+                      '¿Estás seguro de que quieres aceptar esta propuesta y comenzar el trabajo?',
+                      _acceptProposal,
+                      'Aceptar',
+                    ),
                     child: Text('Aceptar Propuesta'),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      _showRejectCompletionDialog(context);
-                    },
+                    onPressed: () => _showDialog(
+                      context,
+                      'Cancelar Trabajo',
+                      '¿Estás seguro de que no quieres participar en este trabajo?',
+                      _blockUserParticipation,
+                      'Confirmar No Participar',
+                    ),
+                    child: Text('Cancelar Trabajo'),
+                  ),
+                ] else if (_currentStatus == 'in_progress' ||
+                    _currentStatus == 'available') ...[
+                  ElevatedButton(
+                    onPressed: () => _showDialog(
+                      context,
+                      'Cancelar Trabajo',
+                      '¿Estás seguro de que no quieres participar en este trabajo?',
+                      _blockUserParticipation,
+                      'Confirmar No Participar',
+                    ),
+                    child: Text('Cancelar Trabajo'),
+                  ),
+                ]
+                else if (_currentStatus == 'pending_confirmation') ...[
+                  ElevatedButton(
+                    onPressed: () => _showConfirmCompletionDialog(context),
+                    child: Text('Confirmar Finalización'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _showRejectCompletionDialog(context),
                     child: Text('Rechazar Finalización'),
                   ),
                 ],
+
               ],
             ),
           ),
