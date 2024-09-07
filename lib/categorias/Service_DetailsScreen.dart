@@ -106,12 +106,40 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
         // Nueva lista para almacenar URLs de imágenes
         List<String> imageUrls = [];
 
-        // Construir el formulario con las URLs de las imágenes
+        // Filtrar las imágenes con rutas válidas
+        List<String> validImagePaths = widget.serviceRequest.images.where((path) => path.isNotEmpty).toList();
+
+        // Subir imágenes a Firebase Storage y obtener las URLs
+        for (var imagePath in validImagePaths) {
+          try {
+            final file = File(imagePath);
+            print('Cargando imagen: $imagePath');
+
+            final compressedFile = await compressAndResizeImage(file);
+            print('Imagen comprimida y redimensionada.');
+
+            // Subir la imagen y obtener la URL
+            String downloadUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
+            imageUrls.add(downloadUrl); // Almacenar la URL descargable
+
+            print('Imagen cargada con éxito: $downloadUrl');
+          } catch (e) {
+            print('Error al cargar imagen: $e');
+          }
+        }
+
+        if (imageUrls.isEmpty) {
+          print('Error: No se subió ninguna imagen.');
+          showErrorDialog(context, 'Error: No se subió ninguna imagen.');
+          return;
+        }
+
+        // Construir el formulario con las URLs de las imágenes subidas
         final formData = {
           'Profesional': widget.subcategoryName,
           'serviceDateTime': widget.serviceRequest.selectedDate ?? '',
           'description': widget.serviceRequest.description ?? '',
-          'images': imageUrls,  // Usar las URLs de Firebase Storage
+          'images': imageUrls, // Asegurarse de que las URLs están aquí
           'location': widget.serviceRequest.location ?? {},
           'offeredPrice': widget.serviceRequest.offeredPrice ?? 0,
           'userId': widget.serviceRequest.userId ?? '',
@@ -120,6 +148,8 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           'categoryId': widget.categoryId,
           'subcategoryId': widget.subcategoryId,
         };
+
+        print('Enviando datos al backend con el siguiente formData: $formData');
 
         // Enviar datos al backend
         final response = await apiService.sendDataToBackend(
@@ -135,37 +165,12 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
 
         print('Respuesta del backend: ${response.statusCode}');
         
-        if (response.statusCode == 200) {
-          print('Datos enviados correctamente al backend. Iniciando carga de imágenes.');
-
-          // Subir imágenes a Firebase Storage y obtener las URLs
-          for (var imagePath in widget.serviceRequest.images) {
-            try {
-              final file = File(imagePath);
-              print('Cargando imagen: $imagePath');
-
-              final compressedFile = await compressAndResizeImage(file);
-              print('Imagen comprimida y redimensionada.');
-
-              String downloadUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-              imageUrls.add(downloadUrl); // Almacenar la URL descargable
-
-              print('Imagen cargada con éxito: $downloadUrl');
-            } catch (e) {
-              print('Error al cargar imagen: $e');
-            }
-          }
-
-          // Actualizar el formulario con las URLs de las imágenes
-          formData['images'] = imageUrls;
-          print('URLs de imágenes actualizadas en el formulario: $imageUrls');
-
-          // Mostrar cuadro de diálogo de éxito
-          showSuccessDialog(context, 'Servicio creado con exito. Código de respuesta: ${response.statusCode}');
+        if (response.statusCode == 201) {
+          print('Datos enviados correctamente al backend.');
+          showSuccessDialog(context, 'Servicio creado con éxito. Código de respuesta: ${response.statusCode}');
         } else {
-          // Manejar error
-          print('datos enviados con exito!: ${response.statusCode}');
-          showSuccessDialog(context, 'Servicio creado con exito. Código de respuesta: ${response.statusCode}');
+          print('Error al enviar datos: ${response.statusCode}');
+          showErrorDialog(context, 'Error al crear el servicio. Código: ${response.statusCode}');
         }
       } catch (error) {
         // Manejo de errores
@@ -183,6 +188,10 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
     print('Error: Términos no aceptados, token nulo o ya se está enviando.');
   }
 }
+
+
+
+
 
 void showSuccessDialog(BuildContext context, String s) {
   showDialog(

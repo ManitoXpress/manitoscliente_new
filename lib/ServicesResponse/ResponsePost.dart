@@ -104,6 +104,34 @@ class ApiService {
     }
   }
 
+  Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
+    try {
+      final String extension = image.path.split('.').last;
+      final String imageName =
+          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String userFolderPath = '$userId/';
+      final String imagePath = '$userFolderPath$imageName';
+
+      if (await image.exists()) {
+        Reference ref = storage.ref().child(imagePath);
+        UploadTask uploadTask = ref.putFile(image);
+
+        await uploadTask.whenComplete(() {
+          print('Imagen cargada con éxito en Firebase Storage');
+        });
+
+        final imageUrl = await ref.getDownloadURL();
+        print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
+      } else {
+        throw Exception('El archivo de imagen no existe.');
+      }
+    } catch (e) {
+      print('Error al cargar la imagen en Firebase Storage: $e');
+      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
+    }
+  }
+
   Future<http.Response> sendDataToBackend(
     ServiceRequest serviceRequest,
     String token,
@@ -178,6 +206,8 @@ class ApiService {
     }
   }
 
+
+
   Future<http.Response> updateUser(
       String userId, RegistrationData registrationData, String token) async {
     try {
@@ -206,38 +236,6 @@ class ApiService {
     } catch (e) {
       print('Error al actualizar el usuario: $e');
       throw Exception('Error al actualizar el usuario: $e');
-    }
-  }
-
-  Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
-    try {
-      final User? user = auth.currentUser;
-      final FirebaseStorage storage = FirebaseStorage.instance;
-
-      final String extension = image.path.split('.').last;
-      String imageName =
-          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
-      String userFolderPath = '${user?.uid}/';
-      String imagePath = '$userFolderPath$imageName';
-
-      if (await image.exists()) {
-        Reference ref = storage.ref().child(imagePath);
-        UploadTask uploadTask = ref.putFile(image);
-
-        await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
-        });
-
-        final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
-        return imageUrl; // Retornar la URL de la imagen
-      } else {
-        print('Error: El archivo de imagen no existe.');
-        throw Exception('El archivo de imagen no existe.');
-      }
-    } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
-      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
 }
