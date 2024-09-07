@@ -7,6 +7,7 @@ import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/home.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
+import 'package:manitoscliente_new/utils/compres.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:manitoscliente_new/wizards/dataservice.dart';
 import 'package:manitoscliente_new/wizards/datetime.dart';
@@ -85,108 +86,148 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
     return true;
   }
   void onSubmit() async {
-    if (widget.acceptTerms && token != null && !isSubmitting) {
-      setState(() {
-        isSubmitting = true; // Bloquear envío adicional
-      });
+  if (widget.acceptTerms && token != null && !isSubmitting) {
+    setState(() {
+      isSubmitting = true; // Bloquear envío adicional
+    });
 
-      final apiService = ApiService();
-      User? user = FirebaseAuth.instance.currentUser;
+    final apiService = ApiService();
+    User? user = FirebaseAuth.instance.currentUser;
 
-      if (user != null) {
-        widget.serviceRequest.userId = user.uid;
-        widget.serviceRequest.status = StatusUtils.getStatusById('available');
+    if (user != null) {
+      widget.serviceRequest.userId = user.uid;
+      widget.serviceRequest.status = StatusUtils.getStatusById('available');
 
-        try {
-          final expertisesJson = jsonEncode(
-            widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
-          );
+      try {
+        final expertisesJson = jsonEncode(
+          widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
+        );
 
-          final formData = {
-            'Profesional': widget.subcategoryName,
-            'serviceDateTime': widget.serviceRequest.selectedDate ?? '',
-            'description': widget.serviceRequest.description ?? '',
-            'images': widget.serviceRequest.images ?? [],
-            'location': widget.serviceRequest.location ?? {},
-            'offeredPrice': widget.serviceRequest.offeredPrice ?? 0,
-            'userId': widget.serviceRequest.userId ?? '',
-            'status': widget.serviceRequest.status.id ?? '',
-            'expertises': expertisesJson,
-            'categoryId': widget.categoryId,
-            'subcategoryId': widget.subcategoryId,
-          };
+        // Nueva lista para almacenar URLs de imágenes
+        List<String> imageUrls = [];
 
-          final response = await apiService.sendDataToBackend(
-            widget.serviceRequest,
-            token!,
-            widget.serviceRequest.status.id,
-            expertisesJson,
-            widget.categoryId,
-            widget.subcategoryId,
-            widget.serviceRequest.status,
-            widget.subcategoryName,
-          );
+        // Construir el formulario con las URLs de las imágenes
+        final formData = {
+          'Profesional': widget.subcategoryName,
+          'serviceDateTime': widget.serviceRequest.selectedDate ?? '',
+          'description': widget.serviceRequest.description ?? '',
+          'images': imageUrls,  // Usar las URLs de Firebase Storage
+          'location': widget.serviceRequest.location ?? {},
+          'offeredPrice': widget.serviceRequest.offeredPrice ?? 0,
+          'userId': widget.serviceRequest.userId ?? '',
+          'status': widget.serviceRequest.status.id ?? '',
+          'expertises': expertisesJson,
+          'categoryId': widget.categoryId,
+          'subcategoryId': widget.subcategoryId,
+        };
 
-          if (response.statusCode == 200) {
-            for (var image in widget.serviceRequest.images) {
-              final file = File(image);
-              await apiService.uploadImageToFirebaseStorage(file, user.uid);
+        // Enviar datos al backend
+        final response = await apiService.sendDataToBackend(
+          widget.serviceRequest,
+          token!,
+          widget.serviceRequest.status.id,
+          expertisesJson,
+          widget.categoryId,
+          widget.subcategoryId,
+          widget.serviceRequest.status,
+          widget.subcategoryName,
+        );
+
+        print('Respuesta del backend: ${response.statusCode}');
+        
+        if (response.statusCode == 200) {
+          print('Datos enviados correctamente al backend. Iniciando carga de imágenes.');
+
+          // Subir imágenes a Firebase Storage y obtener las URLs
+          for (var imagePath in widget.serviceRequest.images) {
+            try {
+              final file = File(imagePath);
+              print('Cargando imagen: $imagePath');
+
+              final compressedFile = await compressAndResizeImage(file);
+              print('Imagen comprimida y redimensionada.');
+
+              String downloadUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
+              imageUrls.add(downloadUrl); // Almacenar la URL descargable
+
+              print('Imagen cargada con éxito: $downloadUrl');
+            } catch (e) {
+              print('Error al cargar imagen: $e');
             }
-
-            
-          } else {
-            // Mostrar el cuadro de diálogo de éxito
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text('¡Servicio creado con éxito!'),
-                  content: const Text('Tu servicio ha sido creado con éxito.'),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HomeScreen(initialPageIndex: 2), 
-                          ),
-                          (route) => false,
-                        );
-                      },
-                      child: const Text('Ir a Historial'),
-                    ),
-                  ],
-                );
-              },
-            );
-            
           }
-        } catch (error) {
-          // Manejo de errores
-          // Mostrar un cuadro de diálogo de error en caso de fallo
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text('Error al crear el servicio'),
-                  content: const Text('Hubo un error al crear el servicio. Inténtalo nuevamente.'),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cerrar'),
-                    ),
-                  ],
-                );
-              },
-            );
-        } finally {
-          setState(() {
-            isSubmitting = false; // Desbloquear después de enviar
-          });
+
+          // Actualizar el formulario con las URLs de las imágenes
+          formData['images'] = imageUrls;
+          print('URLs de imágenes actualizadas en el formulario: $imageUrls');
+
+          // Mostrar cuadro de diálogo de éxito
+          showSuccessDialog(context, 'Servicio creado con exito. Código de respuesta: ${response.statusCode}');
+        } else {
+          // Manejar error
+          print('datos enviados con exito!: ${response.statusCode}');
+          showSuccessDialog(context, 'Servicio creado con exito. Código de respuesta: ${response.statusCode}');
         }
+      } catch (error) {
+        // Manejo de errores
+        print('Error durante la creación del servicio: $error');
+        showErrorDialog(context, 'Error durante la creación del servicio: $error');
+      } finally {
+        setState(() {
+          isSubmitting = false; // Desbloquear después de enviar
+        });
       }
+    } else {
+      print('Error: No hay usuario autenticado.');
     }
+  } else {
+    print('Error: Términos no aceptados, token nulo o ya se está enviando.');
   }
+}
+
+void showSuccessDialog(BuildContext context, String s) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('¡Servicio creado con éxito!'),
+        content: const Text('Tu servicio ha sido creado con éxito.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomeScreen(initialPageIndex: 2), // Redirige a Historial
+                ),
+                (route) => false,
+              );
+            },
+            child: const Text('Ir a Historial'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void showErrorDialog(BuildContext context, String s) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Error al crear el servicio'),
+        content: const Text('Hubo un error al crear el servicio. Inténtalo nuevamente.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
 
 

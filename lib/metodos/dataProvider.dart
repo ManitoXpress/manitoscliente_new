@@ -45,6 +45,7 @@ class ApiDataProvider {
               ),
               offeredPrice: (item['offeredPrice'] as num?)?.toDouble() ?? 0.0,
               userId: item['userId'],
+              workerId: item['workerId'],
               isFavorite: item['isFavorite'] as bool? ?? false,
               acceptedTerms: item['acceptedTerms'] as bool? ?? false,
               serviceType: ServiceType(name: item['serviceType'], id: '', selectedDate: '', selectedTime: ''), status: item['status'], subcategoryName: '',

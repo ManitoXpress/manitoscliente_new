@@ -15,6 +15,9 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final ValueChanged<String> onComplete;
   final Function(String) onStatusChanged;
   final UserData userData;
+  final String workerId;
+
+  final List<String> images;
 
   const ServiceFormWithTimeline({
     required this.serviceRequest,
@@ -22,91 +25,120 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.onComplete,
     required this.onStatusChanged,
     required this.userData,
+    required this.workerId,
+    required this.images,
   });
 
   @override
-  _ServiceFormWithTimelineState createState() =>
-      _ServiceFormWithTimelineState();
+  _ServiceFormWithTimelineState createState() => _ServiceFormWithTimelineState();
 }
 
 class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
-  late String status;
-  final TextEditingController _cancelReasonController = TextEditingController();
-  List<ServiceResponse> offers = [];
+  late TextEditingController _cancelReasonController;
+  late TextEditingController _priceController;
+  late Stream<DocumentSnapshot<Map<String, dynamic>>> _serviceRequestStream;
+  double? _fetchedOfferedPrice;
+  late String _currentStatus;
+
+  final Map<String, String> statusNames = {
+    "available": "Disponible",
+    "offer": "Ofertado",
+    "in_progress": "En curso",
+    "completed": "Completado",
+    "cancelled": "Cancelado",
+    "blocked": "Bloqueado",
+    "pending_confirmation": "Esperando confirmación",
+  };
 
   @override
   void initState() {
     super.initState();
-    status = widget.initialStatus;
+    _cancelReasonController = TextEditingController();
+    _priceController = TextEditingController();
 
-    // Cargar ofertas si es necesario
-    if (widget.serviceRequest.offeredPrice > 0) {
-      _fetchOffers(); // Nueva función para obtener ofertas
-    }
+    _serviceRequestStream = FirebaseFirestore.instance
+        .collection('services')
+        .doc(widget.serviceRequest.id)
+        .snapshots();
+
+    _fetchOfferedPrice();
   }
 
-  void _fetchOffers() async {
-    try {
-      final String serviceId = widget.serviceRequest.id;
-      final ApiService2 apiService = ApiService2();
-      final List<ServiceResponse> fetchedOffers = await apiService.getOffers(serviceId);
+  @override
+  void dispose() {
+    _cancelReasonController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
 
+  Future<void> _fetchOfferedPrice() async {
+    try {
+      final offeredPrice = await fetchOfferedPrice(widget.serviceRequest.id);
       setState(() {
-        offers = fetchedOffers; // Actualizar las ofertas
+        _fetchedOfferedPrice = offeredPrice;
+        _priceController.text =
+            offeredPrice != null ? offeredPrice.toString() : '';
       });
     } catch (e) {
-      print('Error al obtener las ofertas: $e');
+      print('Error al obtener el precio ofertado: $e');
     }
   }
 
-  void _showCancelDialog(BuildContext context) {
+  Future<double?> fetchOfferedPrice(String serviceId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('offers')
+          .where('serviceId', isEqualTo: serviceId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final offerData = querySnapshot.docs.first.data();
+        final offeredPrice = offerData['offeredPrice'];
+        return offeredPrice != null
+            ? double.tryParse(offeredPrice.toString())
+            : null;
+      }
+    } catch (e) {
+      print('Error al obtener el precio ofertado: $e');
+    }
+    return null;
+  }
+
+  // Confirmación de finalización del trabajo por el cliente
+  void _confirmCompletion() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({'status': 'completed'});
+
+      widget.onStatusChanged('completed');
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('Error al confirmar la finalización del trabajo: $e');
+    }
+  }
+
+  // Diálogo de confirmación para la finalización del trabajo
+  void _showConfirmCompletionDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Cancelar Servicio'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Coloque su motivo de cancelación de trabajo:'),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _cancelReasonController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Escriba su motivo aquí',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text('Ejemplos de cancelación de servicio:'),
-                ElevatedButton(
-                  onPressed: () {
-                    _cancelJobWithReason('No puedo continuar con el trabajo');
-                  },
-                  child: const Text('No puedo continuar con el trabajo'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _cancelJobWithReason('Emergencia inesperada');
-                  },
-                  child: const Text('Emergencia inesperada'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _cancelJobWithReason('Otro motivo');
-                  },
-                  child: const Text('Otro motivo'),
-                ),
-              ],
-            ),
-          ),
+          title: Text('Confirmar Finalización'),
+          content: Text(
+              '¿Estás seguro de que quieres confirmar la finalización de este trabajo?'),
           actions: [
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cerrar'),
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _confirmCompletion,
+              child: Text('Confirmar'),
             ),
           ],
         );
@@ -114,118 +146,241 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     );
   }
 
-  Future<void> _viewProposal() async {
+  // Rechazo de la finalización del trabajo por el cliente
+  void _rejectCompletion() async {
     try {
-      if (offers.isNotEmpty) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return OfferDialog(offers: offers);
-          },
-        );
-      }
-    } catch (e) {
-      print('Error al obtener las ofertas: $e');
-    }
-  }
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({'status': 'in_progress'});
 
-  void _cancelJobWithReason(String reason) async {
-    try {
-      print('Trabajo cancelado por la razón: $reason');
-      final Status cancelledStatus = Status(id: 'cancelled', name: 'Cancelado');
-      setState(() {
-        status = cancelledStatus.name;
-      });
-
-      await ApiService().updateServiceStatus(
-        widget.serviceRequest,
-        cancelledStatus.id,
-        widget.userData.getToken!,
-      );
-
-      widget.onComplete(cancelledStatus.id);
+      widget.onStatusChanged('in_progress');
       Navigator.of(context).pop();
     } catch (e) {
-      print('Error al cancelar el trabajo: $e');
+      print('Error al rechazar la finalización del trabajo: $e');
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  print('Precio ofertado: ${widget.serviceRequest.offeredPrice}');
-  
-  return AlertDialog(
-    title: const Text('Detalles del Servicio'),
-    contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-    content: SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Fecha y Hora: ${widget.serviceRequest.serviceDateTime}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+  // Diálogo de rechazo para la finalización del trabajo
+  void _showRejectCompletionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Rechazar Finalización'),
+          content: Text(
+              '¿Estás seguro de que quieres rechazar la finalización de este trabajo?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _rejectCompletion,
+              child: Text('Rechazar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // Método para aceptar la propuesta
+  void _acceptProposal() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({'status': 'in_progress'});
+
+      widget.onStatusChanged('in_progress');
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('Error al aceptar la propuesta: $e');
+    }
+  }
+  // Diálogo de confirmación para aceptar la propuesta
+  void _showAcceptProposalDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Aceptar Propuesta'),
+          content: Text(
+              '¿Estás seguro de que quieres aceptar esta propuesta y comenzar el trabajo?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _acceptProposal,
+              child: Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _blockUserParticipation() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({
+        'blockedUsers': FieldValue.arrayUnion([widget.workerId])
+      });
+
+      widget.onStatusChanged('blocked');
+      widget.onComplete('blocked');
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('Error al bloquear la participación del usuario: $e');
+    }
+  }
+
+  void _showNoParticipationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('No Participar en el Trabajo'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  '¿Estás seguro de que no quieres participar en este trabajo?'),
+            ],
           ),
-          Text(
-            'Descripción: ${widget.serviceRequest.description}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _blockUserParticipation,
+              child: Text('Confirmar No Participar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _serviceRequestStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error al cargar los datos del servicio'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        final serviceData = snapshot.data?.data();
+        if (serviceData == null) {
+          return Center(child: Text('No se encontraron datos del servicio'));
+        }
+
+        _currentStatus = serviceData['status'] ?? 'available';
+        List<String> imageFiles =
+            List<String>.from(serviceData['images'] ?? []);
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('Detalles del Servicio'),
           ),
-          const SizedBox(height: 20),
-          Container(
-            height: 280,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Seguimiento del Servicio',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+          body: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Descripción: ${serviceData['description'] ?? ''}'),
+                SizedBox(height: 16.0),
+                Text('Ubicación: ${serviceData['location'] ?? ''}'),
+                SizedBox(height: 16.0),
+                Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
+                SizedBox(height: 16.0),
+                Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
+                SizedBox(height: 16.0),
+                Text('Imágenes:'),
+                Expanded(
+                  child: FutureBuilder<List<String>>(
+                    future: _getImageUrls(imageFiles),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+
+                      if (snapshot.hasError || snapshot.data == null) {
+                        return Text('No se pudieron cargar las imágenes');
+                      }
+
+                      List<String> imageUrls = snapshot.data!;
+                      return ListView.builder(
+                        itemCount: imageUrls.length,
+                        itemBuilder: (context, index) {
+                          return Image.network(imageUrls[index]);
+                        },
+                      );
+                    },
                   ),
-                  const SizedBox(height: 10),
-                  Text('Estado: ${widget.serviceRequest.status.name}'),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Precio Ofertado: ${widget.serviceRequest.offeredPrice > 0 ? "\$${widget.serviceRequest.offeredPrice.toStringAsFixed(2)}" : 'No hay precio ofertado aún.'}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  if (offers.isNotEmpty)
-                    ElevatedButton(
-                      onPressed: _viewProposal,
-                      child: const Text('Mostrar Propuestas'),
-                    ),
+                ),
+                SizedBox(height: 16.0),
+
+                // Mostrar botones dependiendo del estado
+                if (_currentStatus == 'pending_confirmation') ...[
                   ElevatedButton(
                     onPressed: () {
-                      _showCancelDialog(context);
+                      _showConfirmCompletionDialog(context);
                     },
-                    child: const Text('Cancelar Trabajo'),
+                    child: Text('Confirmar Finalización'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _showAcceptProposalDialog(context);
+                    },
+                    child: Text('Aceptar Propuesta'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _showRejectCompletionDialog(context);
+                    },
+                    child: Text('Rechazar Finalización'),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
-        ],
-      ),
-    ),
-  );
-}
+        );
+      },
+    );
+  }
 
-
-
-  Color _getTextColorByStatus(String statusId) {
-    final status = StatusUtils.getStatusById(statusId);
-    switch (status.id) {
-      case "available":
-        return Colors.green;
-      case "assigned":
-        return Colors.orange;
-      case "in_progress":
-        return Colors.black;
-      case "completed":
-        return Colors.blue;
-      case "cancelled":
-        return const Color(0xFF84090D);
-      default:
-        return Colors.grey;
+  Future<List<String>> _getImageUrls(List<String> imageNames) async {
+    List<String> imageUrls = [];
+    for (String imageName in imageNames) {
+      try {
+        String imageUrl = await ApiService2()
+            .getImageUrls(widget.serviceRequest.userId, imageName);
+        if (imageUrl.isNotEmpty) {
+          imageUrls.add(imageUrl);
+        }
+      } catch (e) {
+        print('Error al obtener la URL de la imagen $imageName: $e');
+      }
     }
+    return imageUrls;
   }
 }

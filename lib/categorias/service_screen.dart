@@ -175,6 +175,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                 selectedTime: '',
                               ),
                               userId: '',
+                              workerId: '',
                               isFavorite: false,
                               selectedDate: '',
                               selectedTime: '',

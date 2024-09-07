@@ -9,6 +9,8 @@ class StatusUtils {
         return Status(id: "assigned", name: "Asignado");
       case "in_progress":
         return Status(id: "in_progress", name: "En curso");
+      case "pending_confirmation":
+        return Status(id: "pending_confirmation", name: "Pendiente");
       case "completed":
         return Status(id: "completed", name: "Completado");
       case "cancelled":

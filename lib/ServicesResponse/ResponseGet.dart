@@ -49,6 +49,25 @@ class ApiService2 {
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
+
+  Future<String> getImageUrls(String userId, String imageName) async {
+  try {
+    String filePath = '$userId/$imageName';
+    print('Accediendo a la ruta de la imagen: $filePath');
+
+    final Reference ref = FirebaseStorage.instance.ref().child(filePath);
+
+    // Intentar obtener la URL de descarga
+    final String downloadUrl = await ref.getDownloadURL();
+    print('URL de descarga obtenida: $downloadUrl');
+    return downloadUrl;
+  } catch (e) {
+    print('Error al obtener la URL de la imagen: $e');
+    // Manejo del caso donde la imagen no existe o no se puede acceder
+    return '';
+  }
+}
+
   Future<List<ServiceResponse>> getOffers(String serviceId) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();

@@ -84,6 +84,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
       offeredPrice: 0.0,
       serviceType: serviceType, // Pasa el objeto ServiceType directamente
       userId: '', // Reemplaza con el usuario real
+      workerId: '',
       isFavorite: false,
       selectedDate: formattedSelectedDate,
       selectedTime: serviceType.selectedTime ?? '',

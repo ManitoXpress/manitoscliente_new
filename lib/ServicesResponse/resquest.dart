@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ServiceRequest {
   String serviceDateTime;
   String id;
@@ -8,6 +9,7 @@ class ServiceRequest {
   double offeredPrice;
   ServiceType serviceType;
   String userId;
+  String workerId;
   bool isFavorite;
   String? selectedDate;
   String? selectedTime;
@@ -33,6 +35,7 @@ class ServiceRequest {
     required this.offeredPrice,
     required this.serviceType,
     required this.userId,
+    required this.workerId,
     required this.isFavorite,
     this.selectedDate,
     this.selectedTime,
@@ -69,12 +72,14 @@ class ServiceRequest {
       serviceType: serviceType ?? this.serviceType,
       status: status ?? this.status,
       userId: userId ?? this.userId,
+      workerId: workerId ?? this.workerId,
       isFavorite: isFavorite ?? this.isFavorite,
       selectedDate: selectedDate ?? this.selectedDate,
       selectedTime: selectedTime ?? this.selectedTime,
       acceptedTerms: acceptedTerms ?? this.acceptedTerms,
       expertises: expertises ?? this.expertises,
-      subcategoryName: subcategoryName ?? this.subcategoryName, // Cambiado a una lista de Expertises
+      subcategoryName: subcategoryName ??
+          this.subcategoryName, // Cambiado a una lista de Expertises
     );
   }
 
@@ -89,12 +94,14 @@ class ServiceRequest {
       'offeredPrice': offeredPrice,
       'serviceType': serviceType.toMap(),
       'userId': userId,
+      'workerId': workerId,
       'isFavorite': isFavorite,
       'selectedDate': selectedDate,
       'selectedTime': selectedTime,
       'acceptedTerms': acceptedTerms,
       'expertises': expertises.map((e) => e.toMap()).toList(),
-      'subcategoryName': subcategoryName, // Convierte la lista de Expertises a Map
+      'subcategoryName':
+          subcategoryName, // Convierte la lista de Expertises a Map
     };
   }
 
@@ -109,15 +116,15 @@ class ServiceRequest {
       offeredPrice: _parseOfferedPrice(data['offeredPrice']),
       serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
       userId: data['userId'] ?? '',
+      workerId: data['workerId'] ?? '',
       isFavorite: data['isFavorite'] ?? false,
       selectedDate: data['selectedDate'],
       selectedTime: data['selectedTime'],
       acceptedTerms: data['acceptedTerms'] ?? false,
       expertises: data['expertises'] != null
           ? List<Expertises>.from(
-          (data['expertises'] as List).map((e) => Expertises.fromMap(e))
-      )
-          : [],  // Garantiza que expertises sea siempre una lista válida
+              (data['expertises'] as List).map((e) => Expertises.fromMap(e)))
+          : [], // Garantiza que expertises sea siempre una lista válida
       status: Status(
         id: data['status'] ?? '',
         name: Status.getNameById(data['status'] ?? ''),
@@ -125,7 +132,6 @@ class ServiceRequest {
       subcategoryName: data['subcategoryName'] ?? '',
     );
   }
-
 
   // Función para convertir el precio ofrecido a un número decimal
   static double _parseOfferedPrice(dynamic value) {
@@ -147,7 +153,6 @@ class Expertises {
   String id;
   String name;
 
-
   Expertises({
     required this.id,
     required this.name,
@@ -157,7 +162,6 @@ class Expertises {
     return {
       'id': id,
       'name': name,
-
     };
   }
 
@@ -165,7 +169,6 @@ class Expertises {
     return Expertises(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
-
     );
   }
 }
@@ -201,6 +204,7 @@ class ServiceType {
     );
   }
 }
+
 class Status {
   final String id;
   final String name;
@@ -210,8 +214,8 @@ class Status {
   // Mapa inverso para buscar el nombre por ID
   static final Map<String, String> _nameById = {
     "available": "Disponible",
-    "offer":"Ofertado",
-    "in_progress":"En curso",
+    "offer": "Ofertado",
+    "in_progress": "En curso",
     "completed": "Completado",
     "cancelled": "Cancelado",
     // Agrega más asignaciones de ID a nombre según sea necesario
@@ -224,8 +228,8 @@ class Status {
 
   Map<String, dynamic> toMap() {
     return {
-    'id': id,
-    'name': name,
+      'id': id,
+      'name': name,
     };
-    }
+  }
 }

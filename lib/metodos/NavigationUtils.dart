@@ -31,6 +31,7 @@ class NavigationUtils {
         offeredPrice: map['offeredPrice']?.toDouble() ?? 0.0,
         serviceType: serviceType, // Asignamos el objeto ServiceType
         userId: map['userId'] ?? '',
+        workerId: map['workerId'] ?? '',
         selectedDate: selectedDate?.toIso8601String(), // Convertimos DateTime a String ISO8601
         selectedTime: map['selectedTime'] ?? '',
         isFavorite: map['isFavorite'] ?? false,

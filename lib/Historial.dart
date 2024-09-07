@@ -34,9 +34,11 @@ class _HistorialState extends State<Historial>
   late final UserData userData;
   int unreadMessagesCount = 0;
   int offerServiceCount = 0;
+  final String workerId = "";
 
   late final RegistrationData registrationData;
   late TabController _tabController;
+ 
 
   @override
   void initState() {
@@ -180,6 +182,7 @@ class _HistorialState extends State<Historial>
                   ),
                   offeredPrice: _parseOfferedPrice(item['offeredPrice']),
                   userId: item['userId'] ?? '', // Asegúrate de que no sea null
+                  workerId: item['workerId'] ?? '',
                   status: status,
                   isFavorite: item['isFavorite'] as bool? ?? false,
                   acceptedTerms: item['acceptedTerms'] as bool? ?? false,
@@ -335,7 +338,7 @@ class _HistorialState extends State<Historial>
         children: [
           _buildServiceListByStatus('available', screenWidth, screenHeight),
           _buildServiceListByStatus('offer', screenWidth, screenHeight),
-          _buildServiceListByStatus('in_progress', screenWidth, screenHeight),
+          _buildServiceListByStatus('in_progress,pending_confirmation', screenWidth, screenHeight),
           _buildServiceListByStatus('completed', screenWidth, screenHeight),
           _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
         ],
@@ -344,12 +347,13 @@ class _HistorialState extends State<Historial>
   }
 
   Widget _buildServiceListByStatus(
-    String statusId, double screenWidth, double screenHeight) {
+  String statusIds, double screenWidth, double screenHeight) {
+  final statusIdList = statusIds.split(','); // Divide el string en una lista de IDs
   final filteredRequests = serviceRequests
-      .where((request) => request.status.id == statusId)
+      .where((request) => statusIdList.contains(request.status.id)) // Filtra por múltiples estados
       .toList();
 
-  if (statusId == 'offer') {
+  if (statusIds.contains('offer')) {
     offerServiceCount = filteredRequests.length;
   }
 
@@ -360,29 +364,31 @@ class _HistorialState extends State<Historial>
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () async {
-            final newStatus = await showDialog<String>(
-              context: context,
-              builder: (BuildContext context) {
-                return ServiceFormWithTimeline(
-                  serviceRequest: filteredRequests[index],
-                  initialStatus: statuses[index],
-                  onComplete: (status) {
-                    setState(() {
-                      statuses[index] = status;
-                    });
-                  },
-                  userData: userData,
-                  onStatusChanged: (newStatus) {},
-                );
-              },
-            );
+          final newStatus = await showDialog<String>(
+            context: context,
+            builder: (BuildContext context) {
+              return ServiceFormWithTimeline(
+                serviceRequest: filteredRequests[index],
+                initialStatus: statuses[index],
+                onComplete: (status) {
+                  setState(() {
+                    statuses[index] = status;
+                  });
+                },
+                userData: userData,
+                onStatusChanged: (newStatus) {},
+                workerId: workerId,
+                images: filteredRequests[index].images,
+              );
+            },
+          );
 
-            if (newStatus != null && newStatus != statuses[index]) {
-              setState(() {
-                statuses[index] = newStatus;
-              });
-            }
-          },
+          if (newStatus != null && newStatus != statuses[index]) {
+            setState(() {
+              statuses[index] = newStatus;
+            });
+          }
+        },
           child: FutureBuilder<double?>(
             future: fetchOfferedPrice(filteredRequests[index].id),
             builder: (context, snapshot) {
@@ -404,7 +410,7 @@ class _HistorialState extends State<Historial>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: 15), // Espacio para el título
+                              SizedBox(height: 15),
                               Text(
                                 'Categoría: ',
                                 style: MyTextStyles.ButtonTextStyle,
@@ -438,9 +444,9 @@ class _HistorialState extends State<Historial>
                             ],
                           ),
                         ),
-                        SizedBox(width: 40), // Espacio entre la imagen y el texto
+                        SizedBox(width: 40),
                           Image.asset(
-                            'assets/animations/manito.png',
+                             'assets/animations/manito.png',
                             width: 84,
                             height: 84,
                         ),
@@ -456,6 +462,7 @@ class _HistorialState extends State<Historial>
     ),
   );
 }
+
 
 
   String truncateDescription(String description) {
