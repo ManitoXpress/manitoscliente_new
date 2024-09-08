@@ -335,11 +335,10 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         _currentStatus = serviceData['status'] ?? 'available';
         List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+        double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+        double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
-        // Actualiza la posición inicial si la ubicación está presente
-        double lat = serviceData['latitude'] ?? 37.7749;
-        double lng = serviceData['longitude'] ?? -122.4194;
-        _initialPosition = LatLng(lat, lng);
+        _initialPosition = LatLng(latitude, longitude);
 
         return Scaffold(
           appBar: AppBar(
@@ -360,9 +359,23 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Descripción: ${serviceData['description'] ?? ''}',
+                    'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
                     style: MyTextStyles.formServiceTextStyle,
                   ),
+                  SizedBox(height: 16.0),
+                  Text.rich(
+                    TextSpan(
+                      text: 'Descripción: ', // Este texto tendrá su propio estilo
+                      style: MyTextStyles.formServiceTextStyle,
+                      children: [
+                        TextSpan(
+                          text: serviceData['description'] ?? '', // Este texto tendrá otro estilo
+                          style: MyTextStyles.inputTextStyle, // Aplica un estilo diferente aquí
+                        ),
+                      ],
+                    ),
+                  ),
+
                   SizedBox(height: 16.0),
                   Text(
                     'Ubicación:',
@@ -399,16 +412,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     ),
                   ),
                   SizedBox(height: 16.0),
-                  Text(
-                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  SizedBox(height: 16.0),
+                  
+                  
                   Text(
                     'Imágenes:',
                     style: MyTextStyles.formServiceTextStyle,
@@ -428,6 +433,11 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                         );
                       },
                     ),
+                  ),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
+                    style: MyTextStyles.formServiceTextStyle,
                   ),
                   SizedBox(height: 16.0),
                 if (_currentStatus == 'offer') ...[
