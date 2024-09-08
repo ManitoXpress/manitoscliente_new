@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 
@@ -314,43 +316,66 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('Detalles del Servicio'),
+            title: Text(
+              'Detalles del Servicio',
+              style: MyTextStyles.ButtonTextStyle,
+            ),
           ),
           body: Padding(
             padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Descripción: ${serviceData['description'] ?? ''}'),
-                SizedBox(height: 16.0),
-                Text('Ubicación: ${serviceData['location'] ?? ''}'),
-                SizedBox(height: 16.0),
-                Text(
-                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
-                SizedBox(height: 16.0),
-                Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
-                SizedBox(height: 16.0),
-                Text('Imágenes:'),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: imageFiles.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Image.network(
-                          imageFiles[index],
-                          height: 80, // Reducción del tamaño de la imagen
-                          width: 80, // Reducción del tamaño de la imagen
-                          fit: BoxFit.cover,
-                        ),
-                      );
-                    },
+            child: Container(
+              padding: EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Color(0xFF1A819A), width: 2.0),
+                borderRadius: BorderRadius.circular(
+                    12.0), // Para bordes redondeados opcionalmente
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Descripción:' '${serviceData['description'] ?? ''}',
+                    style: MyTextStyles.formServiceTextStyle, 
                   ),
-                ),
-
-                SizedBox(height: 16.0),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Ubicación: ${serviceData['location'] ?? ''}',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Imágenes:',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: imageFiles.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Image.network(
+                            imageFiles[index],
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 16.0),
                 if (_currentStatus == 'offer') ...[
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () => _showDialog(
                       context,
                       'Aceptar Propuesta',
@@ -358,9 +383,22 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                       _acceptProposal,
                       'Aceptar',
                     ),
-                    child: Text('Aceptar Propuesta'),
+                    icon: Icon(Icons.energy_savings_leaf, color: Colors.white),
+                      label: Text(
+                    "Aceptar Propuesta",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                     style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
                   ),
-                  ElevatedButton(
+                  ),
+                  ElevatedButton.icon(
                     onPressed: () => _showDialog(
                       context,
                       'Cancelar Trabajo',
@@ -368,11 +406,24 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                       _blockUserParticipation,
                       'Confirmar No Participar',
                     ),
-                    child: Text('Cancelar Trabajo'),
+                    icon: Icon(Icons.dangerous, color: Colors.white),
+                      label: Text(
+                    "Cancelar Trabajo",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                      ),
+                       style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
                   ),
                 ] else if (_currentStatus == 'in_progress' ||
                     _currentStatus == 'available') ...[
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () => _showDialog(
                       context,
                       'Cancelar Trabajo',
@@ -380,21 +431,61 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                       _blockUserParticipation,
                       'Confirmar No Participar',
                     ),
-                    child: Text('Cancelar Trabajo'),
+                    icon: Icon(Icons.dangerous, color: Colors.white),
+                      label: Text(
+                    "Cancelar Trabajo",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                      ),
+                       style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
                   ),
                 ] else if (_currentStatus == 'pending_confirmation') ...[
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () => _showConfirmCompletionDialog(context),
-                    child: Text('Confirmar Finalización'),
+                    icon: Icon(Icons.architecture, color: Colors.white),
+                      label: Text(
+                    "Confirmar Finalización",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                      ),
+                       style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
                   ),
-                  ElevatedButton(
+                  ),
+                  ElevatedButton.icon(
                     onPressed: () => _showRejectCompletionDialog(context),
-                    child: Text('Rechazar Finalización'),
+                    icon: Icon(Icons.dangerous, color: Colors.white),
+                      label: Text(
+                    "Rechazar Finalización",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                      ),
+                       style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
                   ),
                 ],
               ],
             ),
           ),
+        )
         );
       },
     );
