@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
+import 'package:manitoscliente_new/utils/fullMap.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 
@@ -19,6 +21,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final Function(String) onStatusChanged;
   final UserData userData;
   final String workerId;
+  
   final List<String> images;
 
   const ServiceFormWithTimeline({
@@ -29,6 +32,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.userData,
     required this.workerId,
     required this.images,
+    
   });
 
   @override
@@ -42,6 +46,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _serviceRequestStream;
   double? _fetchedOfferedPrice;
   late String _currentStatus;
+  // Añade una posición predeterminada para el mapa
+  late LatLng _initialPosition;
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -59,6 +65,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _initializeControllers();
     _initializeServiceStream();
     _fetchOfferedPrice();
+    _initializeMap();
   }
 
   void _initializeControllers() {
@@ -79,6 +86,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
+  void _initializeMap() {
+  // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
+  double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+  double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+
+  // Inicializa la posición usando los valores de latitud y longitud obtenidos.
+  _initialPosition = LatLng(latitude, longitude);
+}
 
   // Confirmación de finalización del trabajo por el cliente
   void _confirmCompletion() async {
@@ -93,6 +108,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     } catch (e) {
       print('Error al confirmar la finalización del trabajo: $e');
     }
+  }
+  // Abre el mapa en pantalla completa
+  void _openFullMap(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FullMapScreen(initialPosition: _initialPosition),
+      ),
+    );
   }
 
   // Diálogo de confirmación para la finalización del trabajo
@@ -311,8 +334,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        List<String> imageFiles =
-            List<String>.from(serviceData['images'] ?? []);
+        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+
+        // Actualiza la posición inicial si la ubicación está presente
+        double lat = serviceData['latitude'] ?? 37.7749;
+        double lng = serviceData['longitude'] ?? -122.4194;
+        _initialPosition = LatLng(lat, lng);
 
         return Scaffold(
           appBar: AppBar(
@@ -327,20 +354,49 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               padding: EdgeInsets.all(16.0),
               decoration: BoxDecoration(
                 border: Border.all(color: Color(0xFF1A819A), width: 2.0),
-                borderRadius: BorderRadius.circular(
-                    12.0), // Para bordes redondeados opcionalmente
+                borderRadius: BorderRadius.circular(12.0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Descripción:' '${serviceData['description'] ?? ''}',
-                    style: MyTextStyles.formServiceTextStyle, 
+                    'Descripción: ${serviceData['description'] ?? ''}',
+                    style: MyTextStyles.formServiceTextStyle,
                   ),
                   SizedBox(height: 16.0),
                   Text(
-                    'Ubicación: ${serviceData['location'] ?? ''}',
+                    'Ubicación:',
                     style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  GestureDetector(
+                    onTap: () => _openFullMap(context),  // Abre el mapa completo
+                    child: Container(
+                      height: 200,  // Tamaño pequeño del mapa
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.0),
+                        border: Border.all(color: Colors.blueAccent),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: _initialPosition,
+                            zoom: 14.0,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: MarkerId('serviceLocation'),
+                              position: _initialPosition,
+                            ),
+                          },
+                          zoomControlsEnabled: false,
+                          scrollGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                          rotateGesturesEnabled: false,
+                          onTap: (_) => _openFullMap(context),  // Abre el mapa completo
+                        ),
+                      ),
+                    ),
                   ),
                   SizedBox(height: 16.0),
                   Text(
