@@ -57,9 +57,11 @@ class ApiService2 {
 
     final Reference ref = FirebaseStorage.instance.ref().child(filePath);
 
-    // Intentar obtener la URL de descarga
+    // Obtener la URL de descarga
     final String downloadUrl = await ref.getDownloadURL();
-    print('URL de descarga obtenida: $downloadUrl');
+
+    print('URL de descarga de la imagen: $downloadUrl');
+
     return downloadUrl;
   } catch (e) {
     print('Error al obtener la URL de la imagen: $e');
@@ -67,6 +69,9 @@ class ApiService2 {
     return '';
   }
 }
+
+
+
 
   Future<List<ServiceResponse>> getOffers(String serviceId) async {
     try {

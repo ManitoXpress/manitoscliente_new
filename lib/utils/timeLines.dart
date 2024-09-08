@@ -9,6 +9,7 @@ import 'package:timeline_tile/timeline_tile.dart';
 
 import 'cacheLocal.dart';
 import 'offers.dart';
+
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final String initialStatus;
@@ -29,7 +30,8 @@ class ServiceFormWithTimeline extends StatefulWidget {
   });
 
   @override
-  _ServiceFormWithTimelineState createState() => _ServiceFormWithTimelineState();
+  _ServiceFormWithTimelineState createState() =>
+      _ServiceFormWithTimelineState();
 }
 
 class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
@@ -75,6 +77,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
+
   // Confirmación de finalización del trabajo por el cliente
   void _confirmCompletion() async {
     try {
@@ -157,8 +160,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     );
   }
 
-  
-void _acceptProposal() async {
+  void _acceptProposal() async {
     try {
       await FirebaseFirestore.instance
           .collection('services')
@@ -171,6 +173,7 @@ void _acceptProposal() async {
       print('Error al aceptar la propuesta: $e');
     }
   }
+
   // Diálogo de confirmación para aceptar la propuesta
   void _showAcceptProposalDialog(BuildContext context) {
     showDialog(
@@ -196,6 +199,7 @@ void _acceptProposal() async {
       },
     );
   }
+
   Future<void> _blockUserParticipation() async {
     try {
       await FirebaseFirestore.instance
@@ -228,10 +232,10 @@ void _acceptProposal() async {
   }
 
   void _showDialog(
-    BuildContext context, 
-    String title, 
-    String content, 
-    VoidCallback onConfirm, 
+    BuildContext context,
+    String title,
+    String content,
+    VoidCallback onConfirm,
     String confirmText,
   ) {
     showDialog(
@@ -305,7 +309,8 @@ void _acceptProposal() async {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+        List<String> imageFiles =
+            List<String>.from(serviceData['images'] ?? []);
 
         return Scaffold(
           appBar: AppBar(
@@ -320,35 +325,30 @@ void _acceptProposal() async {
                 SizedBox(height: 16.0),
                 Text('Ubicación: ${serviceData['location'] ?? ''}'),
                 SizedBox(height: 16.0),
-                Text('Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
+                Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
                 SizedBox(height: 16.0),
                 Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
                 SizedBox(height: 16.0),
                 Text('Imágenes:'),
                 Expanded(
-                  child: FutureBuilder<List<String>>(
-                    future: _getImageUrls(imageFiles),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      }
-
-                      if (snapshot.hasError || snapshot.data == null) {
-                        return Text('No se pudieron cargar las imágenes');
-                      }
-
-                      List<String> imageUrls = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: imageUrls.length,
-                        itemBuilder: (context, index) {
-                          return Image.network(imageUrls[index]);
-                        },
+                  child: ListView.builder(
+                    itemCount: imageFiles.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Image.network(
+                          imageFiles[index],
+                          height: 80, // Reducción del tamaño de la imagen
+                          width: 80, // Reducción del tamaño de la imagen
+                          fit: BoxFit.cover,
+                        ),
                       );
                     },
                   ),
                 ),
+
                 SizedBox(height: 16.0),
-                
                 if (_currentStatus == 'offer') ...[
                   ElevatedButton(
                     onPressed: () => _showDialog(
@@ -382,8 +382,7 @@ void _acceptProposal() async {
                     ),
                     child: Text('Cancelar Trabajo'),
                   ),
-                ]
-                else if (_currentStatus == 'pending_confirmation') ...[
+                ] else if (_currentStatus == 'pending_confirmation') ...[
                   ElevatedButton(
                     onPressed: () => _showConfirmCompletionDialog(context),
                     child: Text('Confirmar Finalización'),
@@ -393,7 +392,6 @@ void _acceptProposal() async {
                     child: Text('Rechazar Finalización'),
                   ),
                 ],
-
               ],
             ),
           ),
@@ -404,10 +402,13 @@ void _acceptProposal() async {
 
   Future<List<String>> _getImageUrls(List<String> imageNames) async {
     List<String> imageUrls = [];
+    final apiService = ApiService2();
+
     for (String imageName in imageNames) {
       try {
-        String imageUrl = await ApiService2()
-            .getImageUrls(widget.serviceRequest.userId, imageName);
+        // Llamada a getImageUrls usando ApiService2
+        String imageUrl = await apiService.getImageUrls(
+            widget.serviceRequest.userId, imageName);
         if (imageUrl.isNotEmpty) {
           imageUrls.add(imageUrl);
         }
@@ -415,6 +416,8 @@ void _acceptProposal() async {
         print('Error al obtener la URL de la imagen $imageName: $e');
       }
     }
+
     return imageUrls;
   }
+
 }
