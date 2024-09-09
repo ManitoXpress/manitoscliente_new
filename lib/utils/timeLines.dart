@@ -60,61 +60,70 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     "pending_confirmation": "Esperando confirmación",
   };
 
-
-
- @override
+  @override
   void initState() {
     super.initState();
+    _currentStatus = widget.initialStatus;
     _initializeControllers();
     _initializeServiceStream();
     _fetchOfferedPrice();
     _initializeMap();
+    print('serviceId en uso: ${widget.workerId}');
+    print('serviceId en uso: ${widget.serviceRequest.id}');
+    print('workerId en uso: ${widget.serviceRequest.workerId}');
 
-    // Si el estado es "offer", obtenemos los detalles del trabajador
-    if (widget.initialStatus == 'offer') {
-      getWorkerDetails(widget.workerId);
+    // Llamar a getWorkerDetails cuando el estado es 'offer'
+    if (_currentStatus == 'offer' && _workerDetails == null) {
+      getWorkerDetails(widget.serviceRequest
+          .workerId); // Asegúrate de que `workerId` esté disponible en este contexto
     }
   }
 
   // Cambia la función para almacenar los detalles del trabajador en el estado
-  Future<void> getWorkerDetails(String offerId) async {
+  // Función para obtener los detalles del trabajador
+  Future<void> getWorkerDetails(String serviceId) async {
     try {
-      // Obtener el documento de la oferta
+      // Paso 1: Obtener el documento desde la colección 'offers' usando el serviceId
       DocumentSnapshot offerSnapshot = await FirebaseFirestore.instance
           .collection('offers')
-          .doc(offerId)
+          .doc(serviceId)
           .get();
 
       if (offerSnapshot.exists) {
-        // Obtener el workerId de la oferta
-        String workerId = offerSnapshot['workerId'];
+        // Extraer el workerId del documento 'offers'
+        String? workerId = offerSnapshot.get('workerId');
 
-        // Obtener los detalles del trabajador usando el workerId
-        DocumentSnapshot workerSnapshot = await FirebaseFirestore.instance
-            .collection('workers')
-            .doc(workerId)
-            .get();
+        // Verificación para asegurarse de que el workerId está presente
+        if (workerId != null && workerId.isNotEmpty) {
+          print('workerId encontrado: $workerId');
 
-        if (workerSnapshot.exists) {
-          setState(() {
-            _workerDetails = workerSnapshot.data() as Map<String, dynamic>?;
-          });
+          // Paso 2: Obtener los detalles del trabajador usando el workerId
+          DocumentSnapshot workerSnapshot = await FirebaseFirestore.instance
+              .collection('workers')
+              .doc(workerId)
+              .get();
+
+          if (workerSnapshot.exists) {
+            print('Documento del trabajador encontrado');
+            setState(() {
+              _workerDetails = workerSnapshot.data() as Map<String, dynamic>;
+            });
+            print('Detalles del trabajador: $_workerDetails');
+          } else {
+            print(
+                'Documento del trabajador no encontrado para workerId: $workerId');
+          }
         } else {
-          print("Worker not found.");
+          print(
+              'workerId no válido o no encontrado en el documento de offers.');
         }
       } else {
-        print("Offer not found.");
+        print('Documento de offers no encontrado.');
       }
     } catch (e) {
-      print("Error fetching worker details: $e");
+      print('Error al obtener detalles del trabajador: $e');
     }
   }
-
-
-
-
-
-
 
   void _initializeControllers() {
     _cancelReasonController = TextEditingController();
@@ -234,8 +243,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
-
- 
 
   void _acceptProposal() async {
     try {
@@ -394,7 +401,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         print('Estado actual: $_currentStatus'); // Mensaje de depuración
         print(
-            'Detalles del trabajador: $getWorkerDetails'); // Mensaje de depuración
+            'Detalles del trabajador: ${_workerDetails ?? 'No disponible'}'); // Mensaje de depuración
+        // Mensaje de depuración
 
         return Scaffold(
             appBar: AppBar(
@@ -423,12 +431,19 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     // Mostrar datos del trabajador solo si el estado es 'offer' y los detalles están disponibles
                     if (_currentStatus == 'offer' &&
                         getWorkerDetails != null) ...[
-                      Text('Trabajador:'),
-                    Text('Nombre: ${_workerDetails?['displayName'] ?? 'No disponible'}'),
-                    Text('Correo: ${_workerDetails?['email'] ?? 'No disponible'}'),
-                    Text('Nivel de Experiencia: ${_workerDetails?['expLevel'] ?? 'No disponible'}'),
-                    Text('Peritaje: ${_workerDetails?['expertises'] ?? 'No disponible'}'),
-                    SizedBox(height: 16.0),
+                      Text(
+                        'Trabajador:',
+                        style: MyTextStyles.formServiceTextStyle,
+                      ),
+                      Text(
+                          'Nombre: ${_workerDetails?['displayName'] ?? 'No disponible'}'),
+                      Text(
+                          'Correo: ${_workerDetails?['email'] ?? 'No disponible'}'),
+                      Text(
+                          'Nivel de Experiencia: ${_workerDetails?['expLevel'] ?? 'No disponible'}'),
+                      Text(
+                          'Peritaje: ${_workerDetails?['expertises'] ?? 'No disponible'}'),
+                      SizedBox(height: 16.0),
                       Text(
                         'Precio ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
                         style: MyTextStyles.formServiceTextStyle,
@@ -537,6 +552,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                               vertical: 12, horizontal: 25),
                         ),
                       ),
+                      SizedBox(height: 16.0),
                       ElevatedButton.icon(
                         onPressed: () => _showDialog(
                           context,
@@ -561,7 +577,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                         ),
                       ),
                     ] else if (_currentStatus == 'in_progress' ||
-                    _currentStatus == 'available') ...[
+                        _currentStatus == 'available') ...[
                       ElevatedButton.icon(
                         onPressed: () => _showDialog(
                           context,

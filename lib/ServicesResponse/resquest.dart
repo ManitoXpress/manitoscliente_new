@@ -233,3 +233,50 @@ class Status {
     };
   }
 }
+class WorkerDetails {
+  final List<String> certificateImagePaths;
+  final String criminalRecordImagePath;
+  final String displayName;
+  final String email;
+  final List<String> expLevel;
+  final List<Expertise> expertises;
+
+  WorkerDetails({
+    required this.certificateImagePaths,
+    required this.criminalRecordImagePath,
+    required this.displayName,
+    required this.email,
+    required this.expLevel,
+    required this.expertises,
+  });
+
+  factory WorkerDetails.fromMap(Map<String, dynamic> data) {
+    return WorkerDetails(
+      certificateImagePaths: List<String>.from(data['certificateImagePaths'] ?? []),
+      criminalRecordImagePath: data['criminalRecordImagePath'] ?? '',
+      displayName: data['displayName'] ?? '',
+      email: data['email'] ?? '',
+      expLevel: List<String>.from(data['expLevel'] ?? []),
+      expertises: (data['expertises'] as List<dynamic>?)
+              ?.map((item) => Expertise.fromMap(item))
+              .toList() ?? [],
+    );
+  }
+}
+
+class Expertise {
+  final String id;
+  final String name;
+
+  Expertise({required this.id, required this.name});
+
+  factory Expertise.fromMap(Map<String, dynamic> data) {
+    return Expertise(
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+    );
+  }
+}
+
+
+

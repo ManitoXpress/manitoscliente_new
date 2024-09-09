@@ -277,74 +277,85 @@ class _HistorialState extends State<Historial>
     return 0.0;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+ @override
+Widget build(BuildContext context) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Historial',
-          style: MyTextStyles.buttonTextStyle,
-        ),
-        iconTheme: IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: _refreshHistorial,
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelStyle: MyTextStyles.tabTextStyle,
-          unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
-          tabs: [
-            Tab(text: 'Disponibles'),
-            Tab(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Text('Ofertados'),
-                  if (offerServiceCount > 0)
-                    Positioned(
-                      right: 7,
-                      top: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        child: Text(
-                          offerServiceCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
+  return Scaffold(
+    appBar: AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor: Color(0xFF1A819A), // Color de fondo para el AppBar
+      bottom: PreferredSize(
+        preferredSize: Size.fromHeight(10.0), // Ajusta la altura del TabBar
+        child: Container(
+          color: Color(0xFF1A819A), // Color de fondo para el TabBar
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelStyle: MyTextStyles.tabTextStyle,
+            unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
+            tabs: [
+              Tab(text: 'Disponibles'),
+              Tab(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Text('Ofertados'),
+                    if (offerServiceCount > 0)
+                      Positioned(
+                        right: 7,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          child: Text(
+                            offerServiceCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-
-            Tab(text: 'Asignados'),
-            Tab(text: 'Completados'),
-            Tab(text: 'Cancelados'),
-          ],
+              Tab(text: 'Asignados'),
+              Tab(text: 'Completados'),
+              Tab(text: 'Cancelados'),
+            ],
+          ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildServiceListByStatus('available', screenWidth, screenHeight),
-          _buildServiceListByStatus('offer', screenWidth, screenHeight),
-          _buildServiceListByStatus('in_progress,pending_confirmation', screenWidth, screenHeight),
-          _buildServiceListByStatus('completed', screenWidth, screenHeight),
-          _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
-        ],
-      ),
-    );
-  }
+    ),
+    body: Column(
+      children: [
+        Container(
+          color: Colors.white, // Fondo blanco para el título
+          padding: const EdgeInsets.all(16.0),
+          child: const Text(
+            'Historial',
+            style: MyTextStyles.buttonTextStyle3,
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildServiceListByStatus('available', screenWidth, screenHeight),
+              _buildServiceListByStatus('offer', screenWidth, screenHeight),
+              _buildServiceListByStatus('in_progress,pending_confirmation', screenWidth, screenHeight),
+              _buildServiceListByStatus('completed', screenWidth, screenHeight),
+              _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   Widget _buildServiceListByStatus(
   String statusIds, double screenWidth, double screenHeight) {

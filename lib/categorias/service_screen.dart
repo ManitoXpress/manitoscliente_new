@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:manitoscliente_new/Historial.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
@@ -10,6 +11,13 @@ import 'package:searchbar_animation/searchbar_animation.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
 
 import 'package:flutter/material.dart';
+
+import 'dart:async'; // Importa para usar Timer
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+
 
 class ServiceScreen extends StatefulWidget {
   static int notificationCount = 0;
@@ -27,12 +35,20 @@ class _ServiceScreenState extends State<ServiceScreen> {
   String searchText = '';
   PageController _pageController = PageController();
   int _currentPage = 0;
+  Timer? _notificationTimer;
 
   @override
   void initState() {
     super.initState();
     _loadServices();
     _pageController = PageController(initialPage: 0);
+    _startNotificationTimer();
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel(); // Cancelar el Timer cuando se destruya el widget
+    super.dispose();
   }
 
   Future<void> _loadServices() async {
@@ -66,11 +82,48 @@ class _ServiceScreenState extends State<ServiceScreen> {
     }
   }
 
+  Future<void> _checkForNewNotifications() async {
+    try {
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        final serviceQuery = await FirebaseFirestore.instance
+            .collection('services') // Cambia a tu colección
+            .where('userId', isEqualTo: userId)
+            .where('status', isEqualTo: 'new') // Cambia según tu lógica
+            .get();
+
+        final newNotificationCount = serviceQuery.docs.length;
+
+        if (newNotificationCount > 0) {
+          setState(() {
+            notificationCount = newNotificationCount;
+          });
+          _showNotifications(context);
+        }
+      }
+    } catch (e) {
+      print('Error al comprobar las notificaciones: $e');
+    }
+  }
+
+  void _startNotificationTimer() {
+    _notificationTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+      _checkForNewNotifications();
+    });
+  }
+
   void _showNotifications(BuildContext context) {
+    // Mostrar notificación al usuario (esto puede variar según cómo quieras hacerlo)
     ServiceFunctions.showNotifications(
       context,
-      title: 'Nuevo Servicio Creado',
-      body: 'Haz clic para ver los detalles del servicio.',
+      title: 'Nuevo Servicio Disponible',
+      body: 'Haz clic para ver los detalles del nuevo servicio.',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Historial()),
+        );
+      },
     );
   }
 
@@ -95,46 +148,45 @@ class _ServiceScreenState extends State<ServiceScreen> {
           backgroundColor: Color(0xFF6AB8D6),
           automaticallyImplyLeading: false,
           title: Text(
-          'Categorías',
-          style: MyTextStyles.CategoriaButtonTextStyle,
-         ),
-      actions: [
-        Stack(
-          children: <Widget>[
-            IconButton(
-              icon: Icon(Icons.notifications),
-                onPressed: () {
-                _showNotifications(context);
-                },
+            'Categorías',
+            style: MyTextStyles.CategoriaButtonTextStyle,
+          ),
+          actions: [
+            Stack(
+              children: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.notifications),
+                  onPressed: () {
+                    _checkForNewNotifications();
+                  },
                 ),
                 Positioned(
                   right: 11,
                   top: 11,
                   child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(6.5),
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(6.5),
                     ),
                     constraints: BoxConstraints(
                       minWidth: 13,
                       minHeight: 13,
-                      ),
-                      child: Text(
+                    ),
+                    child: Text(
                       notificationCount.toString(),
-                        style: TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 8,
-                        ),
-                        textAlign: TextAlign.center,
-                        ),
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                  ],
+                  ),
                 ),
-              ],  
+              ],
             ),
-
+          ],
+        ),
         body: Container(
           color: Color(0xFF6AB8D6),
           child: Column(

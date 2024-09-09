@@ -24,7 +24,7 @@ class MyTextStyles {
     fontStyle: FontStyle.italic,
   );
   static const TextStyle buttonTextStyle3 = TextStyle(
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: 'Xpress Heavy',
     color: Color(0xFF1A819A),
     fontWeight: FontWeight.normal,
