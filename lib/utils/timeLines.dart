@@ -48,6 +48,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   // Añade una posición predeterminada para el mapa
   late LatLng _initialPosition;
 
+  Map<String, dynamic>? _workerDetails;
+
   final Map<String, String> statusNames = {
     "available": "Disponible",
     "offer": "Ofertado",
@@ -61,56 +63,52 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
 
  @override
-void initState() {
-  super.initState();
-  _initializeControllers();
-  _initializeServiceStream();
-  _fetchOfferedPrice();
-  _initializeMap();
+  void initState() {
+    super.initState();
+    _initializeControllers();
+    _initializeServiceStream();
+    _fetchOfferedPrice();
+    _initializeMap();
 
-  // Si el estado es "offer", obtenemos los detalles del trabajador
-  if (widget.initialStatus == 'offer') {
-    // Llama a _fetchWorkerDetailsFromOffer para obtener los detalles del trabajador
-    getWorkerDetails(widget.workerId);
-  }
-}
-Future<void> getWorkerDetails(String offerId) async {
-  // Obtener el documento de la oferta
-  DocumentSnapshot offerSnapshot = await FirebaseFirestore.instance
-      .collection('offers')
-      .doc(offerId)
-      .get();
-
-  // Verificar si el documento existe
-  if (offerSnapshot.exists) {
-    // Obtener el workerId de la oferta
-    String workerId = offerSnapshot['workerId'];
-
-    // Obtener los detalles del trabajador usando el workerId
-    DocumentSnapshot workerSnapshot = await FirebaseFirestore.instance
-        .collection('workers')
-        .doc(workerId)
-        .get();
-
-    if (workerSnapshot.exists) {
-      // Mostrar los detalles del trabajador
-      String displayName = workerSnapshot['displayName'];
-      String email = workerSnapshot['email'];
-      String imagePath = workerSnapshot['imagePath'];
-      String phoneNumber = workerSnapshot['phoneNumber'];
-
-      print("Worker Details:");
-      print("Name: $displayName");
-      print("Email: $email");
-      print("Image URL: $imagePath");
-      print("Phone Number: $phoneNumber");
-    } else {
-      print("Worker not found.");
+    // Si el estado es "offer", obtenemos los detalles del trabajador
+    if (widget.initialStatus == 'offer') {
+      getWorkerDetails(widget.workerId);
     }
-  } else {
-    print("Offer not found.");
   }
-}
+
+  // Cambia la función para almacenar los detalles del trabajador en el estado
+  Future<void> getWorkerDetails(String offerId) async {
+    try {
+      // Obtener el documento de la oferta
+      DocumentSnapshot offerSnapshot = await FirebaseFirestore.instance
+          .collection('offers')
+          .doc(offerId)
+          .get();
+
+      if (offerSnapshot.exists) {
+        // Obtener el workerId de la oferta
+        String workerId = offerSnapshot['workerId'];
+
+        // Obtener los detalles del trabajador usando el workerId
+        DocumentSnapshot workerSnapshot = await FirebaseFirestore.instance
+            .collection('workers')
+            .doc(workerId)
+            .get();
+
+        if (workerSnapshot.exists) {
+          setState(() {
+            _workerDetails = workerSnapshot.data() as Map<String, dynamic>?;
+          });
+        } else {
+          print("Worker not found.");
+        }
+      } else {
+        print("Offer not found.");
+      }
+    } catch (e) {
+      print("Error fetching worker details: $e");
+    }
+  }
 
 
 
@@ -425,27 +423,12 @@ Future<void> getWorkerDetails(String offerId) async {
                     // Mostrar datos del trabajador solo si el estado es 'offer' y los detalles están disponibles
                     if (_currentStatus == 'offer' &&
                         getWorkerDetails != null) ...[
-                      Text(
-                        'Trabajador:',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
-                      Text(
-                        'Nombre: ${getWorkerDetails!('displayName') ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                      Text(
-                        'Correo: ${getWorkerDetails!('email') ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                      Text(
-                        'Nivel de Experiencia: ${getWorkerDetails!('expLevel') ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                      Text(
-                        'Peritaje: ${getWorkerDetails!('expertises') ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                      SizedBox(height: 16.0),
+                      Text('Trabajador:'),
+                    Text('Nombre: ${_workerDetails?['displayName'] ?? 'No disponible'}'),
+                    Text('Correo: ${_workerDetails?['email'] ?? 'No disponible'}'),
+                    Text('Nivel de Experiencia: ${_workerDetails?['expLevel'] ?? 'No disponible'}'),
+                    Text('Peritaje: ${_workerDetails?['expertises'] ?? 'No disponible'}'),
+                    SizedBox(height: 16.0),
                       Text(
                         'Precio ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
                         style: MyTextStyles.formServiceTextStyle,
