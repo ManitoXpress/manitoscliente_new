@@ -34,7 +34,7 @@ class _HistorialState extends State<Historial>
   late final UserData userData;
   int unreadMessagesCount = 0;
   int offerServiceCount = 0;
-  final String workerId = "";
+
 
   late final RegistrationData registrationData;
   late TabController _tabController;
@@ -99,6 +99,66 @@ class _HistorialState extends State<Historial>
   }
   return null;
 }
+Future<WorkerDetails?> getWorkerDetails(String serviceId) async {
+  try {
+    // Paso 1: Obtener el workerId desde la colección 'offers' usando el serviceId
+    print('Buscando en la colección "offers" con serviceId: $serviceId');
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('offers')
+        .where('serviceId', isEqualTo: serviceId)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      final offerData = querySnapshot.docs.first.data();
+      final workerId = offerData['workerId'];
+
+      // Verificar si el workerId está presente
+      if (workerId != null && workerId.isNotEmpty) {
+        print('Obteniendo detalles del trabajador con workerId: $workerId');
+
+        // Paso 2: Obtener los detalles del trabajador usando el workerId
+        final workerDetails = await fetchWorkerDetails(workerId);
+
+        if (workerDetails != null) {
+          print('Detalles del trabajador obtenidos: ${workerDetails.displayName}, ${workerDetails.email}');
+          return workerDetails;
+        } else {
+          print('No se encontraron detalles del trabajador para workerId: $workerId');
+        }
+      } else {
+        print('workerId no válido o no encontrado en el documento de offers.');
+      }
+    } else {
+      print('No se encontró ningún documento en la colección "offers" con serviceId: $serviceId');
+    }
+  } catch (e) {
+    print('Error al obtener detalles del trabajador: $e');
+  }
+  return null;
+}
+
+Future<WorkerDetails?> fetchWorkerDetails(String workerId) async {
+  try {
+    print('Buscando en la colección "workers" con workerId: $workerId');
+    final workerSnapshot = await FirebaseFirestore.instance
+        .collection('workers')
+        .doc(workerId)
+        .get();
+
+    if (workerSnapshot.exists) {
+      print('Documento del trabajador encontrado.');
+      final data = workerSnapshot.data()!;
+      return WorkerDetails.fromMap(data);
+    } else {
+      print('No se encontró ningún documento en la colección "workers" con workerId: $workerId');
+    }
+  } catch (e) {
+    print('Error al obtener detalles del trabajador: $e');
+  }
+  return null;
+}
+
 
 
 
@@ -332,7 +392,7 @@ Widget build(BuildContext context) {
       children: [
         Container(
           color: Colors.white, // Fondo blanco para el título
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(10.0),
           child: const Text(
             'Historial',
             style: MyTextStyles.buttonTextStyle3,
@@ -357,7 +417,7 @@ Widget build(BuildContext context) {
 
 
 
-  Widget _buildServiceListByStatus(
+ Widget _buildServiceListByStatus(
   String statusIds, double screenWidth, double screenHeight) {
   final statusIdList = statusIds.split(','); // Divide el string en una lista de IDs
   final filteredRequests = serviceRequests
@@ -375,31 +435,40 @@ Widget build(BuildContext context) {
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () async {
-          final newStatus = await showDialog<String>(
-            context: context,
-            builder: (BuildContext context) {
-              return ServiceFormWithTimeline(
-                serviceRequest: filteredRequests[index],
-                initialStatus: statuses[index],
-                onComplete: (status) {
-                  setState(() {
-                    statuses[index] = status;
-                  });
-                },
-                userData: userData,
-                onStatusChanged: (newStatus) {},
-                workerId: workerId,
-                images: filteredRequests[index].images,
-              );
-            },
-          );
+            final workerDetails = await getWorkerDetails(filteredRequests[index].id);
 
-          if (newStatus != null && newStatus != statuses[index]) {
-            setState(() {
-              statuses[index] = newStatus;
-            });
-          }
-        },
+            if (workerDetails != null) {
+              print('Detalles del trabajador obtenidos: ${workerDetails.displayName}, ${workerDetails.email}');
+            } else {
+              print('No se encontraron detalles del trabajador.');
+            }
+
+            final newStatus = await showDialog<String>(
+              context: context,
+              builder: (BuildContext context) {
+                return ServiceFormWithTimeline(
+                  serviceRequest: filteredRequests[index],
+                  initialStatus: statuses[index],
+                  onComplete: (status) {
+                    setState(() {
+                      statuses[index] = status;
+                    });
+                  },
+                  userData: userData,
+                  onStatusChanged: (newStatus) {},
+                  workerId: workerDetails?.id ?? '', // Pasar el workerId
+                  images: filteredRequests[index].images,
+                  workerDetails: workerDetails, // Pasar los detalles completos o null
+                );
+              },
+            );
+
+            if (newStatus != null && newStatus != statuses[index]) {
+              setState(() {
+                statuses[index] = newStatus;
+              });
+            }
+          },
           child: FutureBuilder<double?>(
             future: fetchOfferedPrice(filteredRequests[index].id),
             builder: (context, snapshot) {

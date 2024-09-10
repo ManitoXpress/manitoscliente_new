@@ -21,6 +21,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final Function(String) onStatusChanged;
   final UserData userData;
   final String workerId;
+  final WorkerDetails? workerDetails;
 
   final List<String> images;
 
@@ -32,6 +33,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.userData,
     required this.workerId,
     required this.images,
+    required this.workerDetails,
   });
 
   @override

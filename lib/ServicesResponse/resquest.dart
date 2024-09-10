@@ -234,6 +234,7 @@ class Status {
   }
 }
 class WorkerDetails {
+  final String id;  // Agregado el campo id
   final List<String> certificateImagePaths;
   final String criminalRecordImagePath;
   final String displayName;
@@ -242,6 +243,7 @@ class WorkerDetails {
   final List<Expertise> expertises;
 
   WorkerDetails({
+    required this.id,  // Asegúrate de inicializar el id
     required this.certificateImagePaths,
     required this.criminalRecordImagePath,
     required this.displayName,
@@ -252,6 +254,7 @@ class WorkerDetails {
 
   factory WorkerDetails.fromMap(Map<String, dynamic> data) {
     return WorkerDetails(
+      id: data['id'] ?? '',  // Mapea el id desde el documento
       certificateImagePaths: List<String>.from(data['certificateImagePaths'] ?? []),
       criminalRecordImagePath: data['criminalRecordImagePath'] ?? '',
       displayName: data['displayName'] ?? '',
@@ -263,6 +266,7 @@ class WorkerDetails {
     );
   }
 }
+
 
 class Expertise {
   final String id;
