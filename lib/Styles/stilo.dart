@@ -102,7 +102,7 @@ class MyTextStyles {
     fontSize: 12.0,
   );
   static const TextStyle ButtonTextStyle = TextStyle(
-    color: Color(0xFF3D6173),
+    color: Color.fromARGB(255, 249, 249, 249),
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.bold,
     fontStyle: FontStyle.normal,

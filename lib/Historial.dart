@@ -34,6 +34,7 @@ class _HistorialState extends State<Historial>
   late final UserData userData;
   int unreadMessagesCount = 0;
   int offerServiceCount = 0;
+  
 
 
   late final RegistrationData registrationData;
