@@ -8,6 +8,7 @@ import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/utils/fullMap.dart';
+import 'package:manitoscliente_new/utils/imageComplete.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 
@@ -148,31 +149,23 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     );
   }
 
-  // Diálogo de confirmación para la finalización del trabajo
-  void _showConfirmCompletionDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirmar Finalización'),
-          content: Text(
-              '¿Estás seguro de que quieres confirmar la finalización de este trabajo?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: _confirmCompletion,
-              child: Text('Confirmar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+ // Función para mostrar el diálogo de confirmación
+void showConfirmCompletionDialog(BuildContext context, String serviceId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return ServiceCompletionDialog(serviceId: serviceId);
+    },
+  ).then((confirmed) {
+    if (confirmed == true) {
+      // El trabajo ha sido confirmado como completado
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Trabajo confirmado como completado')),
+      );
+      // Aquí puedes agregar cualquier lógica adicional después de la confirmación
+    }
+  });
+}
 
   // Rechazo de la finalización del trabajo por el cliente
   void _rejectCompletion() async {
@@ -620,7 +613,7 @@ Widget build(BuildContext context) {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             ElevatedButton.icon(
-                              onPressed: () => _showConfirmCompletionDialog(context),
+                              onPressed: () => showConfirmCompletionDialog(context, widget.serviceRequest.id),
                               icon: Icon(Icons.architecture, color: Colors.white),
                               label: Text(
                                 "Confirmar",
