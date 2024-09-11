@@ -91,6 +91,27 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
       isSubmitting = true; // Bloquear envío adicional
     });
 
+    // Mostrar un cuadro de diálogo de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Evitar que se cierre al hacer clic fuera del diálogo
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Enviando datos..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
     final apiService = ApiService();
     User? user = FirebaseAuth.instance.currentUser;
 
@@ -113,23 +134,18 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
         for (var imagePath in validImagePaths) {
           try {
             final file = File(imagePath);
-            print('Cargando imagen: $imagePath');
-
             final compressedFile = await compressAndResizeImage(file);
-            print('Imagen comprimida y redimensionada.');
 
             // Subir la imagen y obtener la URL
             String downloadUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
             imageUrls.add(downloadUrl); // Almacenar la URL descargable
-
-            print('Imagen cargada con éxito: $downloadUrl');
           } catch (e) {
             print('Error al cargar imagen: $e');
           }
         }
 
         if (imageUrls.isEmpty) {
-          print('Error: No se subió ninguna imagen.');
+          Navigator.of(context).pop(); // Cerrar el diálogo de carga
           showErrorDialog(context, 'Error: No se subió ninguna imagen.');
           return;
         }
@@ -149,8 +165,6 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           'subcategoryId': widget.subcategoryId,
         };
 
-        print('Enviando datos al backend con el siguiente formData: $formData');
-
         // Enviar datos al backend
         final response = await apiService.sendDataToBackend(
           widget.serviceRequest,
@@ -164,18 +178,15 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           imageUrls,
         );
 
-        print('Respuesta del backend: ${response.statusCode}');
-        
+        Navigator.of(context).pop(); // Cerrar el diálogo de carga
+
         if (response.statusCode == 201) {
-          print('Datos enviados correctamente al backend.');
-          showSuccessDialog(context, 'Servicio creado con éxito. Código de respuesta: ${response.statusCode}');
+          showSuccessDialog(context, 'Servicio creado con éxito.');
         } else {
-          print('Error al enviar datos: ${response.statusCode}');
           showErrorDialog(context, 'Error al crear el servicio. Código: ${response.statusCode}');
         }
       } catch (error) {
-        // Manejo de errores
-        print('Error durante la creación del servicio: $error');
+        Navigator.of(context).pop(); // Cerrar el diálogo de carga
         showErrorDialog(context, 'Error durante la creación del servicio: $error');
       } finally {
         setState(() {
@@ -183,12 +194,14 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
         });
       }
     } else {
-      print('Error: No hay usuario autenticado.');
+      Navigator.of(context).pop(); // Cerrar el diálogo de carga
+      showErrorDialog(context, 'Error: No hay usuario autenticado.');
     }
   } else {
-    print('Error: Términos no aceptados, token nulo o ya se está enviando.');
+    showErrorDialog(context, 'Error: Términos no aceptados, token nulo o ya se está enviando.');
   }
 }
+
 
 
 

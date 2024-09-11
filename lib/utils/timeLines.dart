@@ -623,7 +623,7 @@ Widget build(BuildContext context) {
                               onPressed: () => _showConfirmCompletionDialog(context),
                               icon: Icon(Icons.architecture, color: Colors.white),
                               label: Text(
-                                "Confirmar Finalización",
+                                "Confirmar",
                                 style: GoogleFonts.karla(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -640,7 +640,7 @@ Widget build(BuildContext context) {
                               onPressed: () => _showRejectCompletionDialog(context),
                               icon: Icon(Icons.dangerous, color: Colors.white),
                               label: Text(
-                                "Rechazar Finalización",
+                                "Rechazar",
                                 style: GoogleFonts.karla(
                                   color: Colors.white,
                                   fontSize: 12,

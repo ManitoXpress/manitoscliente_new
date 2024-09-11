@@ -494,7 +494,7 @@ Widget build(BuildContext context) {
                               SizedBox(height: 15),
                               Text(
                                 'Categoría: ',
-                                style: MyTextStyles.ButtonTextStyle,
+                                style: MyTextStyles.drawerButtonTextStyle,
                               ),
                               Text(
                                 truncateDescription(
@@ -505,7 +505,7 @@ Widget build(BuildContext context) {
                               SizedBox(height: screenHeight * 0.01),
                               Text(
                                 'Servicio: ',
-                                style: MyTextStyles.ButtonTextStyle,
+                                style: MyTextStyles.drawerButtonTextStyle,
                               ),
                               Text(
                                 truncateDescription(
@@ -520,7 +520,7 @@ Widget build(BuildContext context) {
                               SizedBox(height: screenHeight * 0.01),
                               Text(
                                 'Precio Ofertado: \$${offeredPrice.toStringAsFixed(2)}',
-                                style: MyTextStyles.drawerButtonTextStyle5,
+                                style: MyTextStyles.drawerButtonTextStyle,
                               ),
                             ],
                           ),
