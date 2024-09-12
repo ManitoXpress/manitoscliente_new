@@ -61,6 +61,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     "cancelled": "Cancelado",
     "blocked": "Bloqueado",
     "pending_confirmation": "Esperando confirmación",
+    "peding_confirmation2": "Esperando confirmación",
   };
 
   @override

@@ -86,20 +86,27 @@ class _HistorialState extends State<Historial>
         .where('serviceId', isEqualTo: serviceId)
         .limit(1)
         .get();
-    
+
     if (querySnapshot.docs.isNotEmpty) {
       // Obtener el precio ofertado
       final offerData = querySnapshot.docs.first.data();
       final offeredPrice = offerData['offeredPrice'];
 
-      // Verificar si el precio ofertado es válido
-      return offeredPrice != null ? double.tryParse(offeredPrice) : null;
+      // Verificar el tipo de offeredPrice y convertirlo a double si es necesario
+      if (offeredPrice is String) {
+        return double.tryParse(offeredPrice);
+      } else if (offeredPrice is double) {
+        return offeredPrice;
+      } else {
+        return null;
+      }
     }
   } catch (e) {
     print('Error al obtener el precio ofertado: $e');
   }
   return null;
 }
+
 Future<WorkerDetails?> getWorkerDetails(String serviceId) async {
   try {
     // Paso 1: Obtener el workerId desde la colección 'offers' usando el serviceId
