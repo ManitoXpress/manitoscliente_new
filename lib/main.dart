@@ -79,7 +79,7 @@ class _MyAppState extends State<MyApp> {
               600: Color(0xFF1A819A),
               700: Color(0xFF1A819A),
               800: Color(0xFF1A819A),
-              900: Color(0xFF1A819A),
+              900: Color.fromRGBO(26, 129, 154, 1),
             },
           ),
           colorScheme: ColorScheme.fromSwatch().copyWith(

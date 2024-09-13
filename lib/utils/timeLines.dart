@@ -233,16 +233,46 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
           content: Text(
               '¿Estás seguro de que quieres aceptar esta propuesta y comenzar el trabajo?'),
           actions: [
-            TextButton(
-              onPressed: () {
+            ElevatedButton(
+                onPressed:  () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancelar'),
-            ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(
+                      color: Color(0xFF84090D),
+                    ),
+                  ),
+                ),
+                child: Text(
+                  "Cancelar",
+                  style: TextStyle(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
+              ),
             ElevatedButton(
-              onPressed: _acceptProposal,
-              child: Text('Aceptar'),
-            ),
+                onPressed: _acceptProposal,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(
+                      color: Color(0xFF84090D),
+                    ),
+                  ),
+                ),
+                child: Text(
+                  "Aceptar",
+                  style: TextStyle(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -281,32 +311,49 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
   }
 
   void _showDialog(
-    BuildContext context,
-    String title,
-    String content,
-    VoidCallback onConfirm,
-    String confirmText,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(content),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancelar'),
+  BuildContext context,
+  String title,
+  String content,
+  VoidCallback onConfirm,
+  String confirmText,
+) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(
+          title,
+          style: MyTextStyles.drawerButtonTextStyle4, // Aplicar el estilo al título
+        ),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: onConfirm,
+            child: Text(
+              confirmText,
+              style: MyTextStyles.ButtonTextStyle, // Aplicar un estilo personalizado al botón si es necesario
             ),
-            ElevatedButton(
-              onPressed: onConfirm,
-              child: Text(confirmText),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              backgroundColor: Color(0xFF1A819A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(
+                  color: Color(0xFF1A819A), // Color del borde del botón
+                ),
+              ),
             ),
-          ],
-        );
-      },
-    );
-  }
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   Future<void> _fetchOfferedPrice() async {
     try {
@@ -535,50 +582,65 @@ Widget build(BuildContext context) {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             ElevatedButton.icon(
-                              onPressed: () => _showDialog(
-                                context,
-                                'Aceptar Propuesta',
-                                '¿Estás seguro de que quieres aceptar esta propuesta y comenzar el trabajo?',
-                                _acceptProposal,
-                                'Aceptar',
-                              ),
-                              icon: Icon(Icons.energy_savings_leaf, color: Colors.white),
-                              label: Text(
-                                "Aceptar Propuesta",
-                                style: GoogleFonts.karla(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF1A819A),
-                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                            onPressed: () => _showDialog(
+                              context,
+                              'Aceptar Propuesta',
+                              '¿Estás seguro de que quieres aceptar esta propuesta y comenzar el trabajo?',
+                              _acceptProposal,
+                              'Aceptar',
+                            ),
+                            icon: Icon(Icons.architecture, color: Color(0xFF1A819A)),
+                            label: Text(
+                              "Aceptar Propuesta",
+                              style: GoogleFonts.karla(
+                                color: Color(0xFF1A819A),
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                side: BorderSide(
+                                  color: Color(0xFF1A819A),
+                                ),
+                              ),
+                            ),
+                          ),
+
+
+
                             SizedBox(width: 16.0),
                             ElevatedButton.icon(
-                              onPressed: () => _showDialog(
-                                context,
-                                'Cancelar Trabajo',
+                            onPressed: () => _showDialog(
+                              context,
+                              'Cancelar Trabajo',
                                 '¿Estás seguro de que no quieres participar en este trabajo?',
                                 _blockUserParticipation,
                                 'Confirmar No Participar',
-                              ),
-                              icon: Icon(Icons.dangerous, color: Colors.white),
-                              label: Text(
-                                "Cancelar Trabajo",
-                                style: GoogleFonts.karla(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                            ),
+                            icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
+                            label: Text(
+                              "Cancelar Propuesta",
+                              style: GoogleFonts.karla(
+                                color: Color(0xFF1A819A),// Cambié el color del texto
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Ajuste del padding
+                              backgroundColor: Colors.white, // Fondo blanco del botón
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0), // Bordes redondeados
+                                side: BorderSide(
+                                  color: Color(0xFF1A819A),// Borde con el color especificado
+                                ),
+                              ),
+                            ),
+                          ),
                           ],
                         ),
                       ] else if (_currentStatus == 'in_progress' || _currentStatus == 'available') ...[
