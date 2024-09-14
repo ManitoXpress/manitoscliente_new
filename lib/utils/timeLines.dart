@@ -342,6 +342,7 @@ Widget build(BuildContext context) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                 if (_currentStatus == 'avaliable') ...[
                 Text(
                   'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
                   style: MyTextStyles.formServiceTextStyle,
@@ -351,6 +352,7 @@ Widget build(BuildContext context) {
                             width: 84,
                             height: 84,
                         ),
+                 ],
                 
                 SizedBox(height: 16.0),
 
@@ -480,15 +482,13 @@ Widget build(BuildContext context) {
                           },
                         ),
                       ),
-                      SizedBox(height: 16.0),
+                      SizedBox(height: 2.0),
                       Text(
                         'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
                         style: MyTextStyles.formServiceTextStyle,
                       ),
                     ],
 
-                    // Botones de acción dependiendo del estado
-                      SizedBox(height: 16.0),
                       if (_currentStatus == 'offer') ...[
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -584,46 +584,89 @@ Widget build(BuildContext context) {
                           ],
                         ),
                       ] else if (_currentStatus == 'pending_confirmation') ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () => showConfirmCompletionDialog(context, widget.serviceRequest.id),
-                              icon: Icon(Icons.architecture, color: Colors.white),
-                              label: Text(
-                                "Confirmar",
-                                style: GoogleFonts.karla(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF1A819A),
-                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                              ),
-                            ),
-                            SizedBox(width: 16.0),
-                            ElevatedButton.icon(
-                              onPressed: () => _showRejectCompletionDialog(context),
-                              icon: Icon(Icons.dangerous, color: Colors.white),
-                              label: Text(
-                                "Rechazar",
-                                style: GoogleFonts.karla(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF1A819A),
-                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                              ),
-                            ),
-                          ],
+                  SizedBox(height: 2.0),
+                  if (widget.workerDetails != null) ...[
+                    Text.rich(
+                      TextSpan(
+                        text: 'Detalles del trabajador:\n',
+                        style: MyTextStyles.formServiceTextStyle,
+                        children: [
+                          TextSpan(
+                            text: 'Nombre: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                          ),
+                          TextSpan(
+                            text: '${widget.workerDetails?.displayName ?? 'No disponible'}\n',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                          TextSpan(
+                            text: 'Especialidad: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                          ),
+                          TextSpan(
+                            text: '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}\n',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                          TextSpan(
+                            text: 'Nivel de Experiencia: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                          ),
+                          TextSpan(
+                            text: '${widget.workerDetails?.expLevel ?? 'No disponible'}',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Detalles del trabajador no disponibles',
+                      style: MyTextStyles.formServiceTextStyle,
+                    ),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => showConfirmCompletionDialog(context, widget.serviceRequest.id),
+                        icon: Icon(Icons.check_circle, color: Colors.white),
+                        label: Text(
+                          "Confirmar",
+                          style: GoogleFonts.karla(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ],
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF1A819A),
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                        ),
+                      ),
+                      SizedBox(width: 16.0),
+                      ElevatedButton.icon(
+                        onPressed: () => _showRejectCompletionDialog(context),
+                        icon: Icon(Icons.cancel, color: Colors.white),
+                        label: Text(
+                          "Rechazar",
+                          style: GoogleFonts.karla(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF1A819A),
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                        ),
+                      ),
                     ],
+                  ),
+                ],
+                      
+                       
+                        
+                      ],
                   ),
                 ),
             ));
