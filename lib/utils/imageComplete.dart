@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/home.dart';
 
 class ServiceCompletionDialog extends StatefulWidget {
@@ -98,7 +100,9 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Confirmar Finalización'),
+      title: Text('Confirmar Finalización',
+      style: MyTextStyles.notification,
+      ),
       content: _isLoading
           ? Center(child: CircularProgressIndicator())
           : _isProcessingPayment
@@ -136,16 +140,53 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                       ],
                     ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text('Cancelar'),
-        ),
-        if (!_isProcessingPayment)
-          ElevatedButton(
-            onPressed: _confirmCompletion,
-            child: Text('Hacer el pago'),
+        TextButton.icon(
+        onPressed: () => Navigator.of(context).pop(false),
+        icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
+        label: Text(
+          'Cancelar',
+          style: GoogleFonts.karla(
+            color: Color(0xFF1A819A),
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          backgroundColor: Colors.white, // Fondo blanco del botón
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            side: BorderSide(
+              color: Color(0xFF1A819A), // Borde del botón
+            ),
+          ),
+        ),
+      ),
+      if (!_isProcessingPayment)
+        ElevatedButton.icon(
+          onPressed: _confirmCompletion,
+          icon: Icon(Icons.check_circle, color: Color(0xFF1A819A)),
+          label: Text(
+            'Hacer el pago',
+            style: GoogleFonts.karla(
+              color: Color(0xFF1A819A),
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            backgroundColor: Colors.white, // Fondo blanco del botón
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              side: BorderSide(
+                color: Color(0xFF1A819A), // Borde del botón
+              ),
+            ),
+          ),
+        ),
+
       ],
     );
-  }
+ }
 }
