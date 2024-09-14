@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/home.dart';
 
 class ServiceCompletionDialog extends StatefulWidget {
   final String serviceId;
+  final WorkerDetails? workerDetails;
+  final double? fetchedOfferedPrice;
 
-  ServiceCompletionDialog({required this.serviceId});
+  ServiceCompletionDialog({
+    required this.serviceId,
+    required this.workerDetails,
+    required this.fetchedOfferedPrice,
+  });
+
 
   @override
-  _ServiceCompletionDialogState createState() => _ServiceCompletionDialogState();
+  _ServiceCompletionDialogState createState() =>
+      _ServiceCompletionDialogState();
 }
 
 class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
@@ -92,7 +101,9 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
         _isProcessingPayment = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al confirmar la finalización. Por favor, intenta de nuevo.')),
+        SnackBar(
+            content: Text(
+                'Error al confirmar la finalización. Por favor, intenta de nuevo.')),
       );
     }
   }
@@ -100,13 +111,73 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Confirmar Finalización',
-      style: MyTextStyles.notification,
+      title: Text(
+        'Confirmar Finalización',
+        style: MyTextStyles.notification,
       ),
       content: _isLoading
           ? Center(child: CircularProgressIndicator())
           : _isProcessingPayment
-              ? Center(child: Text('Esperando el pago...'))
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(child: Text('Esperando la confirmación del pago...')),
+                    SizedBox(height: 16),
+                    Text.rich(
+                      TextSpan(
+                        text: 'Nombre: ',
+                        style: MyTextStyles.formServiceTextStyle,
+                        children: [
+                          TextSpan(
+                            text:
+                                '${widget.workerDetails?.displayName ?? 'No disponible'}',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                          TextSpan(
+                            text: '\nCorreo: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                          ),
+                          TextSpan(
+                            text:
+                                '${widget.workerDetails?.email ?? 'No disponible'}',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                          TextSpan(
+                            text: '\nNivel de Experiencia: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                          ),
+                          TextSpan(
+                            text:
+                                '${widget.workerDetails?.expLevel ?? 'No disponible'}',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                          TextSpan(
+                            text: '\nEspecialidad: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                          ),
+                          TextSpan(
+                            text:
+                                '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    Text.rich(
+                      TextSpan(
+                        text: 'Precio ofertado: ',
+                        style: MyTextStyles.formServiceTextStyle,
+                        children: [
+                          TextSpan(
+                            text: '${widget.fetchedOfferedPrice ?? 'No ofertado'}',
+                            style: MyTextStyles.inputTextStyle,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
               : _paymentCompleted
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
@@ -126,9 +197,11 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                             child: Image.network(
                               _imageUrl!,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
-                                return Center(child: CircularProgressIndicator());
+                                return Center(
+                                    child: CircularProgressIndicator());
                               },
                               errorBuilder: (context, error, stackTrace) {
                                 return Icon(Icons.error);
@@ -136,57 +209,58 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                             ),
                           ),
                         SizedBox(height: 16),
-                        Text('Por favor, culmine el pago acordado con el trabajador para finalizar el trabajo'),
+                        Text(
+                          'Por favor, culmine el pago acordado con el trabajador para finalizar el trabajo',
+                        ),
                       ],
                     ),
       actions: [
         TextButton.icon(
-        onPressed: () => Navigator.of(context).pop(false),
-        icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
-        label: Text(
-          'Cancelar',
-          style: GoogleFonts.karla(
-            color: Color(0xFF1A819A),
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          backgroundColor: Colors.white, // Fondo blanco del botón
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            side: BorderSide(
-              color: Color(0xFF1A819A), // Borde del botón
-            ),
-          ),
-        ),
-      ),
-      if (!_isProcessingPayment)
-        ElevatedButton.icon(
-          onPressed: _confirmCompletion,
-          icon: Icon(Icons.check_circle, color: Color(0xFF1A819A)),
+          onPressed: () => Navigator.of(context).pop(false),
+          icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
           label: Text(
-            'Hacer el pago',
+            'Cancelar',
             style: GoogleFonts.karla(
               color: Color(0xFF1A819A),
               fontSize: 9,
               fontWeight: FontWeight.bold,
             ),
           ),
-          style: ElevatedButton.styleFrom(
+          style: TextButton.styleFrom(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            backgroundColor: Colors.white, // Fondo blanco del botón
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
               side: BorderSide(
-                color: Color(0xFF1A819A), // Borde del botón
+                color: Color(0xFF1A819A),
               ),
             ),
           ),
         ),
-
+        if (!_isProcessingPayment)
+          ElevatedButton.icon(
+            onPressed: _confirmCompletion,
+            icon: Icon(Icons.check_circle, color: Color(0xFF1A819A)),
+            label: Text(
+              'Hacer el pago',
+              style: GoogleFonts.karla(
+                color: Color(0xFF1A819A),
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(
+                  color: Color(0xFF1A819A),
+                ),
+              ),
+            ),
+          ),
       ],
     );
- }
+  }
 }

@@ -137,7 +137,12 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return ServiceCompletionDialog(serviceId: serviceId);
+      return ServiceCompletionDialog(
+        serviceId: serviceId,
+        workerDetails: _workerDetails,
+        fetchedOfferedPrice: _fetchedOfferedPrice,  // Aquí pasas el precio ofertado
+      );
+
     },
   ).then((confirmed) {
     if (confirmed == true) {
@@ -358,59 +363,82 @@ Widget build(BuildContext context) {
 
                 // Mostrar detalles del trabajador si el estado es 'offer'
                 if ((_currentStatus == 'offer' || _currentStatus == 'in_progress') && widget.workerDetails != null) ...[
-                 Text.rich(
-                  TextSpan(
-                    text: 'Trabajador: ',
-                    style: MyTextStyles.formServiceTextStyle,
-                    children: [
-                      TextSpan(
-                        text: '\nNombre: ',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
-                      TextSpan(
-                        text: '${widget.workerDetails?.displayName ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle, // Estilo diferente para los detalles
-                      ),
-                      TextSpan(
-                        text: '\nCorreo: ',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
-                      TextSpan(
-                        text: '${widget.workerDetails?.email ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                      TextSpan(
-                        text: '\nNivel de Experiencia: ',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
-                      TextSpan(
-                        text: '${widget.workerDetails?.expLevel ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                      TextSpan(
-                        text: '\nEspecialidad: ',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
-                      TextSpan(
-                        text: '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
-                        style: MyTextStyles.inputTextStyle,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 16.0),
-                Text.rich(
-                  TextSpan(
-                    text: 'Precio ofertado: ',
-                    style: MyTextStyles.formServiceTextStyle,
-                    children: [
-                      TextSpan(
-                        text: '${_fetchedOfferedPrice ?? 'No ofertado'}',
-                        style: MyTextStyles.inputTextStyle, // Estilo diferente para el precio
-                      ),
-                    ],
-                  ),
-                ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.center, // Centra el contenido horizontalmente
+                      children: [
+                        Center( 
+                          child: Text(
+                            'Trabajador', // Título centrado
+                            style: MyTextStyles.formServiceTextStyle.copyWith(
+                              fontSize: 24.0, // Tamaño de letra para el título
+                              fontWeight: FontWeight.bold, // Negrita para el título
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8.0), // Espacio entre el título y la imagen
+                        widget.workerDetails?.certificateImagePaths != null && widget.workerDetails!.certificateImagePaths.isNotEmpty
+                          ? Image.network(
+                              widget.workerDetails!.certificateImagePaths[0], // Mostrando la primera imagen desde la URL
+                              height: 150.0, // Tamaño de la imagen
+                              width: 150.0,
+                              fit: BoxFit.cover,
+                            )
+                          : Text('Imagen no disponible', style: MyTextStyles.inputTextStyle), // Texto alternativo si no hay imagen
+                        SizedBox(height: 16.0),
+                        Text.rich(
+                          TextSpan(
+                            text: 'Nombre: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                            children: [
+                              TextSpan(
+                                text: '${widget.workerDetails?.displayName ?? 'No disponible'}',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                              TextSpan(
+                                text: '\nCorreo: ',
+                                style: MyTextStyles.formServiceTextStyle,
+                              ),
+                              TextSpan(
+                                text: '${widget.workerDetails?.email ?? 'No disponible'}',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                              TextSpan(
+                                text: '\nNivel de Experiencia: ',
+                                style: MyTextStyles.formServiceTextStyle,
+                              ),
+                              TextSpan(
+                                text: '${widget.workerDetails?.expLevel ?? 'No disponible'}',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                              TextSpan(
+                                text: '\nEspecialidad: ',
+                                style: MyTextStyles.formServiceTextStyle,
+                              ),
+                              TextSpan(
+                                text: '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16.0),
+                        Text.rich(
+                          TextSpan(
+                            text: 'Precio ofertado: ',
+                            style: MyTextStyles.formServiceTextStyle,
+                            children: [
+                              TextSpan(
+                                text: '${_fetchedOfferedPrice ?? 'No ofertado'}',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+
+
 
                     ] else if (_currentStatus != 'offer') ...[
                       // Si el estado no es 'offer', mostrar datos del servicio

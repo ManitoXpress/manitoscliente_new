@@ -137,6 +137,7 @@ class _HistorialState extends State<Historial>
       );
     }
   }
+  
 
   Future<void> _showNotificationWithAction(String title, String body, String serviceId) async {
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -185,19 +186,25 @@ class _HistorialState extends State<Historial>
 
 
   void _activateForegroundListener() {
-    _foregroundServiceListener = FirebaseFirestore.instance
-        .collection('serviceRequests')
-        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-        .where('status', isEqualTo: 'offer')
-        .snapshots()
-        .listen((snapshot) {
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          _showInAppNotification(change.doc.data()!);
-        }
+  // Listener para escuchar los cambios en la colección 'serviceRequests'
+  _foregroundServiceListener = FirebaseFirestore.instance
+      .collection('serviceRequests')
+      .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+      .snapshots()
+      .listen((snapshot) {
+    // Procesar los cambios en los documentos
+    for (var change in snapshot.docChanges) {
+      if (change.type == DocumentChangeType.added) {
+        // Cuando se añade un nuevo servicio
+        _showInAppNotification(change.doc.data()!);
       }
-    });
-  }
+    }
+
+    // Después de procesar los cambios, actualizamos la lista de servicios
+    _refreshHistorial();
+  });
+}
+
 
   void _showInAppNotification(Map<String, dynamic> serviceData) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -434,50 +441,66 @@ class _HistorialState extends State<Historial>
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Color(0xFF1A819A),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(10.0),
-          child: Container(
-            color: Color(0xFF1A819A),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelStyle: MyTextStyles.tabTextStyle,
-              unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
-              tabs: [
-                Tab(text: 'Disponibles'),
-                Tab(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      const Text('Ofertados'),
-                      if (offerServiceCount > 0)
-                        Positioned(
-                          right: 7,
-                          top: 4,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            child: Text(
-                              offerServiceCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
+      automaticallyImplyLeading: false,
+      backgroundColor: Color(0xFF1A819A),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              'Historial',
+              style: MyTextStyles.buttonTextStyle3,
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh, color: Color.fromRGBO(26, 129, 154, 1), size: 24.0),
+            onPressed: _refreshHistorial,
+          ),
+        ],
+      ),
+      bottom: PreferredSize(
+        preferredSize: Size.fromHeight(10.0),
+        child: Container(
+          color: Color(0xFF1A819A),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelStyle: MyTextStyles.tabTextStyle,
+            unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
+            tabs: [
+              Tab(text: 'Disponibles'),
+              Tab(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Text('Ofertados'),
+                    if (offerServiceCount > 0)
+                      Positioned(
+                        right: 7,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          child: Text(
+                            offerServiceCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-                Tab(text: 'Asignados'),
-                Tab(text: 'Completados'),
-                Tab(text: 'Cancelados'),
-              ],
-            ),
+              ),
+              Tab(text: 'Asignados'),
+              Tab(text: 'Completados'),
+              Tab(text: 'Cancelados'),
+            ],
           ),
         ),
       ),
+    ),
+
       body: Column(
         children: [
           Container(
@@ -487,10 +510,13 @@ class _HistorialState extends State<Historial>
               'Historial',
               style: MyTextStyles.buttonTextStyle3,
             ),
+            
           ),
           Expanded(
+            
             child: TabBarView(
               controller: _tabController,
+              
               children: [
                 _buildServiceListByStatus('available', screenWidth, screenHeight),
                 _buildServiceListByStatus('offer', screenWidth, screenHeight),
