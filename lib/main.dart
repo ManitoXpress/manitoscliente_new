@@ -9,11 +9,32 @@ import 'Loading.dart';
 import 'firebase_options.dart';
 import 'menu/Login.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+
+
+
+// Handler para mensajes en segundo plano
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Handling a background message: ${message.messageId}");
+  // Aquí puedes agregar lógica adicional para manejar el mensaje
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Configurar el handler para mensajes en segundo plano
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Inicializar Firebase App Check
   await FirebaseAppCheck.instance.activate(
@@ -35,7 +56,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _requestTrackingPermission(); // Llamar a la función para solicitar el permiso de App Tracking Transparency
+    _requestTrackingPermission();
+    _initializeFirebaseMessaging();
     Future.delayed(const Duration(seconds: 10), () {
       setState(() {
         isLoading = false;
@@ -52,21 +74,49 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  // Función para inicializar Firebase Messaging
+  Future<void> _initializeFirebaseMessaging() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // Solicitar permisos para iOS
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    print('User granted permission: ${settings.authorizationStatus}');
+
+    // Obtener el token FCM
+    String? token = await messaging.getToken();
+    print('FCM Token: $token');
+
+    // Configurar handlers para mensajes en primer plano
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("Recibido mensaje en primer plano: ${message.messageId}");
+      // Aquí puedes manejar el mensaje, por ejemplo, mostrar una notificación local
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("Aplicación abierta desde notificación: ${message.messageId}");
+      // Aquí puedes manejar la acción cuando se abre la app desde una notificación
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true, // Opcional: habilitar la persistencia local
+      persistenceEnabled: true,
     );
 
     return ScreenUtilInit(
-      designSize: Size(375, 800), // Tamaño base de diseño
+      designSize: Size(375, 800),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Manitos Xpress',
         theme: ThemeData(
-          
           primarySwatch: MaterialColor(
             0xFF1A819A,
             <int, Color>{
@@ -88,10 +138,10 @@ class _MyAppState extends State<MyApp> {
             onBackground: Colors.grey,
           ),
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1A819A), // Color de fondo del AppBar
+            backgroundColor: Color(0xFF1A819A),
           ),
         ),
-        home: isLoading ? LoadingScreen() : LoginScreen(), // Reemplaza LoginScreen con tu pantalla de inicio
+        home: isLoading ? LoadingScreen() : LoginScreen(),
       ),
     );
   }

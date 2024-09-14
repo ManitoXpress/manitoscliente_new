@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:manitoscliente_new/Historial.dart';
@@ -38,12 +39,29 @@ class _ServiceScreenState extends State<ServiceScreen> {
   Timer? _notificationTimer;
 
   @override
-  void initState() {
-    super.initState();
-    _loadServices();
-    _pageController = PageController(initialPage: 0);
-    _startNotificationTimer();
+void initState() {
+  super.initState();
+  _loadServices();
+  _pageController = PageController(initialPage: 0);
+  _startNotificationTimer();
+  
+  // Configurar FCM
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print("Recibido mensaje en primer plano: ${message.messageId}");
+    _handleFCMMessage(message);
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print("Aplicación abierta desde notificación: ${message.messageId}");
+    _handleFCMMessage(message);
+  });
+}
+
+void _handleFCMMessage(RemoteMessage message) {
+  if (message.data['status'] == 'offer') {
+    _checkForNewNotifications();
   }
+}
 
   @override
   void dispose() {
@@ -83,28 +101,28 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 
   Future<void> _checkForNewNotifications() async {
-    try {
-      String? userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        final serviceQuery = await FirebaseFirestore.instance
-            .collection('services') // Cambia a tu colección
-            .where('userId', isEqualTo: userId)
-            .where('status', isEqualTo: 'new') // Cambia según tu lógica
-            .get();
+  try {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      final serviceQuery = await FirebaseFirestore.instance
+          .collection('serviceRequests')  // Asegúrate de que esta sea la colección correcta
+          .where('userId', isEqualTo: userId)
+          .where('status', isEqualTo: 'offer')
+          .get();
 
-        final newNotificationCount = serviceQuery.docs.length;
+      final newOfferCount = serviceQuery.docs.length;
 
-        if (newNotificationCount > 0) {
-          setState(() {
-            notificationCount = newNotificationCount;
-          });
-          _showNotifications(context);
-        }
+      if (newOfferCount > 0) {
+        setState(() {
+          notificationCount = newOfferCount;
+        });
+        _showNotifications(context, newOfferCount);
       }
-    } catch (e) {
-      print('Error al comprobar las notificaciones: $e');
     }
+  } catch (e) {
+    print('Error al comprobar las notificaciones: $e');
   }
+}
 
   void _startNotificationTimer() {
     _notificationTimer = Timer.periodic(Duration(minutes: 5), (timer) {
@@ -112,21 +130,19 @@ class _ServiceScreenState extends State<ServiceScreen> {
     });
   }
 
-  void _showNotifications(BuildContext context) {
-    // Mostrar notificación al usuario (esto puede variar según cómo quieras hacerlo)
-    ServiceFunctions.showNotifications(
-      context,
-      title: 'Nuevo Servicio Disponible',
-      body: 'Haz clic para ver los detalles del nuevo servicio.',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => Historial()),
-        );
-      },
-    );
-  }
-
+  void _showNotifications(BuildContext context, int offerCount) {
+  ServiceFunctions.showNotifications(
+    context,
+    title: 'Nuevas Ofertas Disponibles',
+    body: 'Tienes $offerCount nueva(s) oferta(s) para tus servicios.',
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Historial()),
+      );
+    },
+  );
+}
   void _limpiarTextoBusqueda() {
     setState(() {
       searchText = '';

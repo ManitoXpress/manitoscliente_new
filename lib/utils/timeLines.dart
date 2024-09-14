@@ -7,6 +7,9 @@ import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
+import 'package:manitoscliente_new/metodos/serviceActions.dart';
+import 'package:manitoscliente_new/metodos/serviceDialog.dart';
+import 'package:manitoscliente_new/metodos/serviceFetcher.dart';
 import 'package:manitoscliente_new/utils/fullMap.dart';
 import 'package:manitoscliente_new/utils/imageComplete.dart';
 import 'package:manitoscliente_new/utils/status.dart';
@@ -50,6 +53,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late String _currentStatus;
   // Añade una posición predeterminada para el mapa
   late LatLng _initialPosition;
+  final ServiceActions _serviceActions = ServiceActions();
+  final ServiceDialogs _serviceDialogs = ServiceDialogs();
+  final ServiceDataFetcher _serviceDataFetcher = ServiceDataFetcher();
 
   WorkerDetails? _workerDetails;
 
@@ -70,33 +76,23 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _currentStatus = widget.initialStatus;
     _initializeControllers();
     _initializeServiceStream();
-    _fetchOfferedPrice();
+    _serviceDataFetcher.fetchOfferedPrice(widget.serviceRequest.id).then((price) {
+      setState(() {
+        _fetchedOfferedPrice = price;
+        _priceController.text = price != null ? price.toString() : '';
+      });
+    });
     _initializeMap();
 
-    // Si el estado es 'offer', obtenemos los detalles del trabajador
     if (_currentStatus == 'offer') {
-      _fetchWorkerDetails(widget.workerId);
-    }
-  }
-  Future<void> _fetchWorkerDetails(String workerId) async {
-    try {
-      final workerSnapshot = await FirebaseFirestore.instance
-          .collection('workers')
-          .doc(workerId)
-          .get();
-
-      if (workerSnapshot.exists) {
+      _serviceDataFetcher.fetchWorkerDetails(widget.workerId).then((details) {
         setState(() {
-          _workerDetails = WorkerDetails.fromMap(workerSnapshot.data()!);
+          _workerDetails = details;
         });
-      }
-    } catch (e) {
-      print('Error al obtener los detalles del trabajador: $e');
+      });
     }
   }
 
-  
-  
 
   void _initializeControllers() {
     _cancelReasonController = TextEditingController();
@@ -126,20 +122,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _initialPosition = LatLng(latitude, longitude);
   }
 
-  // Confirmación de finalización del trabajo por el cliente
-  void _confirmCompletion() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({'status': 'completed'});
-
-      widget.onStatusChanged('completed');
-      Navigator.of(context).pop();
-    } catch (e) {
-      print('Error al confirmar la finalización del trabajo: $e');
-    }
-  }
 
   // Abre el mapa en pantalla completa
   void _openFullMap(BuildContext context) {
@@ -223,62 +205,6 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
     }
   }
 
-  // Diálogo de confirmación para aceptar la propuesta
-  void _showAcceptProposalDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Aceptar Propuesta'),
-          content: Text(
-              '¿Estás seguro de que quieres aceptar esta propuesta y comenzar el trabajo?'),
-          actions: [
-            ElevatedButton(
-                onPressed:  () {
-                Navigator.of(context).pop();
-              },
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(
-                      color: Color(0xFF84090D),
-                    ),
-                  ),
-                ),
-                child: Text(
-                  "Cancelar",
-                  style: TextStyle(
-                    color: Color(0xFF84090D),
-                  ),
-                ),
-              ),
-            ElevatedButton(
-                onPressed: _acceptProposal,
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(
-                      color: Color(0xFF84090D),
-                    ),
-                  ),
-                ),
-                child: Text(
-                  "Aceptar",
-                  style: TextStyle(
-                    color: Color(0xFF84090D),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _blockUserParticipation() async {
     try {
       await FirebaseFirestore.instance
@@ -293,20 +219,6 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
       Navigator.of(context).pop();
     } catch (e) {
       print('Error al bloquear la participación del usuario: $e');
-    }
-  }
-
-  Future<void> _updateServiceStatus(String status, String errorMessage) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({'status': status});
-
-      widget.onStatusChanged(status);
-      Navigator.of(context).pop();
-    } catch (e) {
-      print('$errorMessage: $e');
     }
   }
 

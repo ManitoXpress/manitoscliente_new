@@ -46,7 +46,9 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Selecciona la fuente de la imagen'),
+          title: Text('Selecciona la fuente de la imagen',
+           style: MyTextStyles.drawerButtonTextStyle4,
+           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
