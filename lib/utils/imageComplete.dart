@@ -166,7 +166,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                     SizedBox(height: 16.0),
                     Text.rich(
                       TextSpan(
-                        text: 'Precio ofertado: ',
+                        text: '\nPrecio ofertado: ',
                         style: MyTextStyles.formServiceTextStyle,
                         children: [
                           TextSpan(
@@ -214,53 +214,53 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                         ),
                       ],
                     ),
-      actions: [
-        TextButton.icon(
-          onPressed: () => Navigator.of(context).pop(false),
-          icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
-          label: Text(
-            'Cancelar',
-            style: GoogleFonts.karla(
-              color: Color(0xFF1A819A),
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(
-                color: Color(0xFF1A819A),
-              ),
-            ),
-          ),
-        ),
-        if (!_isProcessingPayment)
-          ElevatedButton.icon(
-            onPressed: _confirmCompletion,
-            icon: Icon(Icons.check_circle, color: Color(0xFF1A819A)),
-            label: Text(
-              'Hacer el pago',
-              style: GoogleFonts.karla(
-                color: Color(0xFF1A819A),
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF1A819A),
+            actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(false),
+                icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
+                label: Text(
+                  'Cancelar',
+                  style: GoogleFonts.karla(
+                    color: Color(0xFF1A819A),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(
+                      color: Color(0xFF1A819A),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-      ],
-    );
-  }
-}
+              if (!_isProcessingPayment)
+                ElevatedButton.icon(
+                  onPressed: _confirmCompletion,
+                  icon: Icon(Icons.check_circle, color: Color(0xFF1A819A)),
+                  label: Text(
+                    'Hacer el pago',
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF1A819A),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: Color(0xFF1A819A),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+    }   
+ }

@@ -11,8 +11,10 @@ import 'package:manitoscliente_new/menu/help.dart';
 import 'package:manitoscliente_new/menu/trabaja.dart';
 import 'package:manitoscliente_new/metodos/RegisController.dart';
 
+
 class HomeScreen extends StatefulWidget {
-  final int initialPageIndex; // Agregamos un parámetro para seleccionar la pestaña inicial.
+  final int initialPageIndex; // Agregamos un parámetro para seleccionar la pestaña inicial.\
+  
 
   HomeScreen({this.initialPageIndex = 0}); // Valor predeterminado para la primera pestaña.
 
@@ -27,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    
     _currentIndex = widget.initialPageIndex; // Inicializar con la página seleccionada.
     _pageController = PageController(initialPage: widget.initialPageIndex); // Controlador de PageView.
   }
