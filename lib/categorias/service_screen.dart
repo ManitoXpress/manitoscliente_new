@@ -163,7 +163,9 @@ void _handleFCMMessage(RemoteMessage message) {
         appBar: AppBar(
           backgroundColor: Color(0xFF6AB8D6),
           automaticallyImplyLeading: false,
+          
           title: Text(
+            
             'Categorías',
             style: MyTextStyles.CategoriaButtonTextStyle,
           ),
@@ -284,7 +286,7 @@ void _handleFCMMessage(RemoteMessage message) {
                           // Ajusta la distancia entre la imagen y el texto
                           Text(
                             service.name,
-                            style: MyTextStyles.buttonTextStyle,
+                            style: MyTextStyles.butServiceTextStyle,
                             textAlign: TextAlign.center,
                           ),
                         ],

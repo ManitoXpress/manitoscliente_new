@@ -220,7 +220,7 @@ void showSuccessDialog(BuildContext context, String s) {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => HomeScreen(initialPageIndex: 2), // Redirige a Historial
+                  builder: (context) => HomeScreen(initialPageIndex: 1), // Redirige a Historial
                 ),
                 (route) => false,
               );

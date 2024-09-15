@@ -30,6 +30,13 @@ class MyTextStyles {
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
   );
+  static const TextStyle loginWelcomeStyle = TextStyle(
+    fontSize: 24,
+    fontFamily: 'Xpress Heavy',
+    color: Color(0xFF1A819A),
+    fontWeight: FontWeight.normal,
+    fontStyle: FontStyle.italic,
+  );
   static const TextStyle welcomeTotheJungle = TextStyle(
     color: Color(0xFF000405),
     fontFamily: 'Xpress Heavy',
@@ -85,7 +92,7 @@ class MyTextStyles {
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
-    fontSize: 28.0,
+    fontSize: 40.0,
   );
   static const TextStyle notification = TextStyle(
     color: Color(0xFF1A819A),
@@ -181,7 +188,7 @@ class MyTextStyles {
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
-    fontSize: 17.0,
+    fontSize: 28.0,
   );
   static const TextStyle formsdetails= TextStyle(
     color: Color(0xA3606262),

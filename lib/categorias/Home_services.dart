@@ -338,7 +338,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
               AnimatedContainer(
                 duration: Duration(milliseconds: 300),
                 curve: Curves.easeOut,
-                height: _selectedServiceIndex != -1 ? 300 : 0,
+                height: _selectedServiceIndex != -1 ? 500 : 0,
                 alignment: Alignment.bottomCenter,
                 child: _selectedServiceIndex != -1
                     ? Container(

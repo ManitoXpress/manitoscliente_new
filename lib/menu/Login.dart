@@ -266,7 +266,7 @@ class _LoginFormState extends State<LoginScreen> {
                 SizedBox(height: 10.h),
                 Text(
                   'Bienvenidos a Manitos Xpress',
-                  style: MyTextStyles.buttonTextStyle3,
+                  style: MyTextStyles.loginWelcomeStyle,
                 ),
                 SizedBox(height: 10.h),
                 Row(
@@ -277,7 +277,7 @@ class _LoginFormState extends State<LoginScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1A819A),
                         shape: CircleBorder(),
-                        padding: EdgeInsets.all(8.w),
+                        padding: EdgeInsets.all(3.w),
                       ),
                       onPressed: isLoadingGoogle ? null : signInWithGoogle,
                       child: isLoadingGoogle
@@ -318,7 +318,7 @@ class _LoginFormState extends State<LoginScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1A819A),
                         shape: CircleBorder(),
-                        padding: EdgeInsets.all(8.w),
+                        padding: EdgeInsets.all(3.w),
                       ),
                       onPressed: isLoadingApple ? null : signInWithApple,
                       child: isLoadingApple
@@ -355,27 +355,9 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 70.h),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Acción de borrar cuenta
-                  },
-                  icon: Icon(Icons.delete, color: Colors.white),
-                  label: Text(
-                    "Eliminar cuenta",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1A819A),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12.h, horizontal: 25.w),
-                  ),
-                ),
-                SizedBox(height: 40.h),
+                
+           
+                SizedBox(height: 10.h),
                 TextButton(
                   onPressed: () {
                     launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');

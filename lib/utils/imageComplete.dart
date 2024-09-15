@@ -88,7 +88,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
             Navigator.of(context).pop(true);  // Cerrar el cuadro de diálogo
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => HomeScreen(initialPageIndex: 2),
+                builder: (context) => HomeScreen(initialPageIndex: 1),
               ),
             );
           });

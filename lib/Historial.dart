@@ -431,7 +431,7 @@ class _HistorialState extends State<Historial>
                       status: filteredRequests[index].status.name,
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: const EdgeInsets.all(8.0),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildScreens() {
     return [
       ServiceScreen(),
-      FavoriteScreen(),
+      
       Historial(
         onTabTapped: () {
           // Actualizar solicitudes de historial aquí
@@ -275,15 +275,11 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.account_circle),
+            icon: const Icon(Icons.app_registration_outlined),
             label: 'SERVICIOS',
             backgroundColor: Color(0xFF1A819A),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.favorite),
-            label: 'FAVORITOS',
-            backgroundColor: Color(0xFF1A819A),
-          ),
+          
           BottomNavigationBarItem(
             icon: const Icon(Icons.library_books_outlined),
             label: 'SOLICITUDES',
