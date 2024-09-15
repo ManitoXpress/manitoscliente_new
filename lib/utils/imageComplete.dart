@@ -59,162 +59,111 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   }
 
   void _confirmCompletion() async {
-    setState(() {
-      _isProcessingPayment = true;
-    });
+  setState(() {
+    _isProcessingPayment = true;
+  });
 
-    try {
-      // Actualizar el estado del servicio a 'pending_confirmation2'
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceId)
-          .update({'status': 'pending_confirmation2'});
+  try {
+    // Actualizar el estado del servicio a 'pending_confirmation2'
+    await FirebaseFirestore.instance
+        .collection('services')
+        .doc(widget.serviceId)
+        .update({'status': 'pending_confirmation2'});
 
-      // Monitorear el cambio de estado del servicio
-      FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceId)
-          .snapshots()
-          .listen((snapshot) {
-        if (snapshot.exists) {
-          final data = snapshot.data() as Map<String, dynamic>;
-          if (data['status'] == 'completed') {
-            setState(() {
-              _paymentCompleted = true;
-              _isProcessingPayment = false;
-            });
-            // Cerrar el diálogo después de mostrar el mensaje de éxito
-            Future.delayed(Duration(seconds: 1), () {
-              Navigator.of(context).pop(true);
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => HomeScreen(initialPageIndex: 2),
-                ),
-              );
-            });
-          }
+    // Monitorear el cambio de estado del servicio
+    FirebaseFirestore.instance
+        .collection('services')
+        .doc(widget.serviceId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        if (data['status'] == 'completed') {
+          setState(() {
+            _paymentCompleted = true;
+            _isProcessingPayment = false;
+          });
+          // Cerrar el diálogo después de que el estado sea 'completed'
+          Future.delayed(Duration(seconds: 1), () {
+            Navigator.of(context).pop(true);  // Cerrar el cuadro de diálogo
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(initialPageIndex: 2),
+              ),
+            );
+          });
         }
-      });
-    } catch (e) {
-      print('Error al confirmar la finalización: $e');
-      setState(() {
-        _isProcessingPayment = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Error al confirmar la finalización. Por favor, intenta de nuevo.')),
-      );
-    }
+      }
+    });
+  } catch (e) {
+    print('Error al confirmar la finalización: $e');
+    setState(() {
+      _isProcessingPayment = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al confirmar la finalización. Por favor, intenta de nuevo.'),
+      ),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        'Confirmar Finalización',
-        style: MyTextStyles.notification,
-      ),
-      content: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _isProcessingPayment
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(child: Text('Esperando la confirmación del pago...')),
-                    SizedBox(height: 16),
-                    Text.rich(
+          title: Text('Confirmación de la Oferta',
+            style: MyTextStyles.notification,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Oferta del servicio:',
+                  style: MyTextStyles.ButtonTextStyle,
+                  textAlign: TextAlign.start,
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Precio ofertado: ',
+                    style: MyTextStyles.formServiceTextStyle,
+                    children: [
                       TextSpan(
-                        text: 'Nombre: ',
+                        text: '${widget.fetchedOfferedPrice ?? 'No ofertado'}',
                         style: MyTextStyles.formServiceTextStyle,
-                        children: [
-                          TextSpan(
-                            text:
-                                '${widget.workerDetails?.displayName ?? 'No disponible'}',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                          TextSpan(
-                            text: '\nCorreo: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                          ),
-                          TextSpan(
-                            text:
-                                '${widget.workerDetails?.email ?? 'No disponible'}',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                          TextSpan(
-                            text: '\nNivel de Experiencia: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                          ),
-                          TextSpan(
-                            text:
-                                '${widget.workerDetails?.expLevel ?? 'No disponible'}',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                          TextSpan(
-                            text: '\nEspecialidad: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                          ),
-                          TextSpan(
-                            text:
-                                '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                        ],
                       ),
-                    ),
-                    SizedBox(height: 16.0),
-                    Text.rich(
-                      TextSpan(
-                        text: '\nPrecio ofertado: ',
-                        style: MyTextStyles.formServiceTextStyle,
-                        children: [
-                          TextSpan(
-                            text: '${widget.fetchedOfferedPrice ?? 'No ofertado'}',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-              : _paymentCompleted
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 60),
-                        SizedBox(height: 16),
-                        Text('¡El pago se realizó con éxito!'),
-                      ],
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_imageUrl != null)
-                          Container(
-                            height: 200,
-                            width: double.infinity,
-                            child: Image.network(
-                              _imageUrl!,
-                              fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                    child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(Icons.error);
-                              },
-                            ),
-                          ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Por favor, culmine el pago acordado con el trabajador para finalizar el trabajo',
-                        ),
-                      ],
-                    ),
-            actions: [
+                    ],
+                  ),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+              SizedBox(height: 16.0),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Se agregarán 3 Bs en gastos informáticos.',
+                  style: MyTextStyles.drawerButtonTextStyle5,
+                  textAlign: TextAlign.start,
+                ),
+              ),
+              SizedBox(height: 16.0),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Nuevo precio total: Bs ${(widget.fetchedOfferedPrice! + 3.0).toStringAsFixed(2)}',
+                  style: MyTextStyles.formServiceTextStyle,
+                  textAlign: TextAlign.start,
+                ),
+              ),
+            ],
+
+          ),
+          actions: [
               TextButton.icon(
                 onPressed: () => Navigator.of(context).pop(false),
                 icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
