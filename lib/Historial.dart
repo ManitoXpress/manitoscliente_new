@@ -425,8 +425,10 @@ class _HistorialState extends State<Historial>
 
                 return Container(
                   margin: EdgeInsets.only(bottom: screenHeight * 0.02),
+                  width: screenWidth, // Asegura que el contenedor use todo el ancho disponible
+                  height: screenHeight * 0.24, // Altura del contenedor
                   child: CustomPaint(
-                    size: Size(screenWidth, screenHeight * 0.05),
+                    size: Size(screenWidth, screenHeight * 0.35),
                     painter: CustomTicketShapePainter(
                       status: filteredRequests[index].status.name,
                     ),
@@ -435,11 +437,12 @@ class _HistorialState extends State<Historial>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Contenido textual
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(height: 15),
+                                SizedBox(height: 30),
                                 Text(
                                   'Categoría: ',
                                   style: MyTextStyles.drawerButtonTextStyle,
@@ -469,17 +472,24 @@ class _HistorialState extends State<Historial>
                               ],
                             ),
                           ),
-                          SizedBox(width: 40),
-                          Image.asset(
-                            'assets/animations/manito.png',
-                            width: 84,
-                            height: 84,
+                          // Espacio entre texto e imagen
+                          SizedBox(width: 10),
+                          // Imagen ajustada dentro del Row
+                          Align(
+                            alignment: Alignment.center, // Alinea la imagen verticalmente
+                            child: Image.asset(
+                              'assets/animations/manito.png',
+                              width: 64, // Ajusta el tamaño de la imagen
+                              height: 64, // Ajusta el tamaño de la imagen
+                              fit: BoxFit.contain, // Asegura que la imagen no se salga de su contenedor
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
                 );
+
               },
             ),
           );

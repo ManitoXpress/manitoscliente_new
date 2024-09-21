@@ -236,7 +236,7 @@ class Status {
 class WorkerDetails {
   final String id;  // Agregado el campo id
   final List<String> certificateImagePaths;
-  final String criminalRecordImagePath;
+  final String imagePath;
   final String displayName;
   final String email;
   final List<String> expLevel;
@@ -245,7 +245,7 @@ class WorkerDetails {
   WorkerDetails({
     required this.id,  // Asegúrate de inicializar el id
     required this.certificateImagePaths,
-    required this.criminalRecordImagePath,
+    required this.imagePath,
     required this.displayName,
     required this.email,
     required this.expLevel,
@@ -256,7 +256,7 @@ class WorkerDetails {
     return WorkerDetails(
       id: data['id'] ?? '',  // Mapea el id desde el documento
       certificateImagePaths: List<String>.from(data['certificateImagePaths'] ?? []),
-      criminalRecordImagePath: data['criminalRecordImagePath'] ?? '',
+      imagePath: data['imagePath'] ?? '',
       displayName: data['displayName'] ?? '',
       email: data['email'] ?? '',
       expLevel: List<String>.from(data['expLevel'] ?? []),

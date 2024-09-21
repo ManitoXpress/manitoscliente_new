@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -76,7 +78,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _currentStatus = widget.initialStatus;
     _initializeControllers();
     _initializeServiceStream();
-    _serviceDataFetcher.fetchOfferedPrice(widget.serviceRequest.id).then((price) {
+    _serviceDataFetcher
+        .fetchOfferedPrice(widget.serviceRequest.id)
+        .then((price) {
       setState(() {
         _fetchedOfferedPrice = price;
         _priceController.text = price != null ? price.toString() : '';
@@ -92,7 +96,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       });
     }
   }
-
 
   void _initializeControllers() {
     _cancelReasonController = TextEditingController();
@@ -122,7 +125,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _initialPosition = LatLng(latitude, longitude);
   }
 
-
   // Abre el mapa en pantalla completa
   void _openFullMap(BuildContext context) {
     Navigator.of(context).push(
@@ -132,28 +134,28 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     );
   }
 
- // Función para mostrar el diálogo de confirmación
-void showConfirmCompletionDialog(BuildContext context, String serviceId) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return ServiceCompletionDialog(
-        serviceId: serviceId,
-        workerDetails: _workerDetails,
-        fetchedOfferedPrice: _fetchedOfferedPrice,  // Aquí pasas el precio ofertado
-      );
-
-    },
-  ).then((confirmed) {
-    if (confirmed == true) {
-      // El trabajo ha sido confirmado como completado
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Trabajo confirmado como completado')),
-      );
-      // Aquí puedes agregar cualquier lógica adicional después de la confirmación
-    }
-  });
-}
+  // Función para mostrar el diálogo de confirmación
+  void showConfirmCompletionDialog(BuildContext context, String serviceId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ServiceCompletionDialog(
+          serviceId: serviceId,
+          workerDetails: _workerDetails,
+          fetchedOfferedPrice:
+              _fetchedOfferedPrice, // Aquí pasas el precio ofertado
+        );
+      },
+    ).then((confirmed) {
+      if (confirmed == true) {
+        // El trabajo ha sido confirmado como completado
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Trabajo confirmado como completado')),
+        );
+        // Aquí puedes agregar cualquier lógica adicional después de la confirmación
+      }
+    });
+  }
 
   // Rechazo de la finalización del trabajo por el cliente
   void _rejectCompletion() async {
@@ -228,49 +230,50 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
   }
 
   void _showDialog(
-  BuildContext context,
-  String title,
-  String content,
-  VoidCallback onConfirm,
-  String confirmText,
-) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          title,
-          style: MyTextStyles.drawerButtonTextStyle4, // Aplicar el estilo al título
-        ),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancelar'),
+    BuildContext context,
+    String title,
+    String content,
+    VoidCallback onConfirm,
+    String confirmText,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            title,
+            style: MyTextStyles
+                .drawerButtonTextStyle4, // Aplicar el estilo al título
           ),
-          ElevatedButton(
-            onPressed: onConfirm,
-            child: Text(
-              confirmText,
-              style: MyTextStyles.ButtonTextStyle, // Aplicar un estilo personalizado al botón si es necesario
+          content: Text(content),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancelar'),
             ),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              backgroundColor: Color(0xFF1A819A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF1A819A), // Color del borde del botón
+            ElevatedButton(
+              onPressed: onConfirm,
+              child: Text(
+                confirmText,
+                style: MyTextStyles
+                    .ButtonTextStyle, // Aplicar un estilo personalizado al botón si es necesario
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: Color(0xFF1A819A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF1A819A), // Color del borde del botón
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _fetchOfferedPrice() async {
     try {
@@ -304,144 +307,145 @@ void showConfirmCompletionDialog(BuildContext context, String serviceId) {
   }
 
   @override
-Widget build(BuildContext context) {
-  return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-    stream: _serviceRequestStream,
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return Center(child: Text('Error al cargar los datos del servicio'));
-      }
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _serviceRequestStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error al cargar los datos del servicio'));
+        }
 
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return Center(child: CircularProgressIndicator());
-      }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-      final serviceData = snapshot.data?.data();
-      if (serviceData == null) {
-        return Center(child: Text('No se encontraron datos del servicio'));
-      }
+        final serviceData = snapshot.data?.data();
+        if (serviceData == null) {
+          return Center(child: Text('No se encontraron datos del servicio'));
+        }
 
-      _currentStatus = serviceData['status'] ?? 'available';
-      List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
-      double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
-      double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
-      _initialPosition = LatLng(latitude, longitude);
+        _currentStatus = serviceData['status'] ?? 'available';
+     
+        List<String> imageFiles =
+            List<String>.from(serviceData['images'] ?? []);
+        double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+        double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+        _initialPosition = LatLng(latitude, longitude);
+        print('Current Status: $_currentStatus');
+        print('Service Data: $serviceData');
+        print('Worker Details: ${widget.workerDetails}');
+        if (widget.workerDetails != null) {
+          print('Worker Image Path: ${widget.workerDetails!.imagePath}');
+        }
 
-      return Scaffold(
-        appBar: AppBar(
-          iconTheme: IconThemeData(
-            color: Colors.white),
-          title: Text(
-            'Detalles del Servicio',
-            style: MyTextStyles.ButtonTextStyle,
-          ),
-        ),
-        body: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Container(
-            padding: EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              border: Border.all(color: Color(0xFF1A819A), width: 2.0),
-              borderRadius: BorderRadius.circular(12.0),
+        return Scaffold(
+            appBar: AppBar(
+              iconTheme: IconThemeData(color: Colors.white),
+              title: Text('Detalles del Servicio',
+                  style: MyTextStyles.ButtonTextStyle),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                 if (_currentStatus == 'avaliable') ...[
-                Text(
-                  'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
-                  style: MyTextStyles.formServiceTextStyle,
+            body: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Container(
+                padding: EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(0xFF1A819A), width: 2.0),
+                  borderRadius: BorderRadius.circular(12.0),
                 ),
-                Image.asset(
-                             'assets/animations/manito.png',
-                            width: 84,
-                            height: 84,
-                        ),
-                 ],
-                
-                SizedBox(height: 16.0),
-
-                // Mostrar detalles del trabajador si el estado es 'offer'
-                if ((_currentStatus == 'offer' || _currentStatus == 'in_progress') && widget.workerDetails != null) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center, // Centra el contenido horizontalmente
-                      children: [
-                        Center( 
-                          child: Text(
-                            'Trabajador', // Título centrado
-                            style: MyTextStyles.formServiceTextStyle.copyWith(
-                              fontSize: 24.0, // Tamaño de letra para el título
-                              fontWeight: FontWeight.bold, // Negrita para el título
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_currentStatus == 'available') ...[
+                      Text(
+                          'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
+                          style: MyTextStyles.formServiceTextStyle),
+                      Image.asset('assets/animations/manito.png',
+                          width: 84, height: 84),
+                    ],
+                    SizedBox(height: 16.0),
+                    if ((_currentStatus == 'offer' ||
+                            _currentStatus == 'in_progress') &&
+                        widget.workerDetails != null) ...[
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Center(
+                            child: Text(
+                              'Trabajador',
+                              style: MyTextStyles.formServiceTextStyle.copyWith(
+                                  fontSize: 24.0, fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 8.0), // Espacio entre el título y la imagen
-                        widget.workerDetails?.certificateImagePaths != null && widget.workerDetails!.certificateImagePaths.isNotEmpty
-                          ? Image.network(
-                              widget.workerDetails!.certificateImagePaths[0], // Mostrando la primera imagen desde la URL
-                              height: 150.0, // Tamaño de la imagen
-                              width: 150.0,
-                              fit: BoxFit.cover,
-                            )
-                          : Text('Imagen no disponible', style: MyTextStyles.inputTextStyle), // Texto alternativo si no hay imagen
-                        SizedBox(height: 16.0),
-                        Text.rich(
-                          TextSpan(
-                            text: 'Nombre: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                            children: [
-                              TextSpan(
-                                text: '${widget.workerDetails?.displayName ?? 'No disponible'}',
-                                style: MyTextStyles.inputTextStyle,
-                              ),
-                              TextSpan(
-                                text: '\nCorreo: ',
-                                style: MyTextStyles.formServiceTextStyle,
-                              ),
-                              TextSpan(
-                                text: '${widget.workerDetails?.email ?? 'No disponible'}',
-                                style: MyTextStyles.inputTextStyle,
-                              ),
-                              TextSpan(
-                                text: '\nNivel de Experiencia: ',
-                                style: MyTextStyles.formServiceTextStyle,
-                              ),
-                              TextSpan(
-                                text: '${widget.workerDetails?.expLevel ?? 'No disponible'}',
-                                style: MyTextStyles.inputTextStyle,
-                              ),
-                              TextSpan(
-                                text: '\nEspecialidad: ',
-                                style: MyTextStyles.formServiceTextStyle,
-                              ),
-                              TextSpan(
-                                text: '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
-                                style: MyTextStyles.inputTextStyle,
-                              ),
-                            ],
+                          SizedBox(height: 8.0),
+                          widget.workerDetails!.imagePath.isNotEmpty
+                              ? Image.network(
+                                  widget.workerDetails!.imagePath,
+                                  height: 150.0,
+                                  width: 150.0,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 150,
+                                  cacheHeight: 150,
+                                )
+                              : Text('Imagen no disponible',
+                                  style: MyTextStyles.inputTextStyle),
+                          SizedBox(height: 16.0),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Nombre: ',
+                              style: MyTextStyles.formServiceTextStyle,
+                              children: [
+                                TextSpan(
+                                  text:
+                                      '${widget.workerDetails?.displayName ?? 'No disponible'}',
+                                  style: MyTextStyles.inputTextStyle,
+                                ),
+                                TextSpan(
+                                  text: '\nCorreo: ',
+                                  style: MyTextStyles.formServiceTextStyle,
+                                ),
+                                TextSpan(
+                                  text:
+                                      '${widget.workerDetails?.email ?? 'No disponible'}',
+                                  style: MyTextStyles.inputTextStyle,
+                                ),
+                                TextSpan(
+                                  text: '\nNivel de Experiencia: ',
+                                  style: MyTextStyles.formServiceTextStyle,
+                                ),
+                                TextSpan(
+                                  text:
+                                      '${widget.workerDetails?.expLevel ?? 'No disponible'}',
+                                  style: MyTextStyles.inputTextStyle,
+                                ),
+                                TextSpan(
+                                  text: '\nEspecialidad: ',
+                                  style: MyTextStyles.formServiceTextStyle,
+                                ),
+                                TextSpan(
+                                  text:
+                                      '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
+                                  style: MyTextStyles.inputTextStyle,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 16.0),
-                        Text.rich(
-                          TextSpan(
-                            text: 'Precio ofertado: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                            children: [
-                              TextSpan(
-                                text: '${_fetchedOfferedPrice ?? 'No ofertado'}',
-                                style: MyTextStyles.inputTextStyle,
-                              ),
-                            ],
+                          SizedBox(height: 16.0),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Precio ofertado: ',
+                              style: MyTextStyles.formServiceTextStyle,
+                              children: [
+                                TextSpan(
+                                  text:
+                                      '${_fetchedOfferedPrice ?? 'No ofertado'}',
+                                  style: MyTextStyles.inputTextStyle,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-
-
-
-
+                        ],
+                      ),
                     ] else if (_currentStatus != 'offer') ...[
-                      // Si el estado no es 'offer', mostrar datos del servicio
                       Text.rich(
                         TextSpan(
                           text: 'Descripción: ',
@@ -455,10 +459,8 @@ Widget build(BuildContext context) {
                         ),
                       ),
                       SizedBox(height: 16.0),
-                      Text(
-                        'Ubicación:',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
+                      Text('Ubicación:',
+                          style: MyTextStyles.formServiceTextStyle),
                       GestureDetector(
                         onTap: () => _openFullMap(context),
                         child: Container(
@@ -490,10 +492,8 @@ Widget build(BuildContext context) {
                         ),
                       ),
                       SizedBox(height: 16.0),
-                      Text(
-                        'Imágenes:',
-                        style: MyTextStyles.formServiceTextStyle,
-                      ),
+                      Text('Imágenes:',
+                          style: MyTextStyles.formServiceTextStyle),
                       Expanded(
                         child: ListView.builder(
                           itemCount: imageFiles.length,
@@ -516,12 +516,11 @@ Widget build(BuildContext context) {
                         style: MyTextStyles.formServiceTextStyle,
                       ),
                     ],
-
-                      if (_currentStatus == 'offer') ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
+                    if (_currentStatus == 'offer') ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
                             onPressed: () => _showDialog(
                               context,
                               'Aceptar Propuesta',
@@ -529,7 +528,8 @@ Widget build(BuildContext context) {
                               _acceptProposal,
                               'Aceptar',
                             ),
-                            icon: Icon(Icons.architecture, color: Color(0xFF1A819A)),
+                            icon: Icon(Icons.architecture,
+                                color: Color(0xFF1A819A)),
                             label: Text(
                               "Aceptar Propuesta",
                               style: GoogleFonts.karla(
@@ -539,7 +539,8 @@ Widget build(BuildContext context) {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10.0),
@@ -549,154 +550,164 @@ Widget build(BuildContext context) {
                               ),
                             ),
                           ),
-
-
-
-                            SizedBox(width: 16.0),
-                            ElevatedButton.icon(
+                          SizedBox(width: 16.0),
+                          ElevatedButton.icon(
                             onPressed: () => _showDialog(
                               context,
                               'Cancelar Trabajo',
-                                '¿Estás seguro de que no quieres participar en este trabajo?',
-                                _blockUserParticipation,
-                                'Confirmar No Participar',
+                              '¿Estás seguro de que no quieres participar en este trabajo?',
+                              _blockUserParticipation,
+                              'Confirmar No Participar',
                             ),
-                            icon: Icon(Icons.dangerous, color: Color(0xFF1A819A)),
+                            icon:
+                                Icon(Icons.dangerous, color: Color(0xFF1A819A)),
                             label: Text(
                               "Cancelar Propuesta",
                               style: GoogleFonts.karla(
-                                color: Color(0xFF1A819A),// Cambié el color del texto
+                                color: Color(
+                                    0xFF1A819A), // Cambié el color del texto
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Ajuste del padding
-                              backgroundColor: Colors.white, // Fondo blanco del botón
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8), // Ajuste del padding
+                              backgroundColor:
+                                  Colors.white, // Fondo blanco del botón
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0), // Bordes redondeados
+                                borderRadius: BorderRadius.circular(
+                                    10.0), // Bordes redondeados
                                 side: BorderSide(
-                                  color: Color(0xFF1A819A),// Borde con el color especificado
+                                  color: Color(
+                                      0xFF1A819A), // Borde con el color especificado
                                 ),
                               ),
                             ),
-                          ),
-                          ],
-                        ),
-                      ] else if (_currentStatus == 'in_progress' || _currentStatus == 'available') ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () => _showDialog(
-                                context,
-                                'Cancelar Trabajo',
-                                '¿Estás seguro de que no quieres participar en este trabajo?',
-                                _blockUserParticipation,
-                                'Confirmar No Participar',
-                              ),
-                              icon: Icon(Icons.dangerous, color: Colors.white),
-                              label: Text(
-                                "Cancelar Trabajo",
-                                style: GoogleFonts.karla(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ] else if (_currentStatus == 'pending_confirmation') ...[
-                  SizedBox(height: 2.0),
-                  if (widget.workerDetails != null) ...[
-                    Text.rich(
-                      TextSpan(
-                        text: 'Detalles del trabajador:\n',
-                        style: MyTextStyles.formServiceTextStyle,
-                        children: [
-                          TextSpan(
-                            text: 'Nombre: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                          ),
-                          TextSpan(
-                            text: '${widget.workerDetails?.displayName ?? 'No disponible'}\n',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                          TextSpan(
-                            text: 'Especialidad: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                          ),
-                          TextSpan(
-                            text: '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}\n',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                          TextSpan(
-                            text: 'Nivel de Experiencia: ',
-                            style: MyTextStyles.formServiceTextStyle,
-                          ),
-                          TextSpan(
-                            text: '${widget.workerDetails?.expLevel ?? 'No disponible'}',
-                            style: MyTextStyles.inputTextStyle,
                           ),
                         ],
                       ),
-                    ),
-                  ] else ...[
-                    Text(
-                      'Detalles del trabajador no disponibles',
-                      style: MyTextStyles.formServiceTextStyle,
-                    ),
-                  ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () => showConfirmCompletionDialog(context, widget.serviceRequest.id),
-                        icon: Icon(Icons.check_circle, color: Colors.white),
-                        label: Text(
-                          "Confirmar",
-                          style: GoogleFonts.karla(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                    ] else if (_currentStatus == 'in_progress' ||
+                        _currentStatus == 'available') ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () => _showDialog(
+                              context,
+                              'Cancelar Trabajo',
+                              '¿Estás seguro de que no quieres participar en este trabajo?',
+                              _blockUserParticipation,
+                              'Confirmar No Participar',
+                            ),
+                            icon: Icon(Icons.dangerous, color: Colors.white),
+                            label: Text(
+                              "Cancelar Trabajo",
+                              style: GoogleFonts.karla(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 10),
+                            ),
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1A819A),
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                        ),
+                        ],
                       ),
-                      SizedBox(width: 16.0),
-                      ElevatedButton.icon(
-                        onPressed: () => _showRejectCompletionDialog(context),
-                        icon: Icon(Icons.cancel, color: Colors.white),
-                        label: Text(
-                          "Rechazar",
-                          style: GoogleFonts.karla(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                    ] else if (_currentStatus == 'pending_confirmation') ...[
+                      SizedBox(height: 2.0),
+                      if (widget.workerDetails != null) ...[
+                        Text.rich(
+                          TextSpan(
+                            text: 'Detalles del trabajador:\n',
+                            style: MyTextStyles.formServiceTextStyle,
+                            children: [
+                              TextSpan(
+                                text: 'Nombre: ',
+                                style: MyTextStyles.formServiceTextStyle,
+                              ),
+                              TextSpan(
+                                text:
+                                    '${widget.workerDetails?.displayName ?? 'No disponible'}\n',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                              TextSpan(
+                                text: 'Especialidad: ',
+                                style: MyTextStyles.formServiceTextStyle,
+                              ),
+                              TextSpan(
+                                text:
+                                    '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}\n',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                              TextSpan(
+                                text: 'Nivel de Experiencia: ',
+                                style: MyTextStyles.formServiceTextStyle,
+                              ),
+                              TextSpan(
+                                text:
+                                    '${widget.workerDetails?.expLevel ?? 'No disponible'}',
+                                style: MyTextStyles.inputTextStyle,
+                              ),
+                            ],
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1A819A),
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                      ] else ...[
+                        Text(
+                          'Detalles del trabajador no disponibles',
+                          style: MyTextStyles.formServiceTextStyle,
                         ),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () => showConfirmCompletionDialog(
+                                context, widget.serviceRequest.id),
+                            icon: Icon(Icons.check_circle, color: Colors.white),
+                            label: Text(
+                              "Confirmar",
+                              style: GoogleFonts.karla(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF1A819A),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 10),
+                            ),
+                          ),
+                          SizedBox(width: 16.0),
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                _showRejectCompletionDialog(context),
+                            icon: Icon(Icons.cancel, color: Colors.white),
+                            label: Text(
+                              "Rechazar",
+                              style: GoogleFonts.karla(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF1A819A),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 10),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-                      
-                       
-                        
-                      ],
-                  ),
+                  ],
                 ),
+              ),
             ));
       },
     );

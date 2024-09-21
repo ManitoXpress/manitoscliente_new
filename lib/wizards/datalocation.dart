@@ -42,6 +42,8 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
   Uint8List? mapSnapshot;
   TextEditingController additionalInfoController = TextEditingController();
   Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
+  // Santa Cruz de la Sierra coordinates
+  final LatLng santaCruzLocation = LatLng(-17.7833, -63.1833);
 
   @override
   void initState() {
@@ -230,9 +232,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                     child: GoogleMap(
                       onMapCreated: (controller) {
                         _onMapCreated(controller);
-                        _handleTap(
-                          LatLng(position.latitude, position.longitude),
-                        );
+                        _handleTap(santaCruzLocation);
                       },
                       onTap: (LatLng loc) {
                         setStateDialog(() {
@@ -240,8 +240,8 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                         });
                       },
                       initialCameraPosition: CameraPosition(
-                        target: LatLng(position.latitude, position.longitude),
-                        zoom: 14.0,
+                        target: santaCruzLocation,
+                        zoom: 12.0,
                       ),
                       markers: markers,
                     ),
@@ -254,10 +254,11 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16), // Ajusta el tamaño del botón
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
+                            borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
                           ),
-                          backgroundColor: Color(0xFF84090D),
+                          backgroundColor: Color(0xFF1A819A),// Color personalizado
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -284,11 +285,12 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
+                            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16), // Ajusta el tamaño del botón
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
+                            ),
+                            backgroundColor: Color(0xFF1A819A),// Color personalizado
                           ),
-                          backgroundColor: Color(0xFF84090D),
-                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(

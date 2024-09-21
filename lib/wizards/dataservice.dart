@@ -153,24 +153,24 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           widget.selectedServiceTitle, // Utiliza el título proporcionado
           style: MyTextStyles.formServiceTextStyle,
         ),
-        const SizedBox(height: 8.0),
+        const SizedBox(height: 2.0),
 
         // Mostrar la imagen deseada
         AspectRatio(
-          aspectRatio: 16 / 12,
+          aspectRatio: 4 / 3,
           child: Image.network(
             'https://i.imgur.com/1qPhnSi.png',
             fit: BoxFit.cover,
           ),
         ),
-        const SizedBox(height: 8.0),
+        const SizedBox(height: 2.0),
 
         // Título para detalles del servicio
         Text(
           "Escribe tu problema",
           style: MyTextStyles.formServiceTextStyle,
         ),
-        const SizedBox(height: 8.0),
+        const SizedBox(height: 2.0),
 
         // Cuadro de texto para ingresar detalles del servicio
         TextFormField(
@@ -195,14 +195,14 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             widget.serviceRequest.description = value;
           },
         ),
-        const SizedBox(height: 16.0),
+        const SizedBox(height: 4.0),
 
         // Título para cargar imagen
         Text(
           "Carga una foto de tu problema",
           style: MyTextStyles.formServiceTextStyle,
         ),
-        const SizedBox(height: 8.0),
+        const SizedBox(height: 4.0),
 
         GestureDetector(
           onTap: () => _pickImage(),
@@ -257,7 +257,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             ),
           ),
         ),
-        const SizedBox(height: 16.0),
+        const SizedBox(height: 4.0),
       ],
     );
   }

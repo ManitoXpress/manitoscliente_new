@@ -42,8 +42,8 @@ class CustomTicketShapePainter extends CustomPainter {
     canvas.drawPath(path, borderPaint);
 
     // Dibuja el área del estado con esquinas redondeadas
-    final double statusBoxSize = 50.0; // Tamaño del cuadrado del estado
-    final double statusBoxPadding = 20.0; // Espacio entre el cuadrado y el borde del ticket
+    final double statusBoxSize = 40.0; // Tamaño del cuadrado del estado
+    final double statusBoxPadding = 45.0; // Espacio entre el cuadrado y el borde del ticket
 
     final Paint statusBoxPaint = Paint()
       ..color = Colors.yellow // Color de fondo del cuadrado del estado
@@ -53,8 +53,8 @@ class CustomTicketShapePainter extends CustomPainter {
 
     // Mover 2 puntos a la izquierda modificando la posición de "left"
     final statusBoxRect = Rect.fromLTWH(
-      size.width - statusBoxSize - statusBoxPadding - 12, // Mueve 2 puntos a la izquierda
-      size.height - statusBoxPadding - titleHeight - 8, // Ajusta para estar justo debajo de la imagen
+      size.width - statusBoxSize - statusBoxPadding + 20, // Mueve 2 puntos a la izquierda
+      size.height - statusBoxPadding - titleHeight + 5, // Ajusta para estar justo debajo de la imagen
       statusBoxSize,
       statusBoxSize,
     );
@@ -69,10 +69,13 @@ class CustomTicketShapePainter extends CustomPainter {
     );
 
     canvas.drawRRect(statusBoxRRect, statusBoxPaint);
+    
 
     // Dibuja el texto de Status en el cuadrado
     final TextPainter statusPainter = TextPainter(
+      
       text: TextSpan(
+        
         text: status,
         style: TextStyle(
           color: Colors.black,
