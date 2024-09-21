@@ -430,7 +430,7 @@ class _HistorialState extends State<Historial>
                   child: CustomPaint(
                     size: Size(screenWidth, screenHeight * 0.35),
                     painter: CustomTicketShapePainter(
-                      status: filteredRequests[index].status.name,
+                      status: filteredRequests[index].status,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),

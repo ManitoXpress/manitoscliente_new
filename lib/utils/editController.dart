@@ -105,7 +105,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           TextFormField(
             controller: idCardNumberController,
             decoration: InputDecoration(
-              labelText: 'Número de Carné',
+              labelText: 'Número de Carnet',
               labelStyle: MyTextStyles.formServiceTextStyle,
             ),
             style: MyTextStyles.formServiceTextStyle,

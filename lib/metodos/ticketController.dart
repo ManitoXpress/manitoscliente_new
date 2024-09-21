@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:math' as math;
+
+import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 class CustomTicketShapePainter extends CustomPainter {
-  final String status;
+  final Status status; // Suponemos que status es un objeto de tipo `Status` que tiene un campo `id`
 
   CustomTicketShapePainter({required this.status});
+
+  // Método para obtener el color según el id del estado
+  Color _getStatusColor(String id) {
+    print('Estado recibido (id): "$id"'); // Muestra el id con comillas para depurar
+    switch (id.trim().toLowerCase()) { // Usamos el id en lugar del status completo
+      case 'available':
+        return Colors.green;
+      case 'offer':
+        return Colors.yellow;
+      case 'in_progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.black;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey; // Si no coincide con ningún id conocido
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -46,19 +67,18 @@ class CustomTicketShapePainter extends CustomPainter {
     final double statusBoxPadding = 45.0; // Espacio entre el cuadrado y el borde del ticket
 
     final Paint statusBoxPaint = Paint()
-      ..color = Colors.yellow // Color de fondo del cuadrado del estado
+      ..color = _getStatusColor(status.id) // Color según el id del estado
       ..style = PaintingStyle.fill;
 
     final double statusBoxRadius = 10; // Radio de las esquinas redondeadas del cuadrado del estado
 
     // Mover 2 puntos a la izquierda modificando la posición de "left"
     final statusBoxRect = Rect.fromLTWH(
-      size.width - statusBoxSize - statusBoxPadding + 20, // Mueve 2 puntos a la izquierda
-      size.height - statusBoxPadding - titleHeight + 5, // Ajusta para estar justo debajo de la imagen
+      size.width - statusBoxSize - statusBoxPadding + 27, // Mueve 2 puntos a la izquierda
+      size.height - statusBoxPadding - titleHeight - 90, // Ajusta para estar justo debajo de la imagen
       statusBoxSize,
       statusBoxSize,
     );
-
 
     final RRect statusBoxRRect = RRect.fromRectAndCorners(
       statusBoxRect,
@@ -68,34 +88,10 @@ class CustomTicketShapePainter extends CustomPainter {
       bottomRight: Radius.circular(statusBoxRadius),
     );
 
+    // Dibuja el cuadro de estado de color
     canvas.drawRRect(statusBoxRRect, statusBoxPaint);
-    
 
-    // Dibuja el texto de Status en el cuadrado
-    final TextPainter statusPainter = TextPainter(
-      
-      text: TextSpan(
-        
-        text: status,
-        style: TextStyle(
-          color: Colors.black,
-          fontFamily: 'Xpress Heavy',
-          fontWeight: FontWeight.normal,
-          fontStyle: FontStyle.italic,
-          fontSize: 10.0, // Tamaño de fuente personalizable
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-
-    statusPainter.layout(minWidth: 0, maxWidth: statusBoxSize);
-
-    final statusOffset = Offset(
-      statusBoxRect.left + (statusBoxSize - statusPainter.width) / 2,
-      statusBoxRect.top + (statusBoxSize - statusPainter.height) / 2,
-    );
-
-    statusPainter.paint(canvas, statusOffset);
+    // Aquí eliminamos el código que dibuja el texto en el cuadrado.
   }
 
   @override
