@@ -254,7 +254,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16), // Ajusta el tamaño del botón
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8), // Ajusta el tamaño del botón
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
                           ),
@@ -285,7 +285,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16), // Ajusta el tamaño del botón
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8), // Ajusta el tamaño del botón
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
                             ),
@@ -296,7 +296,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                           child: Text(
                             'Aceptar',
                             style: MyTextStyles.buttonTextStyle.copyWith(
-                              fontSize: 12,
+                              fontSize: 10,
                             ),
                           ),
                         ),
@@ -342,7 +342,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                 GestureDetector(
                   onTap: _showMapScreen,
                   child: Container(
-                    height: 200,
+                    height: 100,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8.0),
                       color: Colors.grey[200],
@@ -371,30 +371,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
             ),
           ),
         ),
-        Padding(
-          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '¿Quieres marcar esta ubicación como favorita?',
-              style: MyTextStyles.formServiceTextStyle,
-              textAlign: TextAlign.left,
-            ),
-          ),
-        ),
-        SwitchListTile(
-          title: Text(
-            'Marcar como favorita',
-            style: MyTextStyles.formServiceTextStyle3,
-          ),
-          value: isFavorite,
-          onChanged: (bool value) {
-            setState(() {
-              isFavorite = value;
-              widget.onFavoritesSelected(value);
-            });
-          },
-        ),
+        SizedBox(height: 10),
         Padding(
           padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
           child: Align(
@@ -408,7 +385,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
         ),
         TextFormField(
           
-          maxLines: 2,
+          maxLines: 1,
           decoration: InputDecoration(
             labelText: 'Detalles del servicio',
             border: OutlineInputBorder(
@@ -428,6 +405,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
             
           },
         ),
+        SizedBox(height: 10),
       ],
     );
   }

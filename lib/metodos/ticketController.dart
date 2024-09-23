@@ -3,7 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'dart:math' as math;
 
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
-class CustomTicketShapePainter extends CustomPainter {
+class CustomTicketShapePainter extends CustomPainter { 
   final Status status; // Suponemos que status es un objeto de tipo `Status` que tiene un campo `id`
 
   CustomTicketShapePainter({required this.status});
@@ -29,13 +29,23 @@ class CustomTicketShapePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double titleHeight = 30.0; // Altura de la línea del título
+    final double titleHeight = 28.0; // Altura de la línea del título
 
     final path = Path();
 
-    // Dibuja el fondo del ticket con bordes azules y fondo blanco
-    final backgroundPaint = Paint()
-      ..color = Colors.white // Fondo blanco
+    // Añadir sombra para efecto 3D
+    canvas.drawShadow(path, Colors.black.withOpacity(0.8), 2.0, true);
+
+    // Dibuja el fondo del ticket con un degradado
+    final Rect rect = Rect.fromLTWH(0, titleHeight, size.width, size.height - titleHeight);
+    final Gradient gradient = LinearGradient(
+      colors: [Colors.white, Colors.grey.shade300], // Degradado de blanco a gris claro
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    
+    final Paint backgroundPaint = Paint()
+      ..shader = gradient.createShader(rect)
       ..style = PaintingStyle.fill;
 
     final double borderRadius = 20; // Radio de las esquinas redondeadas
@@ -43,7 +53,7 @@ class CustomTicketShapePainter extends CustomPainter {
     // Agrega el fondo del ticket con esquinas redondeadas
     path.addRRect(
       RRect.fromRectAndCorners(
-        Rect.fromLTWH(0, titleHeight, size.width, size.height - titleHeight), // Ajusta la altura para excluir la línea del título
+        rect,
         topLeft: Radius.circular(borderRadius),
         topRight: Radius.circular(borderRadius),
         bottomLeft: Radius.circular(borderRadius),
@@ -51,14 +61,14 @@ class CustomTicketShapePainter extends CustomPainter {
       ),
     );
 
-    // Dibuja el fondo blanco del ticket
+    // Dibuja el fondo con el degradado
     canvas.drawPath(path, backgroundPaint);
 
     // Dibuja los bordes azules del ticket
     final borderPaint = Paint()
       ..color = Color(0xFF32AFCC) // Color del borde azul
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0; // Grosor del borde
+      ..strokeWidth = 3.0; // Grosor del borde
 
     canvas.drawPath(path, borderPaint);
 
@@ -90,8 +100,6 @@ class CustomTicketShapePainter extends CustomPainter {
 
     // Dibuja el cuadro de estado de color
     canvas.drawRRect(statusBoxRRect, statusBoxPaint);
-
-    // Aquí eliminamos el código que dibuja el texto en el cuadrado.
   }
 
   @override

@@ -270,102 +270,141 @@ class _HistorialState extends State<Historial>
 
   
 
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+@override
+Widget build(BuildContext context) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      appBar: AppBar(
+  return Scaffold(
+    appBar: AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: Color(0xFF1A819A),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              'Historial',
-              style: MyTextStyles.buttonTextStyle3,
-            ),
-          ),
-          IconButton(
-            icon: Icon(Icons.refresh, color: Color.fromRGBO(26, 129, 154, 1), size: 24.0),
-            onPressed: _refreshHistorial,
-          ),
-        ],
+      title: Text(
+        'Historial',
+        style: MyTextStyles.buttonTextStyle3,
       ),
       bottom: PreferredSize(
-        preferredSize: Size.fromHeight(10.0),
+        preferredSize: Size.fromHeight(50.0),
         child: Container(
-          color: Color(0xFF1A819A),
+          color: Colors.white,
           child: TabBar(
             controller: _tabController,
-            isScrollable: true,
+            labelPadding: EdgeInsets.symmetric(horizontal: 8.0), // Ajuste de espacio entre tabs
             labelStyle: MyTextStyles.tabTextStyle,
             unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
+            indicator: UnderlineTabIndicator( // Línea fina como indicador
+              borderSide: BorderSide(width: 3.0, color: Color(0xFF1A819A)),
+              insets: EdgeInsets.symmetric(horizontal: 20.0), // Añade espacio en los extremos
+            ),
             tabs: [
-              Tab(text: 'Disponibles'),
               Tab(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Icon(Icons.task_alt, color: Colors.black),
+                ),
+                text: 'Disponibles',
+              ),
+              Tab(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Icon(Icons.local_offer, color: Colors.black),
+                ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Text('Ofertados'),
+                    Text('Ofertados'),
                     if (offerServiceCount > 0)
                       Positioned(
-                        right: 7,
-                        top: 4,
+                        right: 0,
+                        top: 0,
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          constraints: BoxConstraints(
+                            minWidth: 20,
+                            minHeight: 20,
+                          ),
                           child: Text(
                             offerServiceCount.toString(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
                   ],
                 ),
               ),
-              Tab(text: 'Asignados'),
-              Tab(text: 'Completados'),
-              Tab(text: 'Cancelados'),
+              Tab(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Icon(Icons.assignment_ind, color: Colors.black),
+                ),
+                text: 'Asignados',
+              ),
+              Tab(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Icon(Icons.check_circle, color: Colors.black),
+                ),
+                text: 'Completados',
+              ),
+              Tab(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Icon(Icons.cancel, color: Colors.black),
+                ),
+                text: 'Cancelados',
+              ),
             ],
           ),
         ),
       ),
     ),
+    body: Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(10.0),
+          child: Row(
+            children: [
+              Text(
+                'Historial',
+                style: MyTextStyles.buttonTextStyle3,
+              ),
+              Spacer(),
+              IconButton(
+                icon: Icon(Icons.refresh, color: Color(0xFF1A819A)),
+                onPressed: _refreshHistorial,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 1.0),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildServiceListByStatus('available', screenWidth, screenHeight),
+              _buildServiceListByStatus('offer', screenWidth, screenHeight),
+              _buildServiceListByStatus('in_progress,pending_confirmation', screenWidth, screenHeight),
+              _buildServiceListByStatus('completed', screenWidth, screenHeight),
+              _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(10.0),
-            child: const Text(
-              'Historial',
-              style: MyTextStyles.buttonTextStyle3,
-            ),
-            
-          ),
-          Expanded(
-            
-            child: TabBarView(
-              controller: _tabController,
-              
-              children: [
-                _buildServiceListByStatus('available', screenWidth, screenHeight),
-                _buildServiceListByStatus('offer', screenWidth, screenHeight),
-                _buildServiceListByStatus('in_progress,pending_confirmation', screenWidth, screenHeight),
-                _buildServiceListByStatus('completed', screenWidth, screenHeight),
-                _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
+
 
   Widget _buildServiceListByStatus(String statusIds, double screenWidth, double screenHeight) {
     final statusIdList = statusIds.split(',');
@@ -424,7 +463,8 @@ class _HistorialState extends State<Historial>
                 final offeredPrice = snapshot.data ?? 0.0;
 
                 return Container(
-                  margin: EdgeInsets.only(bottom: screenHeight * 0.02),
+                  
+                  margin: EdgeInsets.only(bottom: screenHeight * 0.0),
                   width: screenWidth, // Asegura que el contenedor use todo el ancho disponible
                   height: screenHeight * 0.24, // Altura del contenedor
                   child: CustomPaint(
@@ -476,7 +516,7 @@ class _HistorialState extends State<Historial>
                           SizedBox(width: 10),
                           // Imagen ajustada dentro del Row
                           Align(
-                            alignment: Alignment.center, // Alinea la imagen verticalmente
+                            alignment: Alignment.bottomLeft, // Alinea la imagen verticalmente
                             child: Image.asset(
                               'assets/animations/manito.png',
                               width: 64, // Ajusta el tamaño de la imagen

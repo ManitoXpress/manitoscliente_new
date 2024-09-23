@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:flutter_cupertino_date_picker_fork/flutter_cupertino_date_picker_fork.dart';
+
 class DateTimeSelectionWizard extends StatefulWidget {
   final DateTime? selectedDate;
   final TimeOfDay? selectedTime;
@@ -33,34 +35,51 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
     _selectedTime = widget.selectedTime;
   }
 
-  Future<void> _pickDate() async {
-    final DateTime? date = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+  void _pickDate() {
+    DatePicker.showDatePicker(
+      context,
+      pickerTheme: DateTimePickerTheme(
+        showTitle: true,
+        confirm: Text('Confirmar', style: TextStyle(color: Colors.blue)),
+        cancel: Text('Cancelar', style: TextStyle(color: Colors.red)),
+      ),
+      minDateTime: DateTime.now().subtract(const Duration(days: 365)),
+      maxDateTime: DateTime.now().add(const Duration(days: 365)),
+      initialDateTime: _selectedDate ?? DateTime.now(),
+      dateFormat: 'yyyy-MM-dd',
+      onConfirm: (date, _) {
+        setState(() {
+          _selectedDate = date;
+          widget.onDateSelected(_selectedDate);
+        });
+      },
     );
-
-    if (date != null) {
-      setState(() {
-        _selectedDate = date;
-        widget.onDateSelected(_selectedDate);
-      });
-    }
   }
 
-  Future<void> _pickTime() async {
-    final TimeOfDay? time = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
+  void _pickTime() {
+    DatePicker.showDatePicker(
+      context,
+      pickerMode: DateTimePickerMode.time, // Cambiamos el modo para el selector de tiempo
+      pickerTheme: DateTimePickerTheme(
+        showTitle: true,
+        confirm: Text('Confirmar', style: TextStyle(color: Colors.blue)),
+        cancel: Text('Cancelar', style: TextStyle(color: Colors.red)),
+      ),
+      initialDateTime: DateTime(
+        1,
+        1,
+        1,
+        _selectedTime?.hour ?? TimeOfDay.now().hour,
+        _selectedTime?.minute ?? TimeOfDay.now().minute,
+      ),
+      dateFormat: 'HH:mm',
+      onConfirm: (time, _) {
+        setState(() {
+          _selectedTime = TimeOfDay(hour: time.hour, minute: time.minute);
+          widget.onTimeSelected(_selectedTime);
+        });
+      },
     );
-
-    if (time != null) {
-      setState(() {
-        _selectedTime = time;
-        widget.onTimeSelected(_selectedTime);
-      });
-    }
   }
 
   @override

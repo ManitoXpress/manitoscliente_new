@@ -23,6 +23,8 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_local_notifications: ^17.2.2
   firebase_app_check: ^0.3.0+2
+  flutter_cupertino_date_picker_fork: ^1.0.7
+  
   
   firebase_messaging: ^15.0.1
   firebase_auth: ^5.1.0

@@ -11,7 +11,7 @@ class MyTextStyles {
   static const TextStyle tabTextStyle = TextStyle(
     fontSize: 12,
     fontFamily: 'Xpress Heavy',
-    color: Color(0xFFFFFFFF),
+    color: Color(0xFF1A819A),
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
   );
@@ -167,7 +167,7 @@ class MyTextStyles {
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.bold,
     fontStyle: FontStyle.italic,
-    fontSize: 17.0,
+    fontSize: 16.0,
   );
   static const TextStyle formServiceTextStyle3 = TextStyle(
     color: Color(0xFF000405),

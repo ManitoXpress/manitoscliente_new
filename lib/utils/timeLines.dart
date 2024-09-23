@@ -212,22 +212,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-  Future<void> _blockUserParticipation() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({
-        'blockedUsers': FieldValue.arrayUnion([widget.workerId])
-      });
 
-      widget.onStatusChanged('blocked');
-      widget.onComplete('blocked');
-      Navigator.of(context).pop();
-    } catch (e) {
-      print('Error al bloquear la participación del usuario: $e');
-    }
-  }
 
   void _showDialog(
     BuildContext context,
@@ -274,6 +259,32 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
+  Future<void> _cancelService() async {
+  try {
+    // Actualiza el estado del servicio a 'cancelled'
+    await FirebaseFirestore.instance
+        .collection('services')
+        .doc(widget.serviceRequest.id)
+        .update({'status': 'cancelled'});
+    
+    // Mostrar un mensaje o snackbar para confirmar la cancelación
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('El servicio ha sido cancelado.'),
+      ),
+    );
+
+    // Regresar a la pantalla anterior o hacer alguna otra acción
+    Navigator.of(context).pop();
+  } catch (e) {
+    print('Error al cancelar el servicio: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al cancelar el servicio. Inténtalo de nuevo.'),
+      ),
+    );
+  }
+}
 
   Future<void> _fetchOfferedPrice() async {
     try {
@@ -554,10 +565,10 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                           ElevatedButton.icon(
                             onPressed: () => _showDialog(
                               context,
-                              'Cancelar Trabajo',
-                              '¿Estás seguro de que no quieres participar en este trabajo?',
-                              _blockUserParticipation,
-                              'Confirmar No Participar',
+                              'Atras',
+                              '¿Estás seguro de que quieres cancelar el trabajo?',
+                              _cancelService,
+                              'Confirmar en cancelar',
                             ),
                             icon:
                                 Icon(Icons.dangerous, color: Color(0xFF1A819A)),
@@ -596,10 +607,10 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                           ElevatedButton.icon(
                             onPressed: () => _showDialog(
                               context,
-                              'Cancelar Trabajo',
-                              '¿Estás seguro de que no quieres participar en este trabajo?',
-                              _blockUserParticipation,
-                              'Confirmar No Participar',
+                              'Atras',
+                              '¿Estás seguro de que quieres cancelar?',
+                              _cancelService,
+                              'Confirmar cancelar',
                             ),
                             icon: Icon(Icons.dangerous, color: Colors.white),
                             label: Text(
