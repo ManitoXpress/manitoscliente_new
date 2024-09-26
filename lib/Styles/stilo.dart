@@ -56,7 +56,7 @@ class MyTextStyles {
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
-    fontSize: 14,
+    fontSize: 16,
   );
 
   static const TextStyle unselectedTabTextStyle = TextStyle(

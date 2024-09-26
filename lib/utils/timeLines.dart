@@ -399,57 +399,58 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                                 )
                               : Text('Imagen no disponible',
                                   style: MyTextStyles.inputTextStyle),
-                          SizedBox(height: 16.0),
+                          SizedBox(height: 26.0),
                           Text.rich(
                             TextSpan(
                               text: 'Nombre: ',
-                              style: MyTextStyles.formServiceTextStyle,
+                              style: MyTextStyles.drawerButtonTextStyle,
                               children: [
                                 TextSpan(
                                   text:
                                       '${widget.workerDetails?.displayName ?? 'No disponible'}',
-                                  style: MyTextStyles.inputTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle5,
                                 ),
+                                
                                 TextSpan(
                                   text: '\nCorreo: ',
-                                  style: MyTextStyles.formServiceTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle,
                                 ),
                                 TextSpan(
                                   text:
                                       '${widget.workerDetails?.email ?? 'No disponible'}',
-                                  style: MyTextStyles.inputTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle5,
                                 ),
                                 TextSpan(
                                   text: '\nNivel de Experiencia: ',
-                                  style: MyTextStyles.formServiceTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle,
                                 ),
                                 TextSpan(
                                   text:
                                       '${widget.workerDetails?.expLevel ?? 'No disponible'}',
-                                  style: MyTextStyles.inputTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle5,
                                 ),
                                 TextSpan(
                                   text: '\nEspecialidad: ',
-                                  style: MyTextStyles.formServiceTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle,
                                 ),
                                 TextSpan(
                                   text:
                                       '${widget.workerDetails?.expertises.map((e) => e.name).join(', ') ?? 'No disponible'}',
-                                  style: MyTextStyles.inputTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle5,
                                 ),
                               ],
                             ),
                           ),
-                          SizedBox(height: 16.0),
+                          SizedBox(height: 26.0),
                           Text.rich(
                             TextSpan(
                               text: 'Precio ofertado: ',
-                              style: MyTextStyles.formServiceTextStyle,
+                              style: MyTextStyles.drawerButtonTextStyle,
                               children: [
                                 TextSpan(
                                   text:
                                       '${_fetchedOfferedPrice ?? 'No ofertado'}',
-                                  style: MyTextStyles.inputTextStyle,
+                                  style: MyTextStyles.drawerButtonTextStyle5,
                                 ),
                               ],
                             ),
@@ -464,7 +465,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                           children: [
                             TextSpan(
                               text: serviceData['description'] ?? '',
-                              style: MyTextStyles.inputTextStyle,
+                              style: MyTextStyles.drawerButtonTextStyle,
                             ),
                           ],
                         ),
@@ -505,22 +506,42 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                       SizedBox(height: 16.0),
                       Text('Imágenes:',
                           style: MyTextStyles.formServiceTextStyle),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: imageFiles.length,
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Image.network(
-                                imageFiles[index],
-                                height: 80,
-                                width: 80,
-                                fit: BoxFit.cover,
-                              ),
+                      Container(
+                  height: 80,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: imageFiles.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return Dialog(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Image.network(
+                                      imageFiles[index],
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
+                          child: Image.network(
+                            imageFiles[index],
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
+                      );
+                    },
+                  ),
+                ),
                       SizedBox(height: 2.0),
                       Text(
                         'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',

@@ -112,7 +112,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-          title: Text('Confirmación de la Oferta',
+          title: Text('Hacer el pago al Trabajador',
             style: MyTextStyles.notification,
           ),
           content: Column(
@@ -146,7 +146,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Se agregarán 3 Bs en gastos informáticos.',
+                  'Se agregarán 3 Bs en gastos informáticos, porfavor hacer el pago al trabajador para confirmar.',
                   style: MyTextStyles.drawerButtonTextStyle5,
                   textAlign: TextAlign.start,
                 ),

@@ -305,41 +305,51 @@ Widget build(BuildContext context) {
                 text: 'Disponibles',
               ),
               Tab(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Icon(Icons.local_offer, color: Colors.black),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text('Ofertados'),
-                    if (offerServiceCount > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          constraints: BoxConstraints(
-                            minWidth: 20,
-                            minHeight: 20,
-                          ),
-                          child: Text(
-                            offerServiceCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Minimiza el espacio ocupado por la columna
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none, // Permite desbordar el badge de notificación
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: Icon(Icons.local_offer, color: Colors.black),
+                      ),
+                      if (offerServiceCount > 0)
+                        Positioned(
+                          top: -10,  // Ajusta la posición del badge
+                          right: -10,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            textAlign: TextAlign.center,
+                            constraints: BoxConstraints(
+                              minWidth: 20,
+                              minHeight: 20,
+                            ),
+                            child: Text(
+                              offerServiceCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                    ],
+                  ),
+                  SizedBox(height: 4.0), // Espacio entre el ícono y el texto
+                  Text(
+                    'Ofertados',
+                    style: TextStyle(fontSize: 12.0), // Ajuste de tamaño del texto
+                  ),
+                ],
               ),
+            ),
+
               Tab(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 4.0),

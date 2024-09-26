@@ -123,6 +123,39 @@ class _LoginFormState extends State<LoginScreen> {
         setState(() => _teddyArtboard = artboard);
       },
     );
+
+    // Mostrar el AlertDialog después de cargar la pantalla de inicio de sesión
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Términos y Condiciones"),
+            content: TextButton(
+              onPressed: () {
+                launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
+              },
+              child: Text(
+                'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
+                style: TextStyle(
+                  color: Color.fromARGB(255, 2, 8, 168),
+                  fontSize: 16, // Cambia el tamaño según tu preferencia
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: Text("Aceptar"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    });
   }
 
   Future<void> login() async {
@@ -272,7 +305,7 @@ class _LoginFormState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Botón de Google
+                    // Botones de Google y Apple omitidos para simplicidad
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1A819A),
@@ -355,23 +388,7 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                
-           
                 SizedBox(height: 10.h),
-                TextButton(
-                  onPressed: () {
-                    launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
-                  },
-                  child: Text(
-                    'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 2, 8, 168),
-                      fontSize: 6.sp,
-                      decoration: TextDecoration.underline, // Agrega subrayado al texto
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30.h),
               ],
             ),
           ),

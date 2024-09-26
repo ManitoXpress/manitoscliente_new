@@ -53,19 +53,20 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.only(right: 0.5),
-              child: Image.network(
-                'https://i.imgur.com/0MgQOI2.png',
-                width: 90,
-                height: 90,
-              ),
-            ),
+            
             Flexible(
               child: const Text(
                 'SOLUCIONES RÁPIDAS',
                 style: MyTextStyles.appBarTitleTextStyle,
                 overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              
+              child: Image.asset(
+                'assets/images/LOGO2_BLANCO.png',
+                width: 90,
+                height: 90,
               ),
             ),
           ],
@@ -85,7 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     constraints:
                     const BoxConstraints(maxWidth: 200, maxHeight: 200),
-                    child: Image.network("https://i.imgur.com/AWrWerE.png"),
+                    child: Image.asset(
+                'assets/images/LOGO2_BLANCO.png'),
                     margin: const EdgeInsets.only(top: 70, bottom: 40),
                   ),
                   const SizedBox(height: 1.0),

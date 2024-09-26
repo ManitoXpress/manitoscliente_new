@@ -24,7 +24,7 @@ dependencies:
   flutter_local_notifications: ^17.2.2
   firebase_app_check: ^0.3.0+2
   flutter_cupertino_date_picker_fork: ^1.0.7
-  
+
   
   firebase_messaging: ^15.0.1
   firebase_auth: ^5.1.0
@@ -90,6 +90,7 @@ flutter:
 
   assets:
     - assets/images/LOGO1_COLOR.png
+    - assets/images/LOGO2_BLANCO.png
     - assets/images/LOGO1_NEGRO.png
     - assets/images/LOGO2_NEGRO.png
     - assets/images/LOGO2_COLOR.png
