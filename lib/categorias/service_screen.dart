@@ -44,6 +44,9 @@ void initState() {
   _loadServices();
   _pageController = PageController(initialPage: 0);
   _startNotificationTimer();
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWelcomeDialog();
+    });
   
   // Configurar FCM
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -67,8 +70,82 @@ void _handleFCMMessage(RemoteMessage message) {
   void dispose() {
     _notificationTimer?.cancel(); // Cancelar el Timer cuando se destruya el widget
     super.dispose();
-  }
 
+  }
+  void _showWelcomeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+          title: Text(
+            '¡Bienvenido a ManitosXpress!',
+            style: TextStyle(
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A819A),
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'En ManitosXpress, estamos aquí para ayudarte a encontrar soluciones a tus problemas. ¿Necesitas ayuda con algún servicio en específico? ¡Tenemos una amplia gama de servicios disponibles!',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.black54,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              Icon(
+                Icons.handyman,
+                size: 60,
+                color: Color(0xFF1A819A),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Encuentra el servicio que necesitas, desde reparaciones hasta asesorías. ¡Estamos para ayudarte!',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Color.fromARGB(255, 43, 109, 127), backgroundColor: const Color(0xFFE8E8E8), // Color del texto
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18), // Padding
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8), // Bordes redondeados
+                ),
+                side: BorderSide(
+                  color: const Color(0xFFE8E8E8), // Color del borde
+                  width: 1, // Ancho del borde
+                ),
+              ),
+              child: Text(
+                "Empezar",
+                style: TextStyle(
+                  fontSize: 18, // Tamaño de fuente
+                ),
+              ),
+            ),
+
+          ],
+        );
+      },
+    );
+  }
   Future<void> _loadServices() async {
     try {
       String? token = await AuthUtils.getToken();

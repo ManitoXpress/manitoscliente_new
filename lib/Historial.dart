@@ -8,6 +8,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
+import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
 import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
 
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
@@ -20,8 +21,6 @@ import 'package:manitoscliente_new/utils/status.dart';
 
 import 'package:manitoscliente_new/utils/timeLines.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-
 
 class Historial extends StatefulWidget {
   final VoidCallback? onTabTapped;
@@ -41,14 +40,15 @@ class _HistorialState extends State<Historial>
   int offerServiceCount = 0;
   StreamSubscription? _foregroundServiceListener;
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
-  
 
   late final RegistrationData registrationData;
   late TabController _tabController;
+  final ApiService apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
+   
 
     registrationData = RegistrationData(
       userId: '',
@@ -82,12 +82,14 @@ class _HistorialState extends State<Historial>
     _requestNotificationPermissions();
     _registerFCMToken();
   }
+
   Future<void> _checkForOffers() async {
     // Espera a que se carguen los datos
     await Future.delayed(Duration(seconds: 1));
-    
-    final hasOffers = serviceRequests.any((request) => request.status.id == 'offer');
-    
+
+    final hasOffers =
+        serviceRequests.any((request) => request.status.id == 'offer');
+
     if (hasOffers) {
       // Cambia a la pestaña de 'Ofertados' si hay servicios en oferta
       _tabController.animateTo(1);
@@ -100,6 +102,8 @@ class _HistorialState extends State<Historial>
     _foregroundServiceListener?.cancel();
     super.dispose();
   }
+
+  
 
   Future<double?> fetchOfferedPrice(String serviceId) async {
     try {
@@ -142,10 +146,12 @@ class _HistorialState extends State<Historial>
           print('Obteniendo detalles del trabajador con workerId: $workerId');
           return await fetchWorkerDetails(workerId);
         } else {
-          print('workerId no válido o no encontrado en el documento de offers.');
+          print(
+              'workerId no válido o no encontrado en el documento de offers.');
         }
       } else {
-        print('No se encontró ningún documento en la colección "offers" con serviceId: $serviceId');
+        print(
+            'No se encontró ningún documento en la colección "offers" con serviceId: $serviceId');
       }
     } catch (e) {
       print('Error al obtener detalles del trabajador: $e');
@@ -166,7 +172,8 @@ class _HistorialState extends State<Historial>
         final data = workerSnapshot.data()!;
         return WorkerDetails.fromMap(data);
       } else {
-        print('No se encontró ningún documento en la colección "workers" con workerId: $workerId');
+        print(
+            'No se encontró ningún documento en la colección "workers" con workerId: $workerId');
       }
     } catch (e) {
       print('Error al obtener detalles del trabajador: $e');
@@ -182,7 +189,8 @@ class _HistorialState extends State<Historial>
         final userId = user.uid;
         final token = await user.getIdToken();
 
-        final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
+        final cachedRequest =
+            await LocalCacheService.getCachedServiceRequest(userId);
         if (cachedRequest != null) {
           print('Datos del caché encontrados. Mostrando datos del caché...');
           setState(() {
@@ -199,17 +207,23 @@ class _HistorialState extends State<Historial>
 
           if (serviceResponse.statusCode == 200) {
             try {
-              final List<dynamic> jsonDataList = json.decode(serviceResponse.body);
-              final List<dynamic> filteredJsonDataList = jsonDataList.where((item) {
+              final List<dynamic> jsonDataList =
+                  json.decode(serviceResponse.body);
+              final List<dynamic> filteredJsonDataList =
+                  jsonDataList.where((item) {
                 return item['userId'] == userId;
               }).toList();
 
-              final List<ServiceRequest> serviceRequestsList = filteredJsonDataList.map((item) {
+              final List<ServiceRequest> serviceRequestsList =
+                  filteredJsonDataList.map((item) {
                 final statusName = item['status'] as String? ?? 'unknown';
-                final status = Status(id: statusName, name: Status.getNameById(statusName));
+                final status = Status(
+                    id: statusName, name: Status.getNameById(statusName));
 
-                final List<dynamic> expertisesArray = item['expertises'] as List<dynamic>? ?? [];
-                final Map<String, dynamic> expertiseItem = expertisesArray.isNotEmpty ? expertisesArray.first : {};
+                final List<dynamic> expertisesArray =
+                    item['expertises'] as List<dynamic>? ?? [];
+                final Map<String, dynamic> expertiseItem =
+                    expertisesArray.isNotEmpty ? expertisesArray.first : {};
 
                 return ServiceRequest(
                   expertises: [
@@ -221,11 +235,17 @@ class _HistorialState extends State<Historial>
                   id: item['id'] ?? '',
                   serviceDateTime: item['serviceDateTime'] ?? '',
                   description: item['description'] ?? '',
-                  images: (item['images'] as List<dynamic>?)?.map((image) => image as String? ?? '').toList() ?? [],
+                  images: (item['images'] as List<dynamic>?)
+                          ?.map((image) => image as String? ?? '')
+                          .toList() ??
+                      [],
                   location: Map<String, double>.from(
-                    (item['location'] as Map<String, dynamic>?)?.map((key, value) {
-                      return MapEntry(key, (value is int) ? value.toDouble() : value);
-                    }) ?? {},
+                    (item['location'] as Map<String, dynamic>?)
+                            ?.map((key, value) {
+                          return MapEntry(
+                              key, (value is int) ? value.toDouble() : value);
+                        }) ??
+                        {},
                   ),
                   offeredPrice: _parseOfferedPrice(item['offeredPrice']),
                   userId: item['userId'] ?? '',
@@ -245,19 +265,23 @@ class _HistorialState extends State<Historial>
 
               setState(() {
                 serviceRequests = serviceRequestsList;
-                statuses = serviceRequestsList.map((request) => request.status.name).toList();
+                statuses = serviceRequestsList
+                    .map((request) => request.status.name)
+                    .toList();
               });
 
               serviceRequests.forEach((request) {
                 LocalCacheService.cacheServiceRequest(request);
               });
 
-              print('Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
+              print(
+                  'Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
             } catch (e) {
               print('Error al decodificar la respuesta JSON: $e');
             }
           } else {
-            print('Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
+            print(
+                'Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
           }
         }
       } else {
@@ -268,155 +292,161 @@ class _HistorialState extends State<Historial>
     }
   }
 
-  
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-@override
-Widget build(BuildContext context) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final screenHeight = MediaQuery.of(context).size.height;
-
-  return Scaffold(
-    appBar: AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Color(0xFF1A819A),
-      title: Text(
-        'Historial',
-        style: MyTextStyles.buttonTextStyle3,
-      ),
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(50.0),
-        child: Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelPadding: EdgeInsets.symmetric(horizontal: 8.0), // Ajuste de espacio entre tabs
-            labelStyle: MyTextStyles.tabTextStyle,
-            unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
-            indicator: UnderlineTabIndicator( // Línea fina como indicador
-              borderSide: BorderSide(width: 3.0, color: Color(0xFF1A819A)),
-              insets: EdgeInsets.symmetric(horizontal: 20.0), // Añade espacio en los extremos
-            ),
-            tabs: [
-              Tab(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Icon(Icons.task_alt, color: Colors.black),
-                ),
-                text: 'Disponibles',
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Color(0xFF1A819A),
+        title: Text(
+          'Historial',
+          style: MyTextStyles.buttonTextStyle3,
+        ),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(50.0),
+          child: Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelPadding: EdgeInsets.symmetric(
+                  horizontal: 8.0), // Ajuste de espacio entre tabs
+              labelStyle: MyTextStyles.tabTextStyle,
+              unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
+              indicator: UnderlineTabIndicator(
+                // Línea fina como indicador
+                borderSide: BorderSide(width: 3.0, color: Color(0xFF1A819A)),
+                insets: EdgeInsets.symmetric(
+                    horizontal: 20.0), // Añade espacio en los extremos
               ),
-              Tab(
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Minimiza el espacio ocupado por la columna
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none, // Permite desbordar el badge de notificación
+              tabs: [
+                Tab(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Icon(Icons.task_alt, color: Colors.black),
+                  ),
+                  text: 'Disponibles',
+                ),
+                Tab(
+                  child: Column(
+                    mainAxisSize: MainAxisSize
+                        .min, // Minimiza el espacio ocupado por la columna
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Icon(Icons.local_offer, color: Colors.black),
-                      ),
-                      if (offerServiceCount > 0)
-                        Positioned(
-                          top: -10,  // Ajusta la posición del badge
-                          right: -10,
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            constraints: BoxConstraints(
-                              minWidth: 20,
-                              minHeight: 20,
-                            ),
-                            child: Text(
-                              offerServiceCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
+                      Stack(
+                        clipBehavior: Clip
+                            .none, // Permite desbordar el badge de notificación
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Icon(Icons.local_offer, color: Colors.black),
                           ),
-                        ),
+                          if (offerServiceCount > 0)
+                            Positioned(
+                              top: -10, // Ajusta la posición del badge
+                              right: -10,
+                              child: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                constraints: BoxConstraints(
+                                  minWidth: 20,
+                                  minHeight: 20,
+                                ),
+                                child: Text(
+                                  offerServiceCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(
+                          height: 4.0), // Espacio entre el ícono y el texto
+                      Text(
+                        'Ofertados',
+                        style: TextStyle(
+                            fontSize: 12.0), // Ajuste de tamaño del texto
+                      ),
                     ],
                   ),
-                  SizedBox(height: 4.0), // Espacio entre el ícono y el texto
-                  Text(
-                    'Ofertados',
-                    style: TextStyle(fontSize: 12.0), // Ajuste de tamaño del texto
+                ),
+                Tab(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Icon(Icons.assignment_ind, color: Colors.black),
                   ),
-                ],
-              ),
+                  text: 'Asignados',
+                ),
+                Tab(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Icon(Icons.check_circle, color: Colors.black),
+                  ),
+                  text: 'Completados',
+                ),
+                Tab(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Icon(Icons.cancel, color: Colors.black),
+                  ),
+                  text: 'Cancelados',
+                ),
+              ],
             ),
-
-              Tab(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Icon(Icons.assignment_ind, color: Colors.black),
-                ),
-                text: 'Asignados',
-              ),
-              Tab(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Icon(Icons.check_circle, color: Colors.black),
-                ),
-                text: 'Completados',
-              ),
-              Tab(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Icon(Icons.cancel, color: Colors.black),
-                ),
-                text: 'Cancelados',
-              ),
-            ],
           ),
         ),
       ),
-    ),
-    body: Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(10.0),
-          child: Row(
-            children: [
-              Text(
-                'Historial',
-                style: MyTextStyles.buttonTextStyle3,
-              ),
-              Spacer(),
-              IconButton(
-                icon: Icon(Icons.refresh, color: Color(0xFF1A819A)),
-                onPressed: _refreshHistorial,
-              ),
-            ],
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(10.0),
+            child: Row(
+              children: [
+                Text(
+                  'Historial',
+                  style: MyTextStyles.buttonTextStyle3,
+                ),
+                Spacer(),
+                IconButton(
+                  icon: Icon(Icons.refresh, color: Color(0xFF1A819A)),
+                  onPressed: _refreshHistorial,
+                ),
+              ],
+            ),
           ),
-        ),
-        SizedBox(height: 1.0),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildServiceListByStatus('available', screenWidth, screenHeight),
-              _buildServiceListByStatus('offer', screenWidth, screenHeight),
-              _buildServiceListByStatus('in_progress,pending_confirmation', screenWidth, screenHeight),
-              _buildServiceListByStatus('completed', screenWidth, screenHeight),
-              _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
-            ],
+          SizedBox(height: 1.0),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildServiceListByStatus(
+                    'available', screenWidth, screenHeight),
+                _buildServiceListByStatus('offer', screenWidth, screenHeight),
+                _buildServiceListByStatus('in_progress,pending_confirmation',
+                    screenWidth, screenHeight),
+                _buildServiceListByStatus(
+                    'completed', screenWidth, screenHeight),
+                _buildServiceListByStatus(
+                    'cancelled', screenWidth, screenHeight),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-
-
-
-  Widget _buildServiceListByStatus(String statusIds, double screenWidth, double screenHeight) {
+  Widget _buildServiceListByStatus(
+      String statusIds, double screenWidth, double screenHeight) {
     final statusIdList = statusIds.split(',');
     final filteredRequests = serviceRequests
         .where((request) => statusIdList.contains(request.status.id))
@@ -433,10 +463,12 @@ Widget build(BuildContext context) {
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () async {
-              final workerDetails = await getWorkerDetails(filteredRequests[index].id);
+              final workerDetails =
+                  await getWorkerDetails(filteredRequests[index].id);
 
               if (workerDetails != null) {
-                print('Detalles del trabajador obtenidos: ${workerDetails.displayName}, ${workerDetails.email}');
+                print(
+                    'Detalles del trabajador obtenidos: ${workerDetails.displayName}, ${workerDetails.email}');
               } else {
                 print('No se encontraron detalles del trabajador.');
               }
@@ -473,9 +505,9 @@ Widget build(BuildContext context) {
                 final offeredPrice = snapshot.data ?? 0.0;
 
                 return Container(
-                  
                   margin: EdgeInsets.only(bottom: screenHeight * 0.0),
-                  width: screenWidth, // Asegura que el contenedor use todo el ancho disponible
+                  width:
+                      screenWidth, // Asegura que el contenedor use todo el ancho disponible
                   height: screenHeight * 0.24, // Altura del contenedor
                   child: CustomPaint(
                     size: Size(screenWidth, screenHeight * 0.35),
@@ -498,7 +530,8 @@ Widget build(BuildContext context) {
                                   style: MyTextStyles.drawerButtonTextStyle,
                                 ),
                                 Text(
-                                  truncateDescription(filteredRequests[index].subcategoryName),
+                                  truncateDescription(
+                                      filteredRequests[index].subcategoryName),
                                   style: MyTextStyles.drawerButtonTextStyle5,
                                   textAlign: TextAlign.left,
                                 ),
@@ -509,7 +542,10 @@ Widget build(BuildContext context) {
                                 ),
                                 Text(
                                   truncateDescription(
-                                    filteredRequests[index].expertises.map((e) => e.name).join(', '),
+                                    filteredRequests[index]
+                                        .expertises
+                                        .map((e) => e.name)
+                                        .join(', '),
                                   ),
                                   style: MyTextStyles.drawerButtonTextStyle5,
                                   textAlign: TextAlign.left,
@@ -526,12 +562,14 @@ Widget build(BuildContext context) {
                           SizedBox(width: 10),
                           // Imagen ajustada dentro del Row
                           Align(
-                            alignment: Alignment.bottomLeft, // Alinea la imagen verticalmente
+                            alignment: Alignment
+                                .bottomLeft, // Alinea la imagen verticalmente
                             child: Image.asset(
                               'assets/animations/manito.png',
                               width: 64, // Ajusta el tamaño de la imagen
                               height: 64, // Ajusta el tamaño de la imagen
-                              fit: BoxFit.contain, // Asegura que la imagen no se salga de su contenedor
+                              fit: BoxFit
+                                  .contain, // Asegura que la imagen no se salga de su contenedor
                             ),
                           ),
                         ],
@@ -539,7 +577,6 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 );
-
               },
             ),
           );
@@ -547,35 +584,37 @@ Widget build(BuildContext context) {
       ),
     );
   }
+
   Future<void> _initNotifications() async {
-  flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  
-  // Configuración para Android
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  // Configuración para iOS
-  final DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
-  );
+    // Configuración para Android
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  // Configuración para ambas plataformas
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsIOS,
-  );
+    // Configuración para iOS
+    final DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
-  await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse response) {
-      // Manejar la respuesta de la notificación aquí
-      print('Notificación seleccionada: ${response.payload}');
-      // Implementa la navegación o lógica necesaria aquí
-    },
-  );
+    // Configuración para ambas plataformas
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Manejar la respuesta de la notificación aquí
+        print('Notificación seleccionada: ${response.payload}');
+        // Implementa la navegación o lógica necesaria aquí
+      },
+    );
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _handleNotification(message);
@@ -592,14 +631,15 @@ Widget build(BuildContext context) {
     if (message.data['status'] == 'offer') {
       _showNotificationWithAction(
         message.notification?.title ?? 'Nuevo servicio ofertado',
-        message.notification?.body ?? 'Tienes una nueva oferta para tu servicio.',
+        message.notification?.body ??
+            'Tienes una nueva oferta para tu servicio.',
         message.data['serviceId'] ?? '',
       );
     }
   }
-  
 
-  Future<void> _showNotificationWithAction(String title, String body, String serviceId) async {
+  Future<void> _showNotificationWithAction(
+      String title, String body, String serviceId) async {
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'service_offers_channel',
@@ -636,35 +676,47 @@ Widget build(BuildContext context) {
     String? token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
       print('FCM Token: $token');
-      // Aquí deberías implementar la lógica para enviar el token a tu backend
+
+      try {
+        // Llama a la función sendTokenToServer del ApiService
+        final response = await apiService.sendTokenFCM(token);
+
+        if (response.statusCode == 200) {
+          print('Token FCM enviado exitosamente al backend.');
+        } else {
+          print(
+              'Error al enviar el token al backend. Código de estado: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Error al enviar el token al backend: $e');
+      }
     }
   }
-   void _refreshHistorial() async {
+
+  void _refreshHistorial() async {
     await fetchDataForUserId();
     setState(() {});
   }
 
-
   void _activateForegroundListener() {
-  // Listener para escuchar los cambios en la colección 'serviceRequests'
-  _foregroundServiceListener = FirebaseFirestore.instance
-      .collection('serviceRequests')
-      .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-      .snapshots()
-      .listen((snapshot) {
-    // Procesar los cambios en los documentos
-    for (var change in snapshot.docChanges) {
-      if (change.type == DocumentChangeType.added) {
-        // Cuando se añade un nuevo servicio
-        _showInAppNotification(change.doc.data()!);
+    // Listener para escuchar los cambios en la colección 'serviceRequests'
+    _foregroundServiceListener = FirebaseFirestore.instance
+        .collection('serviceRequests')
+        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .snapshots()
+        .listen((snapshot) {
+      // Procesar los cambios en los documentos
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          // Cuando se añade un nuevo servicio
+          _showInAppNotification(change.doc.data()!);
+        }
       }
-    }
 
-    // Después de procesar los cambios, actualizamos la lista de servicios
-    _refreshHistorial();
-  });
-}
-
+      // Después de procesar los cambios, actualizamos la lista de servicios
+      _refreshHistorial();
+    });
+  }
 
   void _showInAppNotification(Map<String, dynamic> serviceData) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -679,6 +731,7 @@ Widget build(BuildContext context) {
       ),
     );
   }
+
   void _openChatScreen() {
     if (serviceRequests.isNotEmpty) {
       Navigator.push(
@@ -725,36 +778,34 @@ Widget build(BuildContext context) {
     }
     return 0.0;
   }
-  
 }
+
 String truncateDescription(String description) {
-    final words = description.split(' ');
-    if (words.length > 6) {
-      return '${words.take(6).join(' ')}...';
-    }
-    return description;
+  final words = description.split(' ');
+  if (words.length > 6) {
+    return '${words.take(6).join(' ')}...';
   }
+  return description;
+}
 
- 
-  Color _getTextColorByStatus(String statusId) {
-    final status = StatusUtils.getStatusById(statusId);
+Color _getTextColorByStatus(String statusId) {
+  final status = StatusUtils.getStatusById(statusId);
 
-    switch (status.id) {
-      case "available":
-        return Colors.green;
-      case "assigned":
-        return Colors.orange;
-      case "in_progress":
-        return Colors.black;
-      case "completed":
-        return Colors.blue;
-      case "cancelled":
-        return const Color(0xFF84090D);
-      default:
-        return Colors.grey;
-    }
+  switch (status.id) {
+    case "available":
+      return Colors.green;
+    case "assigned":
+      return Colors.orange;
+    case "in_progress":
+      return Colors.black;
+    case "completed":
+      return Colors.blue;
+    case "cancelled":
+      return const Color(0xFF84090D);
+    default:
+      return Colors.grey;
   }
-
+}
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");

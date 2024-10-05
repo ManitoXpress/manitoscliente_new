@@ -206,165 +206,158 @@ class _ProfessionalServicesScreenState
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: true, // Elimina la flecha de retroceso
-        title: Text(
-          'Servicios de hogar',
-          style: MyTextStyles.buttonTextStyle,
-        ),
-        actions: [
-          Stack(
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.notifications),
-                onPressed: () {
-                  _showNotifications(context);
-                },
-              ),
-              Positioned(
-                right: 11,
-                top: 11,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(6.5),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      automaticallyImplyLeading: true, // Elimina la flecha de retroceso
+      title: Text(
+        'Servicios de hogar',
+        style: MyTextStyles.buttonTextStyle,
+      ),
+      actions: [
+        Stack(
+          children: <Widget>[
+            IconButton(
+              icon: Icon(Icons.notifications),
+              onPressed: () {
+                _showNotifications(context);
+              },
+            ),
+            Positioned(
+              right: 11,
+              top: 11,
+              child: Container(
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(6.5),
+                ),
+                constraints: BoxConstraints(
+                  minWidth: 13,
+                  minHeight: 13,
+                ),
+                child: Text(
+                  notificationCount
+                      .toString(), // Usa el valor actualizado del contador
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
                   ),
-                  constraints: BoxConstraints(
-                    minWidth: 13,
-                    minHeight: 13,
-                  ),
-                  child: Text(
-                    notificationCount
-                        .toString(), // Usa el valor actualizado del contador
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-      body: GestureDetector(
-        onTap: () {
-          // Cierra el cuadro deslizable al tocar fuera de él
-          if (_selectedServiceIndex != -1) {
-            setState(() {
-              _selectedServiceIndex = -1;
-            });
-          }
-        },
-        child: Container(
-          color: Color(0xFF6AB8D6), // Cambiado el color de fondo
-          child: Column(
-            children: [
-              SizedBox(height: 20),
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 10),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
-                      mainAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
-                    ),
-                    itemCount: subcategoriesToShow.length,
-                    itemBuilder: (context, index) {
-                      final subcategory = subcategoriesToShow[index];
-                      return GestureDetector(
-                        onTap: () {
-                          _onSubcategoryTap(subcategory);
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    const Color(0xFF1A819A).withOpacity(0.15),
-                                spreadRadius: 0.5,
-                                blurRadius: 2,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white70,
-                                  borderRadius: BorderRadius.circular(
-                                      50), // Reducción del tamaño del contorno de la imagen
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(50),
-                                  child: Image.network(
-                                    subcategory.image,
-                                    height:
-                                        80, // Reducción del tamaño de la imagen
-                                    width:
-                                        80, // Reducción del tamaño de la imagen
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                  height:
-                                      8), // Reducción del espacio entre la imagen y el texto
-                              Text(
-                                subcategory.name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: MyTextStyles.drawerButtonTextStyle3,
-                              ),
-                            ],
-                          ),
+            ),
+          ],
+        ),
+      ],
+    ),
+    body: GestureDetector(
+      onTap: () {
+        // Cierra el cuadro deslizable al tocar fuera de él
+        if (_selectedServiceIndex != -1) {
+          setState(() {
+            _selectedServiceIndex = -1;
+          });
+        }
+      },
+      child: Container(
+        color: Color(0xFF6AB8D6), // Cambiado el color de fondo
+        child: Column(
+          children: [
+            SizedBox(height: 20),
+            Expanded(
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 10),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 20.0, // Reduce el espacio entre las celdas
+                    mainAxisSpacing: 20.0, // Reduce el espacio entre las celdas
+                  ),
+                  itemCount: subcategoriesToShow.length,
+                  itemBuilder: (context, index) {
+                    final subcategory = subcategoriesToShow[index];
+                    return GestureDetector(
+                      onTap: () {
+                        _onSubcategoryTap(subcategory);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1A819A).withOpacity(0.15),
+                              spreadRadius: 0.5,
+                              blurRadius: 2,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white70,
+                                borderRadius: BorderRadius.circular(
+                                    50), // Reducción del tamaño del contorno de la imagen
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(50),
+                                child: Image.network(
+                                  subcategory.image,
+                                  height: 80, // Reducción del tamaño de la imagen
+                                  width: 80, // Reducción del tamaño de la imagen
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8), // Reducción del espacio entre la imagen y el texto
+                            Text(
+                              subcategory.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: MyTextStyles.drawerButtonTextStyle3,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-              SizedBox(height: 10),
-              // Cuadro deslizable desde abajo
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                height: _selectedServiceIndex != -1 ? 500 : 0,
-                alignment: Alignment.bottomCenter,
-                child: _selectedServiceIndex != -1
-                    ? Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        // Ajusta el padding para el espacio adicional y márgenes laterales
-                        child: _buildServiceDetails(),
-                      )
-                    : null,
+            ),
+            SizedBox(height: 10),
+            // Cuadro deslizable desde abajo
+            AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              height: _selectedServiceIndex != -1 ? 500 : 0,
+              alignment: Alignment.bottomCenter,
+              child: _selectedServiceIndex != -1
+                  ? Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      // Ajusta el padding para el espacio adicional y márgenes laterales
+                      child: _buildServiceDetails(),
+                    )
+                  : null,
+            ),
+            if (selectedButtonType.isNotEmpty)
+              Text(
+                'Tipo de botón seleccionado: $selectedButtonType',
+                style: const TextStyle(fontSize: 16),
               ),
-              if (selectedButtonType.isNotEmpty)
-                Text(
-                  'Tipo de botón seleccionado: $selectedButtonType',
-                  style: const TextStyle(fontSize: 16),
-                ),
-            ],
-          ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildServiceDetails() {
     if (_selectedServiceIndex < 0 ||

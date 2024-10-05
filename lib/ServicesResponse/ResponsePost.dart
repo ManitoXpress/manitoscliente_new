@@ -89,6 +89,45 @@ class ApiService {
     }
   }
 
+
+  Future<http.Response> sendTokenFCM(String? token) async {
+    try {
+      // Si el token es nulo, no tiene sentido continuar
+      if (token == null) {
+        throw Exception('Token FCM es nulo');
+      }
+
+      // Construir el cuerpo de la solicitud con el token
+      final body = jsonEncode({
+        'fcmToken': token, // Ajusta el nombre del campo según lo que espere tu backend
+      });
+
+      // Enviar el token al servidor
+      final response = await http.post(
+        Uri.parse('$baseUrl/fcm-token'), // Cambia la URL si es necesario
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      );
+
+      // Verifica la respuesta del servidor
+      if (response.statusCode == 200) {
+        print('Token FCM enviado exitosamente al backend.');
+      } else {
+        print(
+            'Error al enviar el token al backend. Código de estado: ${response.statusCode}');
+      }
+
+      return response;
+    } catch (e) {
+      print('Error al enviar token FCM al servidor: $e');
+      throw Exception('Error al enviar token al servidor');
+    }
+  }
+
+
+
   Future<http.Response> sendTokenToServer(String? token) async {
     try {
       final response = await http.get(

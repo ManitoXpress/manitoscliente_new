@@ -204,7 +204,6 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: true, // Elimina la flecha de retroceso
         title: Text(
           'Servicios Profesionales',
           style: MyTextStyles.buttonTextStyle,
@@ -232,8 +231,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                     minHeight: 13,
                   ),
                   child: Text(
-                    notificationCount
-                        .toString(), // Usa el valor actualizado del contador
+                    notificationCount.toString(),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 8,
@@ -248,7 +246,6 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
       ),
       body: GestureDetector(
         onTap: () {
-          // Cierra el cuadro deslizable al tocar fuera de él
           if (_selectedServiceIndex != -1) {
             setState(() {
               _selectedServiceIndex = -1;
@@ -256,7 +253,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
           }
         },
         child: Container(
-          color: Color(0xFF6AB8D6), // Cambiado el color de fondo
+          color: Color(0xFF6AB8D6), // Color de fondo
           child: Column(
             children: [
               SizedBox(height: 20),
@@ -266,10 +263,8 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
-                      mainAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
+                      crossAxisSpacing: 20.0, // Espacio entre celdas
+                      mainAxisSpacing: 20.0, // Espacio entre celdas
                     ),
                     itemCount: subcategoriesToShow.length,
                     itemBuilder: (context, index) {
@@ -284,8 +279,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    const Color(0xFF1A819A).withOpacity(0.15),
+                                color: const Color(0xFF1A819A).withOpacity(0.35),
                                 spreadRadius: 0.5,
                                 blurRadius: 2,
                                 offset: const Offset(0, 3),
@@ -299,25 +293,20 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white70,
-                                  borderRadius: BorderRadius.circular(
-                                      50), // Reducción del tamaño del contorno de la imagen
+                                  borderRadius: BorderRadius.circular(50),
                                 ),
                                 padding: const EdgeInsets.all(4),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(50),
                                   child: Image.network(
                                     subcategory.image,
-                                    height:
-                                        80, // Reducción del tamaño de la imagen
-                                    width:
-                                        80, // Reducción del tamaño de la imagen
+                                    height: 80,
+                                    width: 80,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
-                              const SizedBox(
-                                  height:
-                                      8), // Reducción del espacio entre la imagen y el texto
+                              const SizedBox(height: 8),
                               Text(
                                 subcategory.name,
                                 textAlign: TextAlign.center,
@@ -334,7 +323,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                 ),
               ),
               SizedBox(height: 10),
-              // Cuadro deslizable desde abajo
+              // Cuadro deslizable
               AnimatedContainer(
                 duration: Duration(milliseconds: 300),
                 curve: Curves.easeOut,
@@ -342,9 +331,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                 alignment: Alignment.bottomCenter,
                 child: _selectedServiceIndex != -1
                     ? Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        // Ajusta el padding para el espacio adicional y márgenes laterales
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         child: _buildServiceDetails(),
                       )
                     : null,
@@ -360,6 +347,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
       ),
     );
   }
+
 
   Widget _buildServiceDetails() {
     if (_selectedServiceIndex < 0 ||

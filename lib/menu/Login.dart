@@ -9,6 +9,7 @@ import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/menu/Register.dart';
 import 'package:manitoscliente_new/metodos/animationcontroller.dart';
 import 'package:manitoscliente_new/metodos/logincontroller.dart';
+import 'package:manitoscliente_new/utils/animation.dart';
 import 'package:rive/rive.dart' as rive;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -202,11 +203,28 @@ class _LoginFormState extends State<LoginScreen> {
             content: Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
             actions: [
               TextButton(
-                child: Text("Aceptar"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF090909), backgroundColor: const Color(0xFFE8E8E8), // Color del texto
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 28), // Padding
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8), // Bordes redondeados
+                ),
+                side: BorderSide(
+                  color: const Color(0xFFE8E8E8), // Color del borde
+                  width: 1, // Ancho del borde
+                ),
               ),
+              child: Text(
+                "Aceptar",
+                style: TextStyle(
+                  fontSize: 18, // Tamaño de fuente
+                ),
+              ),
+            ),
+
             ],
           );
         },
@@ -280,118 +298,132 @@ class _LoginFormState extends State<LoginScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        child: Center(
-          child: Container(
-            width: 1.sw,
-            padding: EdgeInsets.symmetric(horizontal: 10.w),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_teddyArtboard != null)
-                  SizedBox(
-                    width: 0.8.sw,
-                    height: 0.38.sh,
-                    child: rive.Rive(
-                      artboard: _teddyArtboard!,
-                      fit: BoxFit.fitWidth,
-                    ),
-                  ),
-                SizedBox(height: 10.h),
-                Text(
-                  'Bienvenidos a Manitos Xpress',
-                  style: MyTextStyles.loginWelcomeStyle,
-                ),
-                SizedBox(height: 10.h),
-                Row(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Blob azul animado
+            Positioned(
+              top: 50,
+              left: 50,
+              child: AnimatedBlob(),
+            ),
+            Positioned(
+              top: 100,
+              right: 50,
+              child: AnimatedBlob(),
+            ),
+            Center(
+              child: Container(
+                width: 1.sw,
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Botones de Google y Apple omitidos para simplicidad
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1A819A),
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
+                    if (_teddyArtboard != null)
+                      SizedBox(
+                        width: 0.8.sw,
+                        height: 0.38.sh,
+                        child: rive.Rive(
+                          artboard: _teddyArtboard!,
+                          fit: BoxFit.fitWidth,
+                        ),
                       ),
-                      onPressed: isLoadingGoogle ? null : signInWithGoogle,
-                      child: isLoadingGoogle
-                          ? CircularProgressIndicator() // Indicador de carga
-                          : CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 40.r,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.white,
-                                radius: 37.r,
-                                child: CircleAvatar(
-                                  radius: 35.r,
+                    SizedBox(height: 10.h),
+                    Text(
+                      'Bienvenidos a Manitos Xpress',
+                      style: MyTextStyles.loginWelcomeStyle,
+                    ),
+                    SizedBox(height: 10.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF1A819A),
+                            shape: CircleBorder(),
+                            padding: EdgeInsets.all(3.w),
+                          ),
+                          onPressed: isLoadingGoogle ? null : signInWithGoogle,
+                          child: isLoadingGoogle
+                              ? CircularProgressIndicator()
+                              : CircleAvatar(
                                   backgroundColor: Colors.white,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        FontAwesomeIcons.google,
-                                        color: Color(0xFF1A819A),
+                                  radius: 40.r,
+                                  child: CircleAvatar(
+                                    backgroundColor: Colors.white,
+                                    radius: 37.r,
+                                    child: CircleAvatar(
+                                      radius: 35.r,
+                                      backgroundColor: Colors.white,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            FontAwesomeIcons.google,
+                                            color: Color(0xFF1A819A),
+                                          ),
+                                          Text(
+                                            'Inicio',
+                                            style: GoogleFonts.lato(
+                                              color: Color(0xFF1A819A),
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      Text(
-                                        'Inicio',
-                                        style: GoogleFonts.lato(
-                                          color: Color(0xFF1A819A),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                    ),
-                    SizedBox(width: 10.w), // Espacio entre los botones
-                    // Botón de Apple
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1A819A),
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: isLoadingApple ? null : signInWithApple,
-                      child: isLoadingApple
-                          ? CircularProgressIndicator() // Indicador de carga
-                          : CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 40.r,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.white,
-                                radius: 37.r,
-                                child: CircleAvatar(
-                                  radius: 35.r,
+                        ),
+                        SizedBox(width: 10.w),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF1A819A),
+                            shape: CircleBorder(),
+                            padding: EdgeInsets.all(3.w),
+                          ),
+                          onPressed: isLoadingApple ? null : signInWithApple,
+                          child: isLoadingApple
+                              ? CircularProgressIndicator()
+                              : CircleAvatar(
                                   backgroundColor: Colors.white,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        FontAwesomeIcons.apple,
-                                        color: Color(0xFF1A819A),
+                                  radius: 40.r,
+                                  child: CircleAvatar(
+                                    backgroundColor: Colors.white,
+                                    radius: 37.r,
+                                    child: CircleAvatar(
+                                      radius: 35.r,
+                                      backgroundColor: Colors.white,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            FontAwesomeIcons.apple,
+                                            color: Color(0xFF1A819A),
+                                          ),
+                                          Text(
+                                            'Apple',
+                                            style: GoogleFonts.lato(
+                                              color: Color(0xFF1A819A),
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      Text(
-                                        'Apple',
-                                        style: GoogleFonts.lato(
-                                          color: Color(0xFF1A819A),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
+                        ),
+                      ],
                     ),
+                    SizedBox(height: 10.h),
                   ],
                 ),
-                SizedBox(height: 10.h),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
