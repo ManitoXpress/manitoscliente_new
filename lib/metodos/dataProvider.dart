@@ -30,6 +30,7 @@ class ApiDataProvider {
             final List<ServiceRequest> serviceRequestsList = jsonDataList
                 .map((item) => ServiceRequest(
               id: item['id'],
+              devicesId: item['devicesId'],
               expertises:item['expertises'],
               serviceDateTime: item['serviceDateTime'],
               description: item['description'],

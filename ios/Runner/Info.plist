@@ -2,97 +2,99 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CADisableMinimumFrameDurationOnPhone</key>
-    <true/>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>$(DEVELOPMENT_LANGUAGE)</string>
-    <key>CFBundleDisplayName</key>
-    <string>Manitos Xpress</string>
-    <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.xpress.manitosxpress</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>Manitos Xpress</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>$(FLUTTER_BUILD_NAME)</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>com.googleusercontent.apps.933474056744-u3c8a2jdeuv4i6cot3l06ht7ihv5ccdq</string>
-                <string>app-1-933474056744-ios-ac6fdbe563e388d8f8131d</string>
-                <string>comgooglemaps</string>
-                <string>com.googleusercontent.apps.933474056744-6o1u1238gkoj9q7052b2i8je0r1m4ij4</string>
-            </array>
-        </dict>
-    </array>
-    <key>LSApplicationQueriesSchemes</key>
-    <array>
-        <string>google</string>
-        <string>com-google-gidconsent2</string>
-    </array>
-    <key>CFBundleVersion</key>
-    <string>$(FLUTTER_BUILD_NUMBER)</string>
-    <key>GMSApiKey</key>
-    <string>AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc</string>
-    <key>LSRequiresIPhoneOS</key>
-    <true/>
-    <key>NSAppleIDUsageDescription</key>
-    <string>Este descriptor se utiliza para iniciar sesión con Apple.</string>
-    <key>NSCameraUsageDescription</key>
-    <string>Esta aplicación necesita acceso a la cámara.</string>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Esta aplicación necesita acceso a su ubicación para proporcionar servicios de ubicación precisos incluso cuando la aplicación está en segundo plano.</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>Esta aplicación necesita acceso a su ubicación en todo momento.</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Esta aplicación necesita acceder a su ubicación mientras está en uso.</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Esta aplicación necesita acceso a la biblioteca de fotos para guardar imágenes.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Esta aplicación necesita acceso a la biblioteca de fotos para que los usuarios puedan seleccionar y cargar imágenes desde su galería.</string>
-    <key>NSUserTrackingUsageDescription</key>
-    <string>Esta aplicación utiliza su ID de dispositivo para ofrecerle una mejor experiencia y contenido personalizado.</string>
-    <key>UIApplicationSupportsIndirectInputEvents</key>
-    <true/>
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>remote-notification</string>
-    </array>
-    <key>UILaunchStoryboardName</key>
-    <string>LaunchScreen</string>
-    <key>UIMainStoryboardFile</key>
-    <string>Main</string>
-    <key>UISupportedInterfaceOrientations</key>
-    <array>
-        <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
-    </array>
-    <key>UISupportedInterfaceOrientations~ipad</key>
-    <array>
-        <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationPortraitUpsideDown</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
-    </array>
-    <key>UISupportsDocumentBrowser</key>
-    <true/>
-    <key>aps-environment</key>
-    <string>production</string>
-    <key>keychain-access-groups</key>
-    <array>
-        <string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
-    </array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Manitos Xpress</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.xpress.manitosxpress</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Manitos Xpress</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.933474056744-u3c8a2jdeuv4i6cot3l06ht7ihv5ccdq</string>
+				<string>app-1-933474056744-ios-ac6fdbe563e388d8f8131d</string>
+				<string>comgooglemaps</string>
+				<string>com.googleusercontent.apps.933474056744-6o1u1238gkoj9q7052b2i8je0r1m4ij4</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>google</string>
+		<string>com-google-gidconsent2</string>
+	</array>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppleIDUsageDescription</key>
+	<string>Este descriptor se utiliza para iniciar sesión con Apple.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Esta aplicación necesita acceso a la cámara.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Esta aplicación necesita acceso a su ubicación para proporcionar servicios de ubicación precisos incluso cuando la aplicación está en segundo plano.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Esta aplicación necesita acceso a su ubicación en todo momento.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Esta aplicación necesita acceder a su ubicación mientras está en uso.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Esta aplicación necesita acceso a la biblioteca de fotos para guardar imágenes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Esta aplicación necesita acceso a la biblioteca de fotos para que los usuarios puedan seleccionar y cargar imágenes desde su galería.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Esta aplicación necesita permisos para enviarle notificaciones.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Esta aplicación utiliza su ID de dispositivo para ofrecerle una mejor experiencia y contenido personalizado.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+	<key>aps-environment</key>
+	<string>production</string>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
+	</array>
 </dict>
 </plist>

@@ -90,7 +90,7 @@ class ApiService {
   }
 
 
-  Future<http.Response> sendTokenFCM(String? token) async {
+  Future<void> sendTokenFCM(String? token) async {
     try {
       // Si el token es nulo, no tiene sentido continuar
       if (token == null) {
@@ -104,7 +104,7 @@ class ApiService {
 
       // Enviar el token al servidor
       final response = await http.post(
-        Uri.parse('$baseUrl/fcm-token'), // Cambia la URL si es necesario
+        Uri.parse('$baseUrl/token'), // Cambia la URL si es necesario
         headers: {
           'Content-Type': 'application/json',
         },
@@ -115,11 +115,8 @@ class ApiService {
       if (response.statusCode == 200) {
         print('Token FCM enviado exitosamente al backend.');
       } else {
-        print(
-            'Error al enviar el token al backend. Código de estado: ${response.statusCode}');
+        print('Error al enviar el token al backend. Código de estado: ${response.statusCode}');
       }
-
-      return response;
     } catch (e) {
       print('Error al enviar token FCM al servidor: $e');
       throw Exception('Error al enviar token al servidor');
@@ -172,75 +169,73 @@ class ApiService {
   }
 
   Future<http.Response> sendDataToBackend(
-    ServiceRequest serviceRequest,
-    String token,
-    String id,
-    String expertises,
-    String categoryId,
-    String subcategoryId,
-    Status status,
-    String subcategoryName,
-    List<String> imageUrls,
-  ) async {
-    print('sendDataToBackend() called');
-    print('Enviando datos al backend:');
+  ServiceRequest serviceRequest,
+  String token,
+  String id,
+  String expertises,
+  String categoryId,
+  String subcategoryId,
+  Status status,
+  String subcategoryName,
+  List<String> imageUrls,
+  String? devicesId, // Asegúrate de que este parámetro esté aquí
+) async {
+  print('sendDataToBackend() called');
+  print('Enviando datos al backend:');
 
-    // Convierte la latitud y longitud a double o usa 0.0 si son nulas
-    double latitude = serviceRequest.location['lat'] ?? 0.0;
-    double longitude = serviceRequest.location['lng'] ?? 0.0;
+  // Convierte la latitud y longitud a double o usa 0.0 si son nulas
+  double latitude = serviceRequest.location['lat'] ?? 0.0;
+  double longitude = serviceRequest.location['lng'] ?? 0.0;
 
-    // Convertir offeredPrice a double antes de asignarlo
-
-    // Construir expertises con el serviceType y el subcategoryId
-    final expertisesList = [
-      {
-        'id': subcategoryId,
-        'name': serviceRequest.serviceType.name,
-      }
-    ];
-
-    // Crear una instancia de FormData
-    final formData = {
-      'subcategoryName': subcategoryName,
-      'serviceDateTime': serviceRequest.serviceDateTime,
-      'description': serviceRequest.description,
-      'images': imageUrls,
-      'location': {
-        'lat': latitude,
-        'lng': longitude,
-      },
-      'userId': serviceRequest.userId,
-      'status': status.id,
-      'expertises':
-          expertisesList, // Aquí es donde se agrega la lista de expertises
-      'categoryId': categoryId,
-    };
-
-    print('FormData: $formData');
-    print('Token: $token');
-
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/services'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(formData),
-      );
-
-      if (response.statusCode == 200) {
-        print('Datos enviados al backend con éxito');
-      } else {
-        print('Solicitud HTTP: ${response.statusCode}');
-      }
-      return response;
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al enviar datos al backend');
+  // Construir expertises con el serviceType y el subcategoryId
+  final expertisesList = [
+    {
+      'id': subcategoryId,
+      'name': serviceRequest.serviceType.name,
     }
-  }
+  ];
 
+  // Crear una instancia de FormData
+  final formData = {
+    'subcategoryName': subcategoryName,
+    'serviceDateTime': serviceRequest.serviceDateTime,
+    'description': serviceRequest.description,
+    'images': imageUrls,
+    'location': {
+      'lat': latitude,
+      'lng': longitude,
+    },
+    'userId': serviceRequest.userId,
+    'status': status.id,
+    'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
+    'categoryId': categoryId,
+    'devicesId': devicesId, // Agrega devicesId aquí
+  };
+
+  print('FormData: $formData');
+  print('Token: $token');
+
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/services'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(formData),
+    );
+
+    if (response.statusCode == 200) {
+      print('Datos enviados al backend con éxito');
+    } else {
+      print('Solicitud HTTP: ${response.statusCode}');
+    }
+    return response;
+  } catch (e) {
+    print('Error en la solicitud HTTP: $e');
+    throw Exception('Error al enviar datos al backend');
+  }
+}
 
 
   Future<http.Response> updateUser(

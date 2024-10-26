@@ -15,8 +15,10 @@ import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/chatscreen.dart';
 import 'package:manitoscliente_new/metodos/RegisController.dart';
+
 import 'package:manitoscliente_new/metodos/ticketController.dart';
 import 'package:manitoscliente_new/utils/cacheLocal.dart';
+import 'package:manitoscliente_new/utils/notification.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 
 import 'package:manitoscliente_new/utils/timeLines.dart';
@@ -44,6 +46,7 @@ class _HistorialState extends State<Historial>
   late final RegistrationData registrationData;
   late TabController _tabController;
   final ApiService apiService = ApiService();
+  late NotificationService notificationService;
 
   @override
   void initState() {
@@ -77,10 +80,10 @@ class _HistorialState extends State<Historial>
       _checkForOffers();
     });
     calculateUnreadMessagesCount();
-    _initNotifications();
+
+
     _activateForegroundListener();
-    _requestNotificationPermissions();
-    _registerFCMToken();
+
   }
 
   Future<void> _checkForOffers() async {
@@ -167,11 +170,14 @@ class _HistorialState extends State<Historial>
           .doc(workerId)
           .get();
 
-      if (workerSnapshot.exists) {
-        print('Documento del trabajador encontrado.');
-        final data = workerSnapshot.data()!;
-        return WorkerDetails.fromMap(data);
-      } else {
+    if (workerSnapshot.exists) {
+      print('Documento del trabajador encontrado.');
+      final data = workerSnapshot.data()!;
+      print('Datos del trabajador: $data');  // Imprime todos los datos para verlos
+
+      return WorkerDetails.fromMap(data);
+
+  } else {
         print(
             'No se encontró ningún documento en la colección "workers" con workerId: $workerId');
       }
@@ -259,7 +265,7 @@ class _HistorialState extends State<Historial>
                     selectedDate: '',
                     selectedTime: '',
                   ),
-                  subcategoryName: item['subcategoryName'] ?? '',
+                  subcategoryName: item['subcategoryName'] ?? '', devicesId: '',
                 );
               }).toList();
 
@@ -584,120 +590,6 @@ class _HistorialState extends State<Historial>
       ),
     );
   }
-
-  Future<void> _initNotifications() async {
-    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
-    // Configuración para Android
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    // Configuración para iOS
-    final DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
-    // Configuración para ambas plataformas
-    final InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
-
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Manejar la respuesta de la notificación aquí
-        print('Notificación seleccionada: ${response.payload}');
-        // Implementa la navegación o lógica necesaria aquí
-      },
-    );
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _handleNotification(message);
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      _handleNotification(message);
-    });
-
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  }
-
-  void _handleNotification(RemoteMessage message) {
-    if (message.data['status'] == 'offer') {
-      _showNotificationWithAction(
-        message.notification?.title ?? 'Nuevo servicio ofertado',
-        message.notification?.body ??
-            'Tienes una nueva oferta para tu servicio.',
-        message.data['serviceId'] ?? '',
-      );
-    }
-  }
-
-  Future<void> _showNotificationWithAction(
-      String title, String body, String serviceId) async {
-    final AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'service_offers_channel',
-      'Service Offers',
-      importance: Importance.max,
-      priority: Priority.high,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('accept', 'Aceptar'),
-        AndroidNotificationAction('reject', 'Rechazar'),
-      ],
-    );
-    final NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-    await flutterLocalNotificationsPlugin.show(
-      0,
-      title,
-      body,
-      platformChannelSpecifics,
-      payload: serviceId,
-    );
-  }
-
-  Future<void> _requestNotificationPermissions() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    print('User granted permission: ${settings.authorizationStatus}');
-  }
-
-  Future<void> _registerFCMToken() async {
-    String? token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      print('FCM Token: $token');
-
-      try {
-        // Llama a la función sendTokenToServer del ApiService
-        final response = await apiService.sendTokenFCM(token);
-
-        if (response.statusCode == 200) {
-          print('Token FCM enviado exitosamente al backend.');
-        } else {
-          print(
-              'Error al enviar el token al backend. Código de estado: ${response.statusCode}');
-        }
-      } catch (e) {
-        print('Error al enviar el token al backend: $e');
-      }
-    }
-  }
-
-  void _refreshHistorial() async {
-    await fetchDataForUserId();
-    setState(() {});
-  }
-
   void _activateForegroundListener() {
     // Listener para escuchar los cambios en la colección 'serviceRequests'
     _foregroundServiceListener = FirebaseFirestore.instance
@@ -731,6 +623,16 @@ class _HistorialState extends State<Historial>
       ),
     );
   }
+
+ 
+ 
+
+  void _refreshHistorial() async {
+    await fetchDataForUserId();
+    setState(() {});
+  }
+
+
 
   void _openChatScreen() {
     if (serviceRequests.isNotEmpty) {

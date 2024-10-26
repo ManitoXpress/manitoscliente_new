@@ -47,17 +47,7 @@ void initState() {
    WidgetsBinding.instance.addPostFrameCallback((_) {
       _showWelcomeDialog();
     });
-  
-  // Configurar FCM
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print("Recibido mensaje en primer plano: ${message.messageId}");
-    _handleFCMMessage(message);
-  });
 
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print("Aplicación abierta desde notificación: ${message.messageId}");
-    _handleFCMMessage(message);
-  });
 }
 
 void _handleFCMMessage(RemoteMessage message) {
@@ -328,7 +318,7 @@ void _handleFCMMessage(RemoteMessage message) {
                               selectedTime: '',
                               acceptedTerms: true,
                               expertises: [],
-                              status: status, subcategoryName: '',
+                              status: status, subcategoryName: '', devicesId: '',
                             );
                             navigateToHomeServices(context, serviceRequest);
                             break;

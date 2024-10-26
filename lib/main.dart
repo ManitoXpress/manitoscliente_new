@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart'; // Importa la librería de ATT
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Importa flutter_screenutil
+import 'package:manitoscliente_new/utils/notification.dart';
 
 import 'Loading.dart';
 import 'firebase_options.dart';
@@ -11,20 +12,14 @@ import 'menu/Login.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 
-
-// Handler para mensajes en segundo plano
+// Manejador para los mensajes en segundo plano
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
-  // Aquí puedes agregar lógica adicional para manejar el mensaje
+  // Aquí puedes agregar lógica adicional para manejar el mensaje en segundo plano
 }
 
 void main() async {
@@ -52,20 +47,23 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool isLoading = true;
+  late NotificationService notificationService;
 
   @override
   void initState() {
     super.initState();
-    _requestTrackingPermission();
-    _initializeFirebaseMessaging();
+    notificationService = NotificationService(); // Inicializar el NotificationService
+    notificationService.initNotifications(context); // Pasar el contexto aquí
+    _requestTrackingPermission(); // Solicitar permisos de tracking para iOS
+    _initializeFirebaseMessaging(); // Inicializar Firebase Messaging
     Future.delayed(const Duration(seconds: 10), () {
       setState(() {
-        isLoading = false;
+        isLoading = false; // Simulación de carga
       });
     });
   }
 
-  // Función para solicitar permiso de App Tracking Transparency
+  // Función para solicitar permiso de App Tracking Transparency en iOS
   Future<void> _requestTrackingPermission() async {
     final TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
     if (status == TrackingStatus.notDetermined) {
@@ -78,7 +76,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeFirebaseMessaging() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    // Solicitar permisos para iOS
+    // Solicitar permisos para notificaciones en iOS
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       badge: true,
@@ -87,30 +85,34 @@ class _MyAppState extends State<MyApp> {
 
     print('User granted permission: ${settings.authorizationStatus}');
 
-    // Obtener el token FCM
+    // Obtener el token FCM para enviar notificaciones a este dispositivo
     String? token = await messaging.getToken();
     print('FCM Token: $token');
 
-    // Configurar handlers para mensajes en primer plano
+    // Configurar handlers para mensajes cuando la app está en primer plano
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print("Recibido mensaje en primer plano: ${message.messageId}");
       // Aquí puedes manejar el mensaje, por ejemplo, mostrar una notificación local
+      notificationService.handleNotification(message, context); // Llama a tu servicio de notificaciones con el contexto
     });
 
+    // Configurar handlers para cuando la app se abre desde una notificación
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print("Aplicación abierta desde notificación: ${message.messageId}");
       // Aquí puedes manejar la acción cuando se abre la app desde una notificación
+      notificationService.handleNotification(message, context); // Llama a tu servicio de notificaciones con el contexto
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Configurar Firestore para habilitar la persistencia
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
     );
 
     return ScreenUtilInit(
-      designSize: Size(375, 800),
+      designSize: const Size(375, 800),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) => MaterialApp(
@@ -141,7 +143,7 @@ class _MyAppState extends State<MyApp> {
             backgroundColor: Color(0xFF1A819A),
           ),
         ),
-        home: isLoading ? LoadingScreen() : LoginScreen(),
+        home: isLoading ? LoadingScreen() : LoginScreen(), // Muestra pantalla de carga si aún está cargando
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ServiceRequest {
   String serviceDateTime;
+  String devicesId;
   String id;
   String description;
   List<String> images;
@@ -29,6 +30,7 @@ class ServiceRequest {
   ServiceRequest({
     required this.serviceDateTime,
     required this.id,
+    required this.devicesId,
     required this.description,
     required this.images,
     required this.location,
@@ -48,6 +50,7 @@ class ServiceRequest {
   ServiceRequest copyWith({
     String? dateTime,
     String? id,
+    String? devicesId,
     String? description,
     List<String>? images,
     Map<String, double>? location,
@@ -65,6 +68,7 @@ class ServiceRequest {
     return ServiceRequest(
       serviceDateTime: dateTime ?? this.serviceDateTime,
       id: id ?? this.id,
+      devicesId: devicesId ?? this.devicesId,
       description: description ?? this.description,
       images: images ?? this.images,
       location: location ?? this.location,
@@ -87,6 +91,7 @@ class ServiceRequest {
     return {
       'serviceDateTime': serviceDateTime,
       'id': id,
+      'devicesId': devicesId,
       'description': description,
       'status': status.toMap(), // Utiliza toMap en lugar de toJson
       'images': images,
@@ -110,6 +115,7 @@ class ServiceRequest {
     return ServiceRequest(
       serviceDateTime: data['serviceDateTime'] ?? '',
       id: data['id'] ?? '',
+      devicesId: data ['devicesId'] ?? '',
       description: data['description'] ?? '',
       images: List<String>.from(data['images'] ?? []),
       location: Map<String, double>.from(data['location'] ?? {}),
@@ -233,9 +239,10 @@ class Status {
     };
   }
 }
+
 class WorkerDetails {
-  final String id;  // Agregado el campo id
-  final List<String> certificateImagePaths;
+  final String id; // Agregado el campo id
+  final String certificateImagePaths;
   final String imagePath;
   final String displayName;
   final String email;
@@ -243,7 +250,7 @@ class WorkerDetails {
   final List<Expertise> expertises;
 
   WorkerDetails({
-    required this.id,  // Asegúrate de inicializar el id
+    required this.id, // Asegúrate de inicializar el id
     required this.certificateImagePaths,
     required this.imagePath,
     required this.displayName,
@@ -254,19 +261,19 @@ class WorkerDetails {
 
   factory WorkerDetails.fromMap(Map<String, dynamic> data) {
     return WorkerDetails(
-      id: data['id'] ?? '',  // Mapea el id desde el documento
-      certificateImagePaths: List<String>.from(data['certificateImagePaths'] ?? []),
+      id: data['id'] ?? '', // Mapea el id desde el documento
+      certificateImagePaths:  data['certificateImagePaths'] ?? [],
       imagePath: data['imagePath'] ?? '',
       displayName: data['displayName'] ?? '',
       email: data['email'] ?? '',
       expLevel: List<String>.from(data['expLevel'] ?? []),
       expertises: (data['expertises'] as List<dynamic>?)
               ?.map((item) => Expertise.fromMap(item))
-              .toList() ?? [],
+              .toList() ??
+          [],
     );
   }
 }
-
 
 class Expertise {
   final String id;
@@ -281,6 +288,3 @@ class Expertise {
     );
   }
 }
-
-
-

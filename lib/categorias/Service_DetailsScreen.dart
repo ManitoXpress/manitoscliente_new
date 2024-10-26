@@ -150,6 +150,9 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           return;
         }
 
+        // Obtener el devicesId (puedes cambiar este valor según tu implementación)
+        String? token = await AuthUtils.getToken();
+        String? devicesId = await AuthUtils.getDeviceId();
         // Construir el formulario con las URLs de las imágenes subidas
         final formData = {
           'Profesional': widget.subcategoryName,
@@ -163,6 +166,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           'expertises': expertisesJson,
           'categoryId': widget.categoryId,
           'subcategoryId': widget.subcategoryId,
+          'devicesId': devicesId, // Aquí agregas el devicesId
         };
 
         // Enviar datos al backend
@@ -176,6 +180,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           widget.serviceRequest.status,
           widget.subcategoryName,
           imageUrls,
+          devicesId, // Aquí también pasas el devicesId al método de envío
         );
 
         Navigator.of(context).pop(); // Cerrar el diálogo de carga
