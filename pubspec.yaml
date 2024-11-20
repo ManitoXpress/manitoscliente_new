@@ -2,7 +2,7 @@ name: manitoscliente_new
 description: "Projecto ManitosXpress."
 publish_to: 'none'
 
-version: 1.4.4+1
+version: 1.5.1+1
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -22,7 +22,8 @@ dependencies:
   app_tracking_transparency: ^2.0.5
   flutter_screenutil: ^5.9.3
   flutter_local_notifications: ^17.2.2
-  firebase_app_check: ^0.3.0+2
+  firebase_app_check: ^0.3.1+6
+
   flutter_cupertino_date_picker_fork: ^1.0.7
   blobs: ^2.0.0
   flutter_blob: ^0.0.1
@@ -57,7 +58,7 @@ dependencies:
   http_parser: ^4.0.2
   geocoding: ^3.0.0
   intl: ^0.19.0
-  firebase_storage: ^12.3.0
+  firebase_storage: ^12.3.6
   uuid: ^4.1.0
 
   flutter_rating_bar: ^4.0.1
