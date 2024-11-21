@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-                            email: userData.email, selectedCountryCode: '', location: {}, paymentType: '',
+                            email: userData.email, selectedCountryCode: '', location: {}, paymentType: '', devicesId: '', fcmToken: '',
 
                           ),  phoneNumber: '',  imagePath: '', paymentType: '',
                         ),

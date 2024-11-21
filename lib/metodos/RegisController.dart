@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_wizard/flutter_wizard.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-
 class RegistrationController {
   RegistrationData registrationData = RegistrationData(userId: '',
       displayName: '',
@@ -13,7 +12,9 @@ class RegistrationController {
       location: {},
       paymentType: '',
 
-      email: '', selectedCountryCode: '', );
+      devicesId: '',
+
+      email: '', selectedCountryCode: '', fcmToken: '', );
   TextEditingController displayNameController = TextEditingController();
   TextEditingController idDocumentController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
@@ -66,6 +67,8 @@ class RegistrationData {
   String phoneNumber;
   String paymentType;
   String selectedCountryCode;
+  String devicesId;
+  String fcmToken;
 
 
   Map<String, double?>? location;
@@ -79,6 +82,8 @@ class RegistrationData {
     required String phoneNumber,
     required String paymentType,
     required String selectedCountryCode,
+    required String devicesId,
+    required String fcmToken,
 
     required Map<String, double?>? location,
     required String email,
@@ -93,6 +98,9 @@ class RegistrationData {
 
 
         email = email,
+
+        devicesId = devicesId,
+        fcmToken = fcmToken,
         location = location;
 
 
@@ -100,6 +108,8 @@ class RegistrationData {
   RegistrationData({
     required this.userId,
     required this.displayName,
+    required this.devicesId,
+    required this.fcmToken,
 
     required this.phoneNumber,
 

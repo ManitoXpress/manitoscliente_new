@@ -40,6 +40,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GMSApiKey</key>
 	<string>AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>google</string>
@@ -62,7 +64,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Esta aplicación necesita acceso a la biblioteca de fotos para que los usuarios puedan seleccionar y cargar imágenes desde su galería.</string>
 	<key>NSUserNotificationUsageDescription</key>
-	<string>Esta aplicación necesita permisos para enviarle notificaciones.</string>
+	<string>Esta aplicación utiliza notificaciones para mantenerlo informado sobre eventos importantes.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Esta aplicación utiliza su ID de dispositivo para ofrecerle una mejor experiencia y contenido personalizado.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

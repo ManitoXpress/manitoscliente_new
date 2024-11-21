@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/metodos/auth_utils.dart';
 
 
 import '../ServicesResponse/ResponseGet.dart';
@@ -33,6 +34,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   late TextEditingController phoneNumberController;
 
   final customColor = CustomColor.materialColor;
+  String? fcmToken;
 
   @override
   void initState() {
@@ -60,13 +62,13 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
         // Construir un nuevo RegistrationData con los cambios y mantener los valores antiguos si los campos están vacíos
         RegistrationData registrationData = RegistrationData(
-          userId: user.uid, displayName: '', phoneNumber: '', selectedCountryCode: '', email: '', location: {}, paymentType: '',
+          userId: user.uid, displayName: '', phoneNumber: '', selectedCountryCode: '', email: '', location: {}, paymentType: '', devicesId: '', fcmToken: '',
         );
-
+        String? devicesId = await AuthUtils.getDeviceId();
         final response = await apiService.updateUser(
           user.uid,
           registrationData,
-          token!,
+          token!, devicesId, fcmToken,
         );
 
         if (response.statusCode == 200) {
@@ -105,7 +107,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           TextFormField(
             controller: idCardNumberController,
             decoration: InputDecoration(
-              labelText: 'Número de Carnet',
+              labelText: 'Número de Carné',
               labelStyle: MyTextStyles.formServiceTextStyle,
             ),
             style: MyTextStyles.formServiceTextStyle,

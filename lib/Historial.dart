@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -51,7 +52,6 @@ class _HistorialState extends State<Historial>
   @override
   void initState() {
     super.initState();
-   
 
     registrationData = RegistrationData(
       userId: '',
@@ -61,6 +61,8 @@ class _HistorialState extends State<Historial>
       selectedCountryCode: '',
       location: {},
       email: '',
+      devicesId: '',
+      fcmToken: '',
     );
 
     userData = UserData(
@@ -81,9 +83,7 @@ class _HistorialState extends State<Historial>
     });
     calculateUnreadMessagesCount();
 
-
     _activateForegroundListener();
-
   }
 
   Future<void> _checkForOffers() async {
@@ -105,8 +105,6 @@ class _HistorialState extends State<Historial>
     _foregroundServiceListener?.cancel();
     super.dispose();
   }
-
-  
 
   Future<double?> fetchOfferedPrice(String serviceId) async {
     try {
@@ -170,14 +168,14 @@ class _HistorialState extends State<Historial>
           .doc(workerId)
           .get();
 
-    if (workerSnapshot.exists) {
-      print('Documento del trabajador encontrado.');
-      final data = workerSnapshot.data()!;
-      print('Datos del trabajador: $data');  // Imprime todos los datos para verlos
+      if (workerSnapshot.exists) {
+        print('Documento del trabajador encontrado.');
+        final data = workerSnapshot.data()!;
+        print(
+            'Datos del trabajador: $data'); // Imprime todos los datos para verlos
 
-      return WorkerDetails.fromMap(data);
-
-  } else {
+        return WorkerDetails.fromMap(data);
+      } else {
         print(
             'No se encontró ningún documento en la colección "workers" con workerId: $workerId');
       }
@@ -186,6 +184,11 @@ class _HistorialState extends State<Historial>
     }
     return null;
   }
+  Future<String> obtenerDeviceId() async {
+  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+  AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+  return androidInfo.id ?? "unknown_device_id";
+}
 
   Future<void> fetchDataForUserId() async {
     try {
@@ -204,12 +207,19 @@ class _HistorialState extends State<Historial>
             statuses = [cachedRequest.status.name];
           });
         } else {
+          final deviceId = await obtenerDeviceId();
           final column = "";
           final value = "";
           final type = "";
 
-          final serviceResponse = await ApiService2()
-              .getByUserId(userId, token!, column, value, type);
+          final serviceResponse = await ApiService2().getByUserId(
+            userId,
+            token!,
+            column,
+            value,
+            type,
+            deviceId: deviceId,
+          );
 
           if (serviceResponse.statusCode == 200) {
             try {
@@ -265,7 +275,8 @@ class _HistorialState extends State<Historial>
                     selectedDate: '',
                     selectedTime: '',
                   ),
-                  subcategoryName: item['subcategoryName'] ?? '', devicesId: '',
+                  subcategoryName: item['subcategoryName'] ?? '',
+                  devicesId: '',
                 );
               }).toList();
 
@@ -590,6 +601,7 @@ class _HistorialState extends State<Historial>
       ),
     );
   }
+
   void _activateForegroundListener() {
     // Listener para escuchar los cambios en la colección 'serviceRequests'
     _foregroundServiceListener = FirebaseFirestore.instance
@@ -624,15 +636,10 @@ class _HistorialState extends State<Historial>
     );
   }
 
- 
- 
-
   void _refreshHistorial() async {
     await fetchDataForUserId();
     setState(() {});
   }
-
-
 
   void _openChatScreen() {
     if (serviceRequests.isNotEmpty) {

@@ -153,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await FirebaseAuth.instance.signOut();
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LoginScreen()));
+          MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',)));
     } catch (e) {
       print('Error al cerrar sesión: $e');
     }

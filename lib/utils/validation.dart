@@ -1,8 +1,10 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:manitoscliente_new/metodos/auth_utils.dart';
 
 import '../ServicesResponse/ResponseGet.dart';
 import '../ServicesResponse/ResponsePost.dart';
@@ -37,10 +39,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   late LocationAndFavoritesWizard step2Location;
   late RegistrationController registrationController;
   bool formCompleted = false;
+  String? fcmToken;
   LatLng? location;
   @override
   void initState() {
-    super.initState();
+    super.initState(
+
+    );
+
+    // Obtener el FCM Token
+    FirebaseMessaging.instance.getToken().then((value) {
+      setState(() {
+        fcmToken = value;
+      });
+    });
 
     setState(() {
       registrationData = RegistrationData(
@@ -50,7 +62,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
         location: {},
         email: '',
-        selectedCountryCode: '', paymentType: '',
+        selectedCountryCode: '', paymentType: '', devicesId: '', fcmToken: '',
       );
 
       userData = UserData(
@@ -125,65 +137,126 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<void> _completeRegistration() async {
-    print('Entrando a _completeRegistration');
+  print('Entrando a _completeRegistration');
+
+  try {
+    final apiService = ApiService();
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print('Advertencia: Usuario no autenticado');
+      return;
+    }
+
+    if (currentStep < 1) {
+      print('Completa todos los pasos del formulario antes de completar el registro.');
+      return;
+    }
+
+    // Obtener Device ID y FCM Token con manejo de errores mejorado
+    String? devicesId;
+    String? fcmToken;
 
     try {
-      final apiService = ApiService();
-      User? user = FirebaseAuth.instance.currentUser;
+      devicesId = await AuthUtils.getDeviceId();
+      
+      // Solicitar permiso explícitamente antes de obtener el token
+      NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
 
-      if (user != null) {
-        if (currentStep < 1) {
-          print('Completa todos los pasos del formulario antes de completar el registro.');
-          return;
-        }
-
-        registrationData.userId = user.uid;
-        registrationData.location = {
-          'lat': location?.latitude ?? 0.0,
-          'lng': location?.longitude ?? 0.0,
-        };
-
-        registrationData = RegistrationData.fromForm(
-          userId: user.uid,
-          displayName: userData.displayName, // Utiliza el displayName del userData
-          phoneNumber: userData.phoneNumber,
-          location: userData.location,
-          email: userData.email,
-          paymentType: userData.paymentType,
-          selectedCountryCode: '',
-
-        );
-
-        print('Después de RegistrationData.fromForm:');
-        String? token = await user.getIdToken();
-
-        final response = await apiService.updateUser(
-          user.uid,
-          registrationData,
-          token!,
-        );
-
-        widget.completeRegistrationCallback();
-
-        if (response.statusCode == 200) {
-          print('Usuario actualizado con éxito');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-          );
-        } else {
-          print('Error en la respuesta del servidor: ${response.statusCode}');
-        }
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        fcmToken = await _getFirebaseMessagingToken();
       } else {
-        print(
-            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.'
-        );
+        print('El usuario no ha concedido permisos de notificación');
+        fcmToken = null;
       }
-    } catch (error) {
-      print('Error durante el proceso de registro: $error');
+    } catch (e) {
+      print('Error obteniendo Device ID o FCM Token: $e');
+      devicesId = null;
+      fcmToken = null;
+    }
+
+    // Validar que los valores no sean nulos
+    if (devicesId == null) {
+      devicesId = 'unknown_device_id';
+    }
+
+    if (fcmToken == null) {
+      fcmToken = 'no_fcm_token';
+    }
+
+    registrationData = RegistrationData.fromForm(
+      userId: user.uid,
+      displayName: userData.displayName,
+      phoneNumber: userData.phoneNumber,
+      location: userData.location,
+      email: userData.email,
+      paymentType: userData.paymentType,
+      selectedCountryCode: '',
+      devicesId: devicesId,
+      fcmToken: fcmToken,
+    );
+
+    print('Device ID: $devicesId');
+    print('FCM Token: $fcmToken');
+
+    String? token = await user.getIdToken();
+
+    if (token == null) {
+      print('Error: No se pudo obtener el token de autenticación');
+      return;
+    }
+
+    final response = await apiService.updateUser(
+      user.uid,
+      registrationData,
+      token,
+      devicesId,
+      fcmToken,
+    );
+
+    if (response.statusCode == 200) {
+      print('Usuario actualizado con éxito');
+      widget.completeRegistrationCallback();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    } else {
+      print('Error en la respuesta del servidor: ${response.statusCode}');
+    }
+  } catch (error, stackTrace) {
+    print('Error durante el proceso de registro: $error');
+    print(stackTrace);
+  }
+}
+
+// Método personalizado para obtener el token con múltiples intentos
+Future<String?> _getFirebaseMessagingToken() async {
+  String? token;
+  int maxAttempts = 3;
+  
+  for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      token = await FirebaseMessaging.instance.getToken();
+      
+      if (token != null) {
+        return token;
+      }
+      
+      // Esperar un poco antes del siguiente intento
+      await Future.delayed(Duration(seconds: 2));
+    } catch (e) {
+      print('Intento $attempt de obtener token fallido: $e');
     }
   }
-
+  
+  return null;
+}
 
 
   @override

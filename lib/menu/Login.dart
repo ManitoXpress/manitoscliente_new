@@ -25,7 +25,7 @@ import '../metodos/RegisController.dart';
 import '../widgets/welcome.dart';
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({Key? key}) : super(key: key);
+  LoginScreen({Key? key, required String deviceId}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginFormState();
@@ -65,8 +65,14 @@ class _LoginFormState extends State<LoginScreen> {
       String value = "pipe-repair";
       String type = "match";
 
-      final response = await ApiService2()
-          .getByUserId(userId, token, column, value, type);
+      final response = await ApiService2().getByUserId(
+        userId,
+        token,
+        column,
+        value,
+        type,
+        deviceId: '',
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
@@ -93,8 +99,8 @@ class _LoginFormState extends State<LoginScreen> {
       (data) {
         final file = rive.RiveFile.import(data);
         final artboard = file.mainArtboard;
-        stateMachineController =
-            rive.StateMachineController.fromArtboard(artboard, "State Machine 1");
+        stateMachineController = rive.StateMachineController.fromArtboard(
+            artboard, "State Machine 1");
         if (stateMachineController != null) {
           artboard.addController(stateMachineController!);
 
@@ -168,11 +174,14 @@ class _LoginFormState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
-      final userDoc = await _firestore.collection('workers').doc(userCredential.user?.uid).get();
+      final userDoc = await _firestore
+          .collection('workers')
+          .doc(userCredential.user?.uid)
+          .get();
 
       if (userDoc.exists) {
         successTrigger?.fire();
-        _navigateToCardScreenPage(); 
+        _navigateToCardScreenPage();
       } else {
         failTrigger?.fire();
         showDialog(
@@ -200,31 +209,34 @@ class _LoginFormState extends State<LoginScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text("Inicio de sesión fallido"),
-            content: Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
+            content:
+                Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
             actions: [
               TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF090909), backgroundColor: const Color(0xFFE8E8E8), // Color del texto
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 28), // Padding
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8), // Bordes redondeados
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF090909),
+                  backgroundColor: const Color(0xFFE8E8E8), // Color del texto
+                  padding: EdgeInsets.symmetric(
+                      vertical: 12, horizontal: 28), // Padding
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(8), // Bordes redondeados
+                  ),
+                  side: BorderSide(
+                    color: const Color(0xFFE8E8E8), // Color del borde
+                    width: 1, // Ancho del borde
+                  ),
                 ),
-                side: BorderSide(
-                  color: const Color(0xFFE8E8E8), // Color del borde
-                  width: 1, // Ancho del borde
+                child: Text(
+                  "Aceptar",
+                  style: TextStyle(
+                    fontSize: 18, // Tamaño de fuente
+                  ),
                 ),
               ),
-              child: Text(
-                "Aceptar",
-                style: TextStyle(
-                  fontSize: 18, // Tamaño de fuente
-                ),
-              ),
-            ),
-
             ],
           );
         },
@@ -242,7 +254,6 @@ class _LoginFormState extends State<LoginScreen> {
       setState(() => isLoadingGoogle = false);
     }
   }
-
   Future<void> signInWithApple() async {
     setState(() => isLoadingApple = true);
     try {
@@ -302,16 +313,7 @@ class _LoginFormState extends State<LoginScreen> {
           alignment: Alignment.center,
           children: [
             // Blob azul animado
-            Positioned(
-              top: 50,
-              left: 50,
-              child: AnimatedBlob(),
-            ),
-            Positioned(
-              top: 100,
-              right: 50,
-              child: AnimatedBlob(),
-            ),
+
             Center(
               child: Container(
                 width: 1.sw,
@@ -356,7 +358,8 @@ class _LoginFormState extends State<LoginScreen> {
                                       radius: 35.r,
                                       backgroundColor: Colors.white,
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             FontAwesomeIcons.google,

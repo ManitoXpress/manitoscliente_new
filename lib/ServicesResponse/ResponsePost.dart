@@ -47,7 +47,7 @@ class ApiService {
       ServiceRequest serviceRequest, String newStatusId, String token) async {
     try {
       final String? refreshedToken =
-          await FirebaseAuth.instance.currentUser?.getIdToken(true);
+      await FirebaseAuth.instance.currentUser?.getIdToken(true);
 
       if (refreshedToken == null) {
         print('Token de autenticación nulo o vacío');
@@ -169,83 +169,92 @@ class ApiService {
   }
 
   Future<http.Response> sendDataToBackend(
-  ServiceRequest serviceRequest,
-  String token,
-  String id,
-  String expertises,
-  String categoryId,
-  String subcategoryId,
-  Status status,
-  String subcategoryName,
-  List<String> imageUrls,
-  String? devicesId, // Asegúrate de que este parámetro esté aquí
-) async {
-  print('sendDataToBackend() called');
-  print('Enviando datos al backend:');
+      ServiceRequest serviceRequest,
+      String token,
+      String id,
+      String expertises,
+      String categoryId,
+      String subcategoryId,
+      Status status,
+      String subcategoryName,
+      List<String> imageUrls,
+      String? devicesId, // Asegúrate de que este parámetro esté aquí
+      String? fcmToken,
+      ) async {
+    print('sendDataToBackend() called');
+    print('Enviando datos al backend:');
 
-  // Convierte la latitud y longitud a double o usa 0.0 si son nulas
-  double latitude = serviceRequest.location['lat'] ?? 0.0;
-  double longitude = serviceRequest.location['lng'] ?? 0.0;
+    // Convierte la latitud y longitud a double o usa 0.0 si son nulas
+    double latitude = serviceRequest.location['lat'] ?? 0.0;
+    double longitude = serviceRequest.location['lng'] ?? 0.0;
 
-  // Construir expertises con el serviceType y el subcategoryId
-  final expertisesList = [
-    {
-      'id': subcategoryId,
-      'name': serviceRequest.serviceType.name,
-    }
-  ];
+    // Construir expertises con el serviceType y el subcategoryId
+    final expertisesList = [
+      {
+        'id': subcategoryId,
+        'name': serviceRequest.serviceType.name,
+      }
+    ];
 
-  // Crear una instancia de FormData
-  final formData = {
-    'subcategoryName': subcategoryName,
-    'serviceDateTime': serviceRequest.serviceDateTime,
-    'description': serviceRequest.description,
-    'images': imageUrls,
-    'location': {
-      'lat': latitude,
-      'lng': longitude,
-    },
-    'userId': serviceRequest.userId,
-    'status': status.id,
-    'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
-    'categoryId': categoryId,
-    'devicesId': devicesId, // Agrega devicesId aquí
-  };
-
-  print('FormData: $formData');
-  print('Token: $token');
-
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/services'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
+    // Crear una instancia de FormData
+    final formData = {
+      'subcategoryName': subcategoryName,
+      'serviceDateTime': serviceRequest.serviceDateTime,
+      'description': serviceRequest.description,
+      'images': imageUrls,
+      'location': {
+        'lat': latitude,
+        'lng': longitude,
       },
-      body: jsonEncode(formData),
-    );
+      'userId': serviceRequest.userId,
+      'status': status.id,
+      'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
+      'categoryId': categoryId,
+      'devicesId': devicesId, // Agrega devicesId aquí
+      'fcmToken': fcmToken,
+    };
 
-    if (response.statusCode == 200) {
-      print('Datos enviados al backend con éxito');
-    } else {
-      print('Solicitud HTTP: ${response.statusCode}');
+    print('FormData: $formData');
+    print('Token: $token');
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/services'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(formData),
+      );
+
+      if (response.statusCode == 200) {
+        print('Datos enviados al backend con éxito');
+      } else {
+        print('Solicitud HTTP: ${response.statusCode}');
+      }
+      return response;
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      throw Exception('Error al enviar datos al backend');
     }
-    return response;
-  } catch (e) {
-    print('Error en la solicitud HTTP: $e');
-    throw Exception('Error al enviar datos al backend');
   }
-}
 
 
   Future<http.Response> updateUser(
-      String userId, RegistrationData registrationData, String token) async {
+      String userId,
+      RegistrationData registrationData,
+      String token,
+      String? devicesId,
+      String? fcmToken,
+      ) async {
     try {
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,
         'phoneNumber': FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
         'location': registrationData.location ?? {},
         'paymentType': registrationData.paymentType,
+        'deviceId' : registrationData.devicesId,
+        'fcmToken' : registrationData.fcmToken,
       };
 
       print('Request Body: $requestBody');
@@ -291,16 +300,16 @@ class FormData {
 
   Map<String, dynamic> toMap() {
     return {
-      'dateTime': dateTime,
-      'description': description,
-      'images': images,
-      'location': {
-        'lat': location['lat'],
-        'lng': location['lng'],
-      },
-      'offeredPrice': offeredPrice,
-      'serviceType': serviceType,
-      'userId': userId,
+    'dateTime': dateTime,
+    'description': description,
+    'images': images,
+    'location': {
+    'lat': location['lat'],
+    'lng': location['lng'],
+    },
+    'offeredPrice': offeredPrice,
+    'serviceType': serviceType,
+    'userId': userId,
     };
   }
 }

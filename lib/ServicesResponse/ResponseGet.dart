@@ -51,24 +51,24 @@ class ApiService2 {
   }
 
   Future<String> getImageUrls(String userId, String imageName) async {
-  try {
-    String filePath = '$userId/$imageName';
-    print('Accediendo a la ruta de la imagen: $filePath');
+    try {
+      String filePath = '$userId/$imageName';
+      print('Accediendo a la ruta de la imagen: $filePath');
 
-    final Reference ref = FirebaseStorage.instance.ref().child(filePath);
+      final Reference ref = FirebaseStorage.instance.ref().child(filePath);
 
-    // Obtener la URL de descarga
-    final String downloadUrl = await ref.getDownloadURL();
+      // Obtener la URL de descarga
+      final String downloadUrl = await ref.getDownloadURL();
 
-    print('URL de descarga de la imagen: $downloadUrl');
+      print('URL de descarga de la imagen: $downloadUrl');
 
-    return downloadUrl;
-  } catch (e) {
-    print('Error al obtener la URL de la imagen: $e');
-    // Manejo del caso donde la imagen no existe o no se puede acceder
-    return '';
+      return downloadUrl;
+    } catch (e) {
+      print('Error al obtener la URL de la imagen: $e');
+      // Manejo del caso donde la imagen no existe o no se puede acceder
+      return '';
+    }
   }
-}
 
 
 
@@ -180,27 +180,59 @@ class ApiService2 {
     }
   }
 
-  Future<http.Response> getByUserId(String userId, String authToken, String column, String value, String type) async {
-  try {
-    final String? authTokenValue = await AuthUtils.getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/services?userId=$userId&columns=$column&values=$value&type=$type'),
-      headers: <String, String>{
-        'Authorization': 'Bearer $authTokenValue',
-      },
-    );
+  Future<http.Response> getByUserId(String userId, String authToken, String column, String value, String type, {required String deviceId}) async {
+    try {
+      final String? authTokenValue = await AuthUtils.getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/services?userId=$userId&columns=$column&values=$value&type=$type'),
+        headers: <String, String>{
+          'Authorization': 'Bearer $authTokenValue',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      print('Datos recibidos del backend con éxito');
-    } else {
-      print('Solicitud HTTP fallida: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        print('Datos recibidos del backend con éxito');
+      } else {
+        print('Solicitud HTTP fallida: ${response.statusCode}');
+      }
+      return response;
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      throw Exception('Error al obtener datos del backend');
     }
-    return response;
-  } catch (e) {
-    print('Error en la solicitud HTTP: $e');
-    throw Exception('Error al obtener datos del backend');
   }
-}
+  Future<http.Response> getServiceByIdAndName(
+      String categoryId, String serviceName, String token) async {
+    print('getServiceByIdAndName() called');
+    print('Obteniendo servicio del backend:');
+
+    // Construimos la URL con los parámetros necesarios
+    final String url = '$baseUrl/services?categoryId=$categoryId&name=$serviceName';
+
+    print('URL: $url');
+    print('Token: $token');
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('Servicio obtenido con éxito');
+      } else {
+        print('Solicitud HTTP fallida con código: ${response.statusCode}');
+      }
+      return response;
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      throw Exception('Error al obtener el servicio del backend');
+    }
+  }
+
 
 
   Future<http.Response> fetchServiceDetailsFromBackend(String userId, String serviceId) async {
@@ -362,15 +394,15 @@ class ServiceResponse {
     ))
         .toList();
     return ServiceResponse(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      image: json['image'] ?? '',
-      description: json['description'] ?? '',
-      serviceTypes: serviceTypes,
-      parentId: json['parentId'] ?? '', // Asegúrate de proporcionar un valor por defecto si es nulo
-      buttonTexts: json['buttonTexts'] != null ? List<String>.from(json['buttonTexts']) : [],
-      priceRanges: json['priceRanges'] != null ? List<dynamic>.from(json['priceRanges']) : [],
-      typeName: json['typeName'] ?? '', // Corregido el nombre del campo
-    );
-  }
+        id: json['id'] ?? '',
+        name: json['name'] ?? '',
+        image: json['image'] ?? '',
+        description: json['description'] ?? '',
+        serviceTypes: serviceTypes,
+        parentId: json['parentId'] ?? '', // Asegúrate de proporcionar un valor por defecto si es nulo
+        buttonTexts: json['buttonTexts'] != null ? List<String>.from(json['buttonTexts']) : [],
+        priceRanges: json['priceRanges'] != null ? List<dynamic>.from(json['priceRanges']) : [],
+        typeName: json['typeName'] ?? '', // Corregido el nombre del campo
+        );
+    }
 }

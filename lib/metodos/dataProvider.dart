@@ -19,7 +19,7 @@ class ApiDataProvider {
         String type = "";
 
 
-        final Response serviceResponse = await ApiService2().getByUserId(userId, token!, column, value, type, );
+        final Response serviceResponse = await ApiService2().getByUserId(userId, token!, column, value, type, deviceId: '', );
 
         print('Respuesta del servidor: ${serviceResponse.body}');
 
@@ -30,7 +30,6 @@ class ApiDataProvider {
             final List<ServiceRequest> serviceRequestsList = jsonDataList
                 .map((item) => ServiceRequest(
               id: item['id'],
-              devicesId: item['devicesId'],
               expertises:item['expertises'],
               serviceDateTime: item['serviceDateTime'],
               description: item['description'],
@@ -46,6 +45,7 @@ class ApiDataProvider {
               ),
               offeredPrice: (item['offeredPrice'] as num?)?.toDouble() ?? 0.0,
               userId: item['userId'],
+              devicesId: item['devicesId'],
               workerId: item['workerId'],
               isFavorite: item['isFavorite'] as bool? ?? false,
               acceptedTerms: item['acceptedTerms'] as bool? ?? false,

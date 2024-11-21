@@ -9,6 +9,7 @@ class UserData {
   Map<String, double?>? location;
   String paymentType;
   String email;
+
   RegistrationData registrationData; // Nueva propiedad
 
   UserData({
@@ -20,6 +21,7 @@ class UserData {
     required this.paymentType,
     required this.getToken,
     required this.email,
+
     required this.registrationData, // Nueva propiedad
   });
 
@@ -53,7 +55,7 @@ class UserData {
 
       location: location,
 
-      email: email,
+      email: email, devicesId: '', fcmToken: '',
 
     ),
   );
@@ -85,7 +87,7 @@ class UserData {
               : null,
 
 
-          email: json['email'] ?? '',
+          email: json['email'] ?? '', devicesId: '', fcmToken: '',
 
         ),
       );
@@ -108,7 +110,7 @@ class UserData {
 
           location: {},
 
-          email: '',
+          email: '', devicesId: '', fcmToken: '',
         ), getToken: '',
       );
     }
