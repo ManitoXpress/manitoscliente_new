@@ -179,7 +179,7 @@ class ApiService {
       String subcategoryName,
       List<String> imageUrls,
       String? devicesId, // Asegúrate de que este parámetro esté aquí
-      String? fcmToken,
+   
       ) async {
     print('sendDataToBackend() called');
     print('Enviando datos al backend:');
@@ -211,7 +211,7 @@ class ApiService {
       'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
       'categoryId': categoryId,
       'devicesId': devicesId, // Agrega devicesId aquí
-      'fcmToken': fcmToken,
+  
     };
 
     print('FormData: $formData');

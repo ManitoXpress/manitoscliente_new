@@ -106,38 +106,49 @@ class ServiceRequest {
       'acceptedTerms': acceptedTerms,
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'subcategoryName':
-          subcategoryName, // Convierte la lista de Expertises a Map
+      subcategoryName, // Convierte la lista de Expertises a Map
     };
   }
 
   factory ServiceRequest.fromSnapshot(DocumentSnapshot snapshot) {
-    final data = snapshot.data() as Map<String, dynamic>;
-    return ServiceRequest(
-      serviceDateTime: data['serviceDateTime'] ?? '',
-      id: data['id'] ?? '',
-      devicesId: data ['devicesId'] ?? '',
-      description: data['description'] ?? '',
-      images: List<String>.from(data['images'] ?? []),
-      location: Map<String, double>.from(data['location'] ?? {}),
-      offeredPrice: _parseOfferedPrice(data['offeredPrice']),
-      serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
-      userId: data['userId'] ?? '',
-      workerId: data['workerId'] ?? '',
-      isFavorite: data['isFavorite'] ?? false,
-      selectedDate: data['selectedDate'],
-      selectedTime: data['selectedTime'],
-      acceptedTerms: data['acceptedTerms'] ?? false,
-      expertises: data['expertises'] != null
-          ? List<Expertises>.from(
-              (data['expertises'] as List).map((e) => Expertises.fromMap(e)))
-          : [], // Garantiza que expertises sea siempre una lista válida
-      status: Status(
-        id: data['status'] ?? '',
-        name: Status.getNameById(data['status'] ?? ''),
-      ),
-      subcategoryName: data['subcategoryName'] ?? '',
-    );
-  }
+  final data = snapshot.data() as Map<String, dynamic>;
+  return ServiceRequest(
+    serviceDateTime: data['serviceDateTime']?.toString() ?? '',
+    id: data['id']?.toString() ?? '',
+    devicesId: data['devicesId']?.toString() ?? '',
+    description: data['description']?.toString() ?? '',
+    images: (data['images'] as List<dynamic>?)
+            ?.map((image) => image?.toString() ?? '')
+            .toList() ??
+        [],
+    location: Map<String, double>.from(
+      (data['location'] as Map<String, dynamic>?)
+              ?.map((key, value) => MapEntry(
+                    key.toString(),
+                    (value is int) ? value.toDouble() : (value as double? ?? 0.0),
+                  )) ??
+          {},
+    ),
+    offeredPrice: _parseOfferedPrice(data['offeredPrice']),
+    serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
+    userId: data['userId']?.toString() ?? '',
+    workerId: data['workerId']?.toString() ?? '',
+    isFavorite: data['isFavorite'] as bool? ?? false,
+    selectedDate: data['selectedDate']?.toString(),
+    selectedTime: data['selectedTime']?.toString(),
+    acceptedTerms: data['acceptedTerms'] as bool? ?? false,
+    expertises: (data['expertises'] as List<dynamic>?)
+            ?.map((e) => Expertises.fromMap(e as Map<String, dynamic>))
+            .toList() ??
+        [],
+    status: Status(
+      id: data['status']?.toString() ?? '',
+      name: Status.getNameById(data['status']?.toString() ?? ''),
+    ),
+    subcategoryName: data['subcategoryName']?.toString() ?? '',
+  );
+}
+
 
   // Función para convertir el precio ofrecido a un número decimal
   static double _parseOfferedPrice(dynamic value) {
@@ -262,14 +273,15 @@ class WorkerDetails {
   factory WorkerDetails.fromMap(Map<String, dynamic> data) {
     return WorkerDetails(
       id: data['id'] ?? '', // Mapea el id desde el documento
-      certificateImagePaths:  data['certificateImagePaths'] ?? [],
+      certificateImagePaths:
+      data['certificateImagePaths'] ?? [],
       imagePath: data['imagePath'] ?? '',
       displayName: data['displayName'] ?? '',
       email: data['email'] ?? '',
       expLevel: List<String>.from(data['expLevel'] ?? []),
       expertises: (data['expertises'] as List<dynamic>?)
-              ?.map((item) => Expertise.fromMap(item))
-              .toList() ??
+          ?.map((item) => Expertise.fromMap(item))
+          .toList() ??
           [],
     );
   }
@@ -283,8 +295,8 @@ class Expertise {
 
   factory Expertise.fromMap(Map<String, dynamic> data) {
     return Expertise(
-      id: data['id'] ?? '',
-      name: data['name'] ?? '',
-    );
-  }
+        id: data['id'] ?? '',
+        name: data['name'] ?? '',
+        );
+    }
 }

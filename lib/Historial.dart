@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -34,25 +35,26 @@ class Historial extends StatefulWidget {
   _HistorialState createState() => _HistorialState();
 }
 
-class _HistorialState extends State<Historial>
-    with SingleTickerProviderStateMixin {
+class _HistorialState extends State<Historial> with SingleTickerProviderStateMixin {
   List<ServiceRequest> serviceRequests = [];
   List<String> statuses = [];
   late final UserData userData;
   int unreadMessagesCount = 0;
   int offerServiceCount = 0;
   StreamSubscription? _foregroundServiceListener;
-  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
   late final RegistrationData registrationData;
   late TabController _tabController;
   final ApiService apiService = ApiService();
   late NotificationService notificationService;
+  Timer? _notificationTimer;
+  bool isLoading = false;
+  int notificationCount = 0;
+  NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
-
     registrationData = RegistrationData(
       userId: '',
       displayName: '',
@@ -60,9 +62,7 @@ class _HistorialState extends State<Historial>
       paymentType: '',
       selectedCountryCode: '',
       location: {},
-      email: '',
-      devicesId: '',
-      fcmToken: '',
+      email: '', devicesId: '', fcmToken: '',
     );
 
     userData = UserData(
@@ -77,35 +77,47 @@ class _HistorialState extends State<Historial>
       getToken: '',
     );
 
+    // Configurar el controlador de pestañas
     _tabController = TabController(length: 5, vsync: this);
+
+    // Obtener datos y verificar ofertas
     fetchDataForUserId().then((_) {
       _checkForOffers();
     });
+
+    // Calcular mensajes no leídos
     calculateUnreadMessagesCount();
 
-    _activateForegroundListener();
+
+
+
+
+ 
   }
+
 
   Future<void> _checkForOffers() async {
     // Espera a que se carguen los datos
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(Duration(seconds: 2));
 
     final hasOffers =
-        serviceRequests.any((request) => request.status.id == 'offer');
+    serviceRequests.any((request) => request.status.id == 'offer');
 
     if (hasOffers) {
       // Cambia a la pestaña de 'Ofertados' si hay servicios en oferta
       _tabController.animateTo(1);
-    }
-  }
 
+
+    }
+
+  }
   @override
   void dispose() {
+
     _tabController.dispose();
     _foregroundServiceListener?.cancel();
     super.dispose();
   }
-
   Future<double?> fetchOfferedPrice(String serviceId) async {
     try {
       final querySnapshot = await FirebaseFirestore.instance
@@ -129,7 +141,6 @@ class _HistorialState extends State<Historial>
     }
     return null;
   }
-
   Future<WorkerDetails?> getWorkerDetails(String serviceId) async {
     try {
       print('Buscando en la colección "offers" con serviceId: $serviceId');
@@ -159,6 +170,25 @@ class _HistorialState extends State<Historial>
     }
     return null;
   }
+  Future<String> obtenerDeviceId() async {
+  try {
+    final deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      final id = androidInfo.id?.toString() ?? 'Unknown Device ID';
+      return id;
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      final id = iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
+      return id;
+    } else {
+      return 'Unsupported Platform';
+    }
+  } catch (e) {
+    print('Error obteniendo Device ID: $e');
+    return 'Error Device ID';
+  }
+}
 
   Future<WorkerDetails?> fetchWorkerDetails(String workerId) async {
     try {
@@ -171,9 +201,6 @@ class _HistorialState extends State<Historial>
       if (workerSnapshot.exists) {
         print('Documento del trabajador encontrado.');
         final data = workerSnapshot.data()!;
-        print(
-            'Datos del trabajador: $data'); // Imprime todos los datos para verlos
-
         return WorkerDetails.fromMap(data);
       } else {
         print(
@@ -184,130 +211,147 @@ class _HistorialState extends State<Historial>
     }
     return null;
   }
-  Future<String> obtenerDeviceId() async {
-  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-  AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-  return androidInfo.id ?? "unknown_device_id";
+  Future<void> fetchDataForUserId() async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      final userId = user.uid;
+      final token = await user.getIdToken();
+
+      // Verificar si los datos están en caché
+      final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
+      if (cachedRequest != null) {
+        print('Datos del caché encontrados. Mostrando datos del caché...');
+        setState(() {
+          serviceRequests = [cachedRequest];
+          statuses = [cachedRequest.status.name];
+        });
+        return; // Salir si los datos del caché ya están disponibles
+      }
+
+      // Obtener el Device ID
+      final deviceId = await obtenerDeviceId();
+      final column = "";
+      final value = "";
+      final type = "";
+
+      // Realizar solicitud al backend
+      final serviceResponse = await ApiService2().getByUserId(
+        userId,
+        token ?? '',
+        column,
+        value,
+        type,
+        deviceId: deviceId,
+      );
+
+      if (serviceResponse.statusCode == 200) {
+        // Procesar los datos recibidos
+        final List<dynamic> jsonDataList =
+            (json.decode(serviceResponse.body) as List<dynamic>? ?? [])
+                .where((item) => item != null) // Filtrar elementos nulos
+                .toList();
+
+        final List<ServiceRequest> serviceRequestsList = jsonDataList.map((item) {
+  try {
+    // Validar y procesar cada campo
+    final id = item['id']?.toString() ?? 'ID no disponible';
+    final description = item['description']?.toString() ?? 'Sin descripción';
+    final devicesId = item['devicesId']?.toString() ?? 'Dispositivo no disponible';
+    final categoryId = item['categoryId']?.toString() ?? 'Categoría no disponible';
+    final serviceDateTime = item['serviceDateTime']?.toString() ?? '';
+    final statusName = item['status']?.toString() ?? 'unknown';
+    final subcategoryName = item['subcategoryName']?.toString() ?? 'Sin subcategoría';
+    final userId = item['userId']?.toString() ?? 'Usuario no disponible';
+
+    // Validar status
+    final status = Status(
+      id: statusName,
+      name: Status.getNameById(statusName),
+    );
+
+    // Validar imágenes
+    final images = (item['images'] as List<dynamic>?)
+        ?.map((image) => image?.toString() ?? '')
+        .toList() ?? [];
+
+    // Validar ubicación
+    final locationData = item['location'] as Map<String, dynamic>? ?? {};
+    final location = locationData.map((key, value) {
+      return MapEntry(
+        key.toString(),
+        value is int ? value.toDouble() : (value as double? ?? 0.0),
+      );
+    });
+
+    // Validar expertises
+    final expertisesArray = item['expertises'] as List<dynamic>? ?? [];
+    final expertisesList = expertisesArray.map((expertiseItem) {
+      final expertiseId = expertiseItem['id']?.toString() ?? 'Sin ID';
+      final expertiseName = expertiseItem['name']?.toString() ?? 'Sin nombre';
+      return Expertises(id: expertiseId, name: expertiseName);
+    }).toList();
+
+    // Crear y devolver el objeto ServiceRequest
+    return ServiceRequest(
+      id: id,
+      description: description,
+      devicesId: devicesId,
+      serviceDateTime: serviceDateTime,
+      status: status,
+      images: images,
+      location: location,
+      expertises: expertisesList,
+      userId: userId,
+      subcategoryName: subcategoryName,
+      serviceType: ServiceType(
+        id: categoryId,
+        name: subcategoryName,
+        selectedDate: '',
+        selectedTime: '',
+      ),
+      offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+      workerId: item['workerId']?.toString() ?? 'Sin trabajador',
+      isFavorite: item['isFavorite'] as bool? ?? false,
+      acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+    );
+  } catch (e) {
+    print('Error procesando item: $e');
+    return null; // Si algo falla, devolver null
+  }
+}).where((request) => request != null).cast<ServiceRequest>().toList();
+
+        // Actualizar estado y guardar en caché
+        setState(() {
+          serviceRequests = serviceRequestsList;
+          statuses = serviceRequestsList.map((request) => request.status.name).toList();
+        });
+
+        // Cachear los resultados
+        serviceRequests.forEach((request) {
+          LocalCacheService.cacheServiceRequest(request);
+        });
+
+        print(
+            'Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
+      } else {
+        print('Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
+      }
+    } else {
+      print('Usuario no autenticado');
+    }
+  } catch (e, stackTrace) {
+  print('Error en la solicitud HTTP: $e');
+  print('Stack trace: $stackTrace');
 }
 
-  Future<void> fetchDataForUserId() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
+}
 
-      if (user != null) {
-        final userId = user.uid;
-        final token = await user.getIdToken();
 
-        final cachedRequest =
-            await LocalCacheService.getCachedServiceRequest(userId);
-        if (cachedRequest != null) {
-          print('Datos del caché encontrados. Mostrando datos del caché...');
-          setState(() {
-            serviceRequests = [cachedRequest];
-            statuses = [cachedRequest.status.name];
-          });
-        } else {
-          final deviceId = await obtenerDeviceId();
-          final column = "";
-          final value = "";
-          final type = "";
 
-          final serviceResponse = await ApiService2().getByUserId(
-            userId,
-            token!,
-            column,
-            value,
-            type,
-            deviceId: deviceId,
-          );
 
-          if (serviceResponse.statusCode == 200) {
-            try {
-              final List<dynamic> jsonDataList =
-                  json.decode(serviceResponse.body);
-              final List<dynamic> filteredJsonDataList =
-                  jsonDataList.where((item) {
-                return item['userId'] == userId;
-              }).toList();
 
-              final List<ServiceRequest> serviceRequestsList =
-                  filteredJsonDataList.map((item) {
-                final statusName = item['status'] as String? ?? 'unknown';
-                final status = Status(
-                    id: statusName, name: Status.getNameById(statusName));
-
-                final List<dynamic> expertisesArray =
-                    item['expertises'] as List<dynamic>? ?? [];
-                final Map<String, dynamic> expertiseItem =
-                    expertisesArray.isNotEmpty ? expertisesArray.first : {};
-
-                return ServiceRequest(
-                  expertises: [
-                    Expertises(
-                      id: expertiseItem['id'] ?? '',
-                      name: expertiseItem['name'] ?? '',
-                    )
-                  ],
-                  id: item['id'] ?? '',
-                  serviceDateTime: item['serviceDateTime'] ?? '',
-                  description: item['description'] ?? '',
-                  images: (item['images'] as List<dynamic>?)
-                          ?.map((image) => image as String? ?? '')
-                          .toList() ??
-                      [],
-                  location: Map<String, double>.from(
-                    (item['location'] as Map<String, dynamic>?)
-                            ?.map((key, value) {
-                          return MapEntry(
-                              key, (value is int) ? value.toDouble() : value);
-                        }) ??
-                        {},
-                  ),
-                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                  userId: item['userId'] ?? '',
-                  workerId: item['workerId'] ?? '',
-                  status: status,
-                  isFavorite: item['isFavorite'] as bool? ?? false,
-                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                  serviceType: ServiceType(
-                    name: item['serviceType'] ?? '',
-                    id: '',
-                    selectedDate: '',
-                    selectedTime: '',
-                  ),
-                  subcategoryName: item['subcategoryName'] ?? '',
-                  devicesId: '',
-                );
-              }).toList();
-
-              setState(() {
-                serviceRequests = serviceRequestsList;
-                statuses = serviceRequestsList
-                    .map((request) => request.status.name)
-                    .toList();
-              });
-
-              serviceRequests.forEach((request) {
-                LocalCacheService.cacheServiceRequest(request);
-              });
-
-              print(
-                  'Servicios cargados con éxito. Total de servicios obtenidos del backend: ${serviceRequests.length}');
-            } catch (e) {
-              print('Error al decodificar la respuesta JSON: $e');
-            }
-          } else {
-            print(
-                'Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
-          }
-        }
-      } else {
-        print('Usuario no autenticado');
-      }
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +366,7 @@ class _HistorialState extends State<Historial>
           'Historial',
           style: MyTextStyles.buttonTextStyle3,
         ),
+
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(50.0),
           child: Container(
@@ -440,6 +485,7 @@ class _HistorialState extends State<Historial>
               ],
             ),
           ),
+
           SizedBox(height: 1.0),
           Expanded(
             child: TabBarView(
@@ -481,7 +527,7 @@ class _HistorialState extends State<Historial>
           return GestureDetector(
             onTap: () async {
               final workerDetails =
-                  await getWorkerDetails(filteredRequests[index].id);
+              await getWorkerDetails(filteredRequests[index].id);
 
               if (workerDetails != null) {
                 print(
@@ -524,7 +570,7 @@ class _HistorialState extends State<Historial>
                 return Container(
                   margin: EdgeInsets.only(bottom: screenHeight * 0.0),
                   width:
-                      screenWidth, // Asegura que el contenedor use todo el ancho disponible
+                  screenWidth, // Asegura que el contenedor use todo el ancho disponible
                   height: screenHeight * 0.24, // Altura del contenedor
                   child: CustomPaint(
                     size: Size(screenWidth, screenHeight * 0.35),
@@ -601,63 +647,12 @@ class _HistorialState extends State<Historial>
       ),
     );
   }
-
-  void _activateForegroundListener() {
-    // Listener para escuchar los cambios en la colección 'serviceRequests'
-    _foregroundServiceListener = FirebaseFirestore.instance
-        .collection('serviceRequests')
-        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-        .snapshots()
-        .listen((snapshot) {
-      // Procesar los cambios en los documentos
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          // Cuando se añade un nuevo servicio
-          _showInAppNotification(change.doc.data()!);
-        }
-      }
-
-      // Después de procesar los cambios, actualizamos la lista de servicios
-      _refreshHistorial();
-    });
-  }
-
-  void _showInAppNotification(Map<String, dynamic> serviceData) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Nuevo servicio ofertado: ${serviceData['description']}'),
-        action: SnackBarAction(
-          label: 'Ver',
-          onPressed: () {
-            // Navegar a los detalles del servicio
-          },
-        ),
-      ),
-    );
-  }
+ 
 
   void _refreshHistorial() async {
     await fetchDataForUserId();
     setState(() {});
   }
-
-  void _openChatScreen() {
-    if (serviceRequests.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No hay servicios disponibles para iniciar el chat.'),
-        ),
-      );
-    }
-  }
-
   void calculateUnreadMessagesCount() async {
     int count = 0;
     for (var request in serviceRequests) {
@@ -673,7 +668,6 @@ class _HistorialState extends State<Historial>
       unreadMessagesCount = count;
     });
   }
-
   double _parseOfferedPrice(dynamic value) {
     if (value is String) {
       try {
@@ -688,35 +682,10 @@ class _HistorialState extends State<Historial>
     return 0.0;
   }
 }
-
 String truncateDescription(String description) {
   final words = description.split(' ');
   if (words.length > 6) {
     return '${words.take(6).join(' ')}...';
   }
   return description;
-}
-
-Color _getTextColorByStatus(String statusId) {
-  final status = StatusUtils.getStatusById(statusId);
-
-  switch (status.id) {
-    case "available":
-      return Colors.green;
-    case "assigned":
-      return Colors.orange;
-    case "in_progress":
-      return Colors.black;
-    case "completed":
-      return Colors.blue;
-    case "cancelled":
-      return const Color(0xFF84090D);
-    default:
-      return Colors.grey;
-  }
-}
-
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("Handling a background message: ${message.messageId}");
-  // Aquí puedes agregar lógica adicional para manejar notificaciones en segundo plano
 }
