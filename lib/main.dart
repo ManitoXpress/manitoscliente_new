@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,10 +20,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // Handler para mensajes en segundo plano
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
-  // Aquí puedes manejar la lógica adicional para mensajes en segundo plano
+
+  // Manejar la notificación en segundo plano con NotificationService
+
 }
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,97 +45,68 @@ void main() async {
     appleProvider: AppleProvider.appAttest,
   );
 
-  runApp(MyApp());
+  // Inicializar el servicio de notificaciones
+  await FCMService().init();
+
+
+
+  // Obtener y guardar Device ID
+  final deviceId = await obtenerDeviceId();
+  print("Device ID: $deviceId");
+
+  runApp(MyApp(deviceId: deviceId));
+}
+Future<String> obtenerDeviceId() async {
+  try {
+    final deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      final id = androidInfo.id?.toString() ?? 'Unknown Device ID';
+      return id;
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      final id = iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
+      return id;
+    } else {
+      return 'Unsupported Platform';
+    }
+  } catch (e) {
+    print('Error obteniendo Device ID: $e');
+    return 'Error Device ID';
+  }
 }
 
 class MyApp extends StatefulWidget {
+  final String deviceId;
+
+  const MyApp({required this.deviceId});
+
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
   bool isLoading = true;
-  late NotificationService notificationService;
+
 
   @override
   void initState() {
     super.initState();
-    notificationService = NotificationService(); // Inicializar NotificationService
-    notificationService.initNotifications(context); // Inicializar notificaciones con contexto
-    _requestTrackingPermission(); // Solicitar permisos de tracking en iOS
-    _initializeFirebaseMessaging(); // Inicializar Firebase Messaging
     Future.delayed(const Duration(seconds: 10), () {
       setState(() {
-        isLoading = false; // Simulación de carga inicial
+        isLoading = false;
       });
     });
   }
 
-  // Solicitar permiso de App Tracking Transparency en iOS
-  Future<void> _requestTrackingPermission() async {
-    final TrackingStatus status =
-        await AppTrackingTransparency.trackingAuthorizationStatus;
-    if (status == TrackingStatus.notDetermined) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      await AppTrackingTransparency.requestTrackingAuthorization();
-    }
-  }
-
-  // Inicializar Firebase Messaging
-  Future<void> _initializeFirebaseMessaging() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    // Solicitar permisos de notificaciones en iOS
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    print('User granted permission: ${settings.authorizationStatus}');
-
-    // Obtener el token FCM para enviar notificaciones
-    String? token = await messaging.getToken();
-    if (token != null) {
-      print('FCM Token: $token');
-      sendTokenToServer(token); // Enviar token al servidor
-    }
-
-    // Escuchar mensajes en primer plano
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Mensaje recibido en primer plano: ${message.messageId}");
-      notificationService.handleNotification(
-          message, context); // Mostrar notificación local
-    });
-
-    // Manejar cuando la app se abre desde una notificación
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print("App abierta desde notificación: ${message.messageId}");
-      notificationService.handleNotification(
-          message, context); // Manejar acción específica
-    });
-  }
-
-  // Función para enviar el token al servidor
-  void sendTokenToServer(String token) {
-    // Aquí implementas el envío del token al backend
-    print('Enviando token al servidor: $token');
-    // Ejemplo de cómo podrías implementarlo:
-    FirebaseFirestore.instance
-        .collection('tokens')
-        .doc(token)
-        .set({'token': token, 'timestamp': DateTime.now()});
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Configurar Firestore para persistencia
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
     );
 
     return ScreenUtilInit(
-      designSize: const Size(375, 800),
+      designSize: Size(375, 800),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) => MaterialApp(
@@ -136,7 +115,7 @@ class _MyAppState extends State<MyApp> {
         theme: ThemeData(
           primarySwatch: MaterialColor(
             0xFF1A819A,
-            <int, Color>{
+            <int, Color> {
               50: Color(0xFF1A819A),
               100: Color(0xFF1A819A),
               200: Color(0xFF1A819A),
@@ -158,11 +137,7 @@ class _MyAppState extends State<MyApp> {
             backgroundColor: Color(0xFF1A819A),
           ),
         ),
-        home: isLoading
-            ? LoadingScreen()
-            : LoginScreen(
-                deviceId: '', // Puedes pasar un valor real aquí si lo necesitas
-              ),
+        home: isLoading ? LoadingScreen() : LoginScreen(deviceId: widget.deviceId),
       ),
     );
   }

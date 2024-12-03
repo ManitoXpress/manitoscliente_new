@@ -111,6 +111,23 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
 
   }
+  Future<void> _requestNotificationPermission() async {
+  NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  );
+
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    print('Permiso de notificaciones concedido');
+  } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+    print('Permiso de notificaciones denegado');
+  } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+    print('Permiso provisional concedido');
+  }
+}
+
 
   void restoreFormState() {
     // Lógica para cargar datos previos del formulario si es necesario
@@ -135,6 +152,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
 
   }
+
+  Future<String?> _getFirebaseMessagingToken() async {
+  try {
+    String? token = await FirebaseMessaging.instance.getToken();
+    if (token != null) {
+      print('FCM Token obtenido: $token');
+    } else {
+      print('FCM Token es nulo');
+    }
+    return token;
+  } catch (e) {
+    print('Error al obtener el FCM Token: $e');
+    return null;
+  }
+}
+
 
   Future<void> _completeRegistration() async {
   print('Entrando a _completeRegistration');
@@ -236,27 +269,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 }
 
 // Método personalizado para obtener el token con múltiples intentos
-Future<String?> _getFirebaseMessagingToken() async {
-  String? token;
-  int maxAttempts = 3;
-  
-  for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      token = await FirebaseMessaging.instance.getToken();
-      
-      if (token != null) {
-        return token;
-      }
-      
-      // Esperar un poco antes del siguiente intento
-      await Future.delayed(Duration(seconds: 2));
-    } catch (e) {
-      print('Intento $attempt de obtener token fallido: $e');
-    }
-  }
-  
-  return null;
-}
+
 
 
   @override
