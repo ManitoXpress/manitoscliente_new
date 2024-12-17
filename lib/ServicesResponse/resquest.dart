@@ -106,49 +106,50 @@ class ServiceRequest {
       'acceptedTerms': acceptedTerms,
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'subcategoryName':
-      subcategoryName, // Convierte la lista de Expertises a Map
+          subcategoryName, // Convierte la lista de Expertises a Map
     };
   }
 
   factory ServiceRequest.fromSnapshot(DocumentSnapshot snapshot) {
-  final data = snapshot.data() as Map<String, dynamic>;
-  return ServiceRequest(
-    serviceDateTime: data['serviceDateTime']?.toString() ?? '',
-    id: data['id']?.toString() ?? '',
-    devicesId: data['devicesId']?.toString() ?? '',
-    description: data['description']?.toString() ?? '',
-    images: (data['images'] as List<dynamic>?)
-            ?.map((image) => image?.toString() ?? '')
-            .toList() ??
-        [],
-    location: Map<String, double>.from(
-      (data['location'] as Map<String, dynamic>?)
-              ?.map((key, value) => MapEntry(
-                    key.toString(),
-                    (value is int) ? value.toDouble() : (value as double? ?? 0.0),
-                  )) ??
-          {},
-    ),
-    offeredPrice: _parseOfferedPrice(data['offeredPrice']),
-    serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
-    userId: data['userId']?.toString() ?? '',
-    workerId: data['workerId']?.toString() ?? '',
-    isFavorite: data['isFavorite'] as bool? ?? false,
-    selectedDate: data['selectedDate']?.toString(),
-    selectedTime: data['selectedTime']?.toString(),
-    acceptedTerms: data['acceptedTerms'] as bool? ?? false,
-    expertises: (data['expertises'] as List<dynamic>?)
-            ?.map((e) => Expertises.fromMap(e as Map<String, dynamic>))
-            .toList() ??
-        [],
-    status: Status(
-      id: data['status']?.toString() ?? '',
-      name: Status.getNameById(data['status']?.toString() ?? ''),
-    ),
-    subcategoryName: data['subcategoryName']?.toString() ?? '',
-  );
-}
-
+    final data = snapshot.data() as Map<String, dynamic>;
+    return ServiceRequest(
+      serviceDateTime: data['serviceDateTime']?.toString() ?? '',
+      id: data['id']?.toString() ?? '',
+      devicesId: data['devicesId']?.toString() ?? '',
+      description: data['description']?.toString() ?? '',
+      images: (data['images'] as List<dynamic>?)
+              ?.map((image) => image?.toString() ?? '')
+              .toList() ??
+          [],
+      location: Map<String, double>.from(
+        (data['location'] as Map<String, dynamic>?)
+                ?.map((key, value) => MapEntry(
+                      key.toString(),
+                      (value is int)
+                          ? value.toDouble()
+                          : (value as double? ?? 0.0),
+                    )) ??
+            {},
+      ),
+      offeredPrice: _parseOfferedPrice(data['offeredPrice']),
+      serviceType: ServiceType.fromMap(data['serviceType'] ?? {}),
+      userId: data['userId']?.toString() ?? '',
+      workerId: data['workerId']?.toString() ?? '',
+      isFavorite: data['isFavorite'] as bool? ?? false,
+      selectedDate: data['selectedDate']?.toString(),
+      selectedTime: data['selectedTime']?.toString(),
+      acceptedTerms: data['acceptedTerms'] as bool? ?? false,
+      expertises: (data['expertises'] as List<dynamic>?)
+              ?.map((e) => Expertises.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      status: Status(
+        id: data['status']?.toString() ?? '',
+        name: Status.getNameById(data['status']?.toString() ?? ''),
+      ),
+      subcategoryName: data['subcategoryName']?.toString() ?? '',
+    );
+  }
 
   // Función para convertir el precio ofrecido a un número decimal
   static double _parseOfferedPrice(dynamic value) {
@@ -253,8 +254,10 @@ class Status {
 
 class WorkerDetails {
   final String id; // Agregado el campo id
-  final String certificateImagePaths;
+  final List<String> certificateImagePaths;
   final String imagePath;
+  final String idDocumentImagePath;
+  final String phoneNumber;
   final String displayName;
   final String email;
   final List<String> expLevel;
@@ -264,6 +267,8 @@ class WorkerDetails {
     required this.id, // Asegúrate de inicializar el id
     required this.certificateImagePaths,
     required this.imagePath,
+    required this.idDocumentImagePath,
+    required this.phoneNumber,
     required this.displayName,
     required this.email,
     required this.expLevel,
@@ -273,15 +278,19 @@ class WorkerDetails {
   factory WorkerDetails.fromMap(Map<String, dynamic> data) {
     return WorkerDetails(
       id: data['id'] ?? '', // Mapea el id desde el documento
-      certificateImagePaths:
-      data['certificateImagePaths'] ?? [],
+      certificateImagePaths: (data['certificateImagePaths'] as List<dynamic>?)
+              ?.map((item) => item.toString())
+              .toList() ??
+          [],
       imagePath: data['imagePath'] ?? '',
+      idDocumentImagePath: data['idDocumentImagePath'] ?? '',
+      phoneNumber: data['phoneNumber'] ?? '',
       displayName: data['displayName'] ?? '',
       email: data['email'] ?? '',
       expLevel: List<String>.from(data['expLevel'] ?? []),
       expertises: (data['expertises'] as List<dynamic>?)
-          ?.map((item) => Expertise.fromMap(item))
-          .toList() ??
+              ?.map((item) => Expertise.fromMap(item))
+              .toList() ??
           [],
     );
   }
@@ -295,8 +304,8 @@ class Expertise {
 
   factory Expertise.fromMap(Map<String, dynamic> data) {
     return Expertise(
-        id: data['id'] ?? '',
-        name: data['name'] ?? '',
-        );
-    }
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+    );
+  }
 }

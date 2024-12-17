@@ -249,78 +249,80 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
       if (serviceResponse.statusCode == 200) {
         // Procesar los datos recibidos
         final List<dynamic> jsonDataList =
-            (json.decode(serviceResponse.body) as List<dynamic>? ?? [])
-                .where((item) => item != null) // Filtrar elementos nulos
-                .toList();
+          (json.decode(serviceResponse.body) as List<dynamic>? ?? [])
+              .where((item) => item != null && item['userId'] == userId) // Filtrar por userId
+              .toList();
+
 
         final List<ServiceRequest> serviceRequestsList = jsonDataList.map((item) {
-  try {
-    // Validar y procesar cada campo
-    final id = item['id']?.toString() ?? 'ID no disponible';
-    final description = item['description']?.toString() ?? 'Sin descripción';
-    final devicesId = item['devicesId']?.toString() ?? 'Dispositivo no disponible';
-    final categoryId = item['categoryId']?.toString() ?? 'Categoría no disponible';
-    final serviceDateTime = item['serviceDateTime']?.toString() ?? '';
-    final statusName = item['status']?.toString() ?? 'unknown';
-    final subcategoryName = item['subcategoryName']?.toString() ?? 'Sin subcategoría';
-    final userId = item['userId']?.toString() ?? 'Usuario no disponible';
+          try {
+            // Validar y procesar cada campo
+            final id = item['id']?.toString() ?? 'ID no disponible';
+            final description = item['description']?.toString() ?? 'Sin descripción';
+            final devicesId = item['devicesId']?.toString() ?? 'Dispositivo no disponible';
+            final categoryId = item['categoryId']?.toString() ?? 'Categoría no disponible';
+            final serviceDateTime = item['serviceDateTime']?.toString() ?? '';
+            final statusName = item['status']?.toString() ?? 'unknown';
+            final subcategoryName = item['subcategoryName']?.toString() ?? 'Sin subcategoría';
+            final userId = item['userId']?.toString() ?? 'Usuario no disponible';
 
-    // Validar status
-    final status = Status(
-      id: statusName,
-      name: Status.getNameById(statusName),
-    );
+            // Validar status
+            final status = Status(
+              id: statusName,
+              name: Status.getNameById(statusName),
+            );
 
-    // Validar imágenes
-    final images = (item['images'] as List<dynamic>?)
-        ?.map((image) => image?.toString() ?? '')
-        .toList() ?? [];
+            // Validar imágenes
+            final images = (item['images'] as List<dynamic>?)
+                    ?.map((image) => image?.toString() ?? '')
+                    .toList() ??
+                [];
 
-    // Validar ubicación
-    final locationData = item['location'] as Map<String, dynamic>? ?? {};
-    final location = locationData.map((key, value) {
-      return MapEntry(
-        key.toString(),
-        value is int ? value.toDouble() : (value as double? ?? 0.0),
-      );
-    });
+            // Validar ubicación
+            final locationData = item['location'] as Map<String, dynamic>? ?? {};
+            final location = locationData.map((key, value) {
+              return MapEntry(
+                key.toString(),
+                value is int ? value.toDouble() : (value as double? ?? 0.0),
+              );
+            });
 
-    // Validar expertises
-    final expertisesArray = item['expertises'] as List<dynamic>? ?? [];
-    final expertisesList = expertisesArray.map((expertiseItem) {
-      final expertiseId = expertiseItem['id']?.toString() ?? 'Sin ID';
-      final expertiseName = expertiseItem['name']?.toString() ?? 'Sin nombre';
-      return Expertises(id: expertiseId, name: expertiseName);
-    }).toList();
+            // Validar expertises
+            final expertisesArray = item['expertises'] as List<dynamic>? ?? [];
+            final expertisesList = expertisesArray.map((expertiseItem) {
+              final expertiseId = expertiseItem['id']?.toString() ?? 'Sin ID';
+              final expertiseName = expertiseItem['name']?.toString() ?? 'Sin nombre';
+              return Expertises(id: expertiseId, name: expertiseName);
+            }).toList();
 
-    // Crear y devolver el objeto ServiceRequest
-    return ServiceRequest(
-      id: id,
-      description: description,
-      devicesId: devicesId,
-      serviceDateTime: serviceDateTime,
-      status: status,
-      images: images,
-      location: location,
-      expertises: expertisesList,
-      userId: userId,
-      subcategoryName: subcategoryName,
-      serviceType: ServiceType(
-        id: categoryId,
-        name: subcategoryName,
-        selectedDate: '',
-        selectedTime: '',
-      ),
-      offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-      workerId: item['workerId']?.toString() ?? 'Sin trabajador',
-      isFavorite: item['isFavorite'] as bool? ?? false,
-      acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-    );
-  } catch (e) {
-    print('Error procesando item: $e');
-    return null; // Si algo falla, devolver null
-  }
-}).where((request) => request != null).cast<ServiceRequest>().toList();
+            // Crear y devolver el objeto ServiceRequest
+            return ServiceRequest(
+              id: id,
+              description: description,
+              devicesId: devicesId,
+              serviceDateTime: serviceDateTime,
+              status: status,
+              images: images,
+              location: location,
+              expertises: expertisesList,
+              userId: userId,
+              subcategoryName: subcategoryName,
+              serviceType: ServiceType(
+                id: categoryId,
+                name: subcategoryName,
+                selectedDate: '',
+                selectedTime: '',
+              ),
+              offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+              workerId: item['workerId']?.toString() ?? 'Sin trabajador',
+              isFavorite: item['isFavorite'] as bool? ?? false,
+              acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+            );
+          } catch (e) {
+            print('Error procesando item: $e');
+            return null; // Si algo falla, devolver null
+          }
+        }).where((request) => request != null).cast<ServiceRequest>().toList();
 
         // Actualizar estado y guardar en caché
         setState(() {
@@ -342,10 +344,9 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
       print('Usuario no autenticado');
     }
   } catch (e, stackTrace) {
-  print('Error en la solicitud HTTP: $e');
-  print('Stack trace: $stackTrace');
-}
-
+    print('Error en la solicitud HTTP: $e');
+    print('Stack trace: $stackTrace');
+  }
 }
 
 

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
@@ -11,6 +12,8 @@ import 'package:manitoscliente_new/metodos/home_screen_functions.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
 import 'package:searchbar_animation/searchbar_animation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import '../utils/status.dart';
 
@@ -125,44 +128,65 @@ class _ProfessionalServicesScreenState
 
   // Define una función para cargar los servicios
   Future<void> _loadServices() async {
-    print('Cargando servicios...');
+  print('Cargando servicios...');
 
-    try {
-      // Obtiene el token
-      String? token = await AuthUtils.getToken();
+  try {
+    // Obtén el token
+    String? token = await AuthUtils.getToken();
 
-      if (token != null) {
-        print('Token: $token');
+    if (token != null) {
+      print('Token: $token');
+      
+      // Carga datos desde el almacenamiento local antes de llamar al backend
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final cachedServices = prefs.getString('cached_services');
+      final cacheTimestamp = prefs.getInt('cache_timestamp');
 
+      if (cachedServices != null) {
+        // Deserializa los servicios en caché
+        final List<dynamic> decodedJson = jsonDecode(cachedServices);
+        final List<ServiceResponse> cachedServiceResponses = decodedJson
+            .map((json) => ServiceResponse.fromJson(json))
+            .toList();
+
+        // Muestra los servicios en caché inmediatamente
+        setState(() {
+          subcategoriesToShow = cachedServiceResponses;
+        });
+
+        print('Servicios cargados desde caché.');
+      }
+
+      // Verifica si el caché es reciente (por ejemplo, 1 hora)
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final isCacheStale = cacheTimestamp == null || (now - cacheTimestamp > 3600000);
+
+      if (isCacheStale || cachedServices == null) {
+        // Llama al backend si el caché está vacío o desactualizado
         String parentId = 'wZvEJHJ6Q2eBOEWn3if2';
 
-        // Llama a fetchServicesFromBackend2 con el token y parentId
         final List<ServiceResponse> serviceResponses =
             await _apiService2.fetchServicesFromBackend2(token, parentId);
 
-        // Ordena las subcategorías alfabéticamente por nombre
+        // Ordena y actualiza el estado con los servicios del servidor
         serviceResponses.sort((a, b) => a.name.compareTo(b.name));
-
-        // Actualiza subcategoriesToShow con las subcategorías ordenadas
         setState(() {
           subcategoriesToShow = serviceResponses;
         });
 
-        print('Subcategorías ordenadas alfabéticamente:');
-        subcategoriesToShow.forEach((subcategory) {
-          print(subcategory.name);
-        });
+        // Guarda los datos en caché
+        
+        prefs.setInt('cache_timestamp', now);
 
-        print(
-            'Total de servicios obtenidos del backend: ${serviceResponses.length}');
-        print('Servicios cargados con éxito.');
-      } else {
-        print('No se pudo obtener el token.');
+        print('Servicios cargados del backend y almacenados en caché.');
       }
-    } catch (e) {
-      print('Error al cargar los servicios: $e');
+    } else {
+      print('No se pudo obtener el token.');
     }
+  } catch (e) {
+    print('Error al cargar los servicios: $e');
   }
+}
 
   @override
   void initState() {
@@ -307,12 +331,15 @@ Widget build(BuildContext context) {
                               padding: const EdgeInsets.all(4),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(50),
-                                child: Image.network(
-                                  subcategory.image,
-                                  height: 80, // Reducción del tamaño de la imagen
-                                  width: 80, // Reducción del tamaño de la imagen
+                                child: CachedNetworkImage(
+                                  imageUrl: subcategory.image,
+                                  height: 80,
+                                  width: 80,
                                   fit: BoxFit.cover,
+                                  placeholder: (context, url) => CircularProgressIndicator(), // Indicador de carga
+                                  errorWidget: (context, url, error) => Icon(Icons.error), // Widget para errores
                                 ),
+
                               ),
                             ),
                             const SizedBox(height: 8), // Reducción del espacio entre la imagen y el texto

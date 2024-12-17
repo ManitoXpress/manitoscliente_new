@@ -19,53 +19,50 @@ import 'package:manitoscliente_new/home.dart';
 import '../widgets/welcome.dart';
 import 'RegisController.dart';
 
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+
 class LoginScreenController {
   static final ApiService apiService = ApiService();
-  static final String _tokenCollection = 'user_tokens';
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _tokenCollection = 'user_tokens';
 
+  // Almacena datos del usuario en Firestore si no existen
   static Future<void> storeUserData(User user) async {
-    final firestore = FirebaseFirestore.instance;
-    final userRef = firestore.collection('users').doc(user.uid);
-
+    final userRef = _firestore.collection('workers').doc(user.uid);
     final userDoc = await userRef.get();
+
     if (!userDoc.exists) {
       await userRef.set({
         'displayName': user.displayName,
         'email': user.email,
         'phoneNumber': user.phoneNumber,
         'imagePath': user.photoURL,
-        // Otros campos que desees almacenar
       });
     }
   }
 
+  // Obtiene o crea un token para el usuario
   static Future<String?> getToken() async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-
+      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Verificar si ya existe un token
-        String? existingToken = await _getExistingToken(user.uid);
-
+        final existingToken = await _getExistingToken(user.uid);
         if (existingToken != null) {
-          // Si hay un token existente, devolverlo
           return existingToken;
-        } else {
-          // Si no hay un token existente, obtener uno nuevo
-          String? newToken = await user.getIdToken();
-
-          // Almacenar el nuevo token para uso futuro
-          if (newToken != null) {
-            await _storeToken(user.uid, newToken);
-          }
-
-          return newToken;
         }
-      } else {
-        print('El usuario no está autenticado.');
-        return null;
+        final newToken = await user.getIdToken();
+        if (newToken != null) {
+          await _storeToken(user.uid, newToken);
+        }
+        return newToken;
       }
+      print('El usuario no está autenticado.');
+      return null;
     } catch (e) {
       print('Error al obtener el token: $e');
       return null;
@@ -74,14 +71,11 @@ class LoginScreenController {
 
   static Future<String?> _getExistingToken(String userId) async {
     try {
-      DocumentSnapshot tokenDoc =
-          await _firestore.collection(_tokenCollection).doc(userId).get();
-
+      final tokenDoc = await _firestore.collection(_tokenCollection).doc(userId).get();
       if (tokenDoc.exists) {
         return tokenDoc['token'] as String?;
-      } else {
-        return null;
       }
+      return null;
     } catch (e) {
       print('Error al obtener el token existente: $e');
       return null;
@@ -90,85 +84,38 @@ class LoginScreenController {
 
   static Future<void> _storeToken(String userId, String newToken) async {
     try {
-      await _firestore
-          .collection(_tokenCollection)
-          .doc(userId)
-          .set({'token': newToken});
+      await _firestore.collection(_tokenCollection).doc(userId).set({'token': newToken});
     } catch (e) {
       print('Error al almacenar el token: $e');
     }
   }
 
-  static void _navigateToRegisterScreen(BuildContext context,
-      {bool alreadyRegistered = false}) {
+  // Verifica si el usuario ya está registrado
+  static Future<bool> _checkIfUserIsRegistered(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('workers').doc(userId).get();
+      return userDoc.exists;
+    } catch (e) {
+      print('Error al verificar el registro del usuario: $e');
+      return false;
+    }
+  }
+
+  // Navegación según el estado del usuario
+  static void _navigateToRegisterScreen(BuildContext context, {bool alreadyRegistered = false}) {
     final registrationController = RegistrationController();
 
-    if (alreadyRegistered) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              HomeScreen(), // Ir directamente a la pantalla principal
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FirstTimeLoginScreen(
-            registrationController: registrationController,
-          ),
-        ),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => alreadyRegistered
+            ? HomeScreen()
+            : FirstTimeLoginScreen(registrationController: registrationController),
+      ),
+    );
   }
 
-  static Future<User?> signInWithGoogle(BuildContext context) async {
-    final GoogleSignIn _googleSignIn = GoogleSignIn();
-    final FirebaseAuth _auth = FirebaseAuth.instance;
-
-    try {
-      final GoogleSignInAccount? googleSignInAccount =
-          await _googleSignIn.signIn();
-      if (googleSignInAccount != null) {
-        final GoogleSignInAuthentication googleSignInAuthentication =
-            await googleSignInAccount.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleSignInAuthentication.accessToken,
-          idToken: googleSignInAuthentication.idToken,
-        );
-
-        final UserCredential authResult =
-            await _auth.signInWithCredential(credential);
-        final User? user = authResult.user;
-
-        if (user != null) {
-          // Verificar si el usuario ya está registrado en la base de datos
-          bool alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
-
-          String? token = await getToken();
-          await storeUserData(user);
-          print('Token después de la autenticación con Google: $token');
-
-          print('Inicio de sesión con Google exitoso para ${user.displayName}');
-
-          _navigateToRegisterScreen(context,
-              alreadyRegistered: alreadyRegistered);
-        }
-
-        return user;
-      }
-    } catch (error) {
-      print(error);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error de autenticación con Google: $error'),
-          duration: Duration(seconds: 5),
-        ),
-      );
-    }
-    return null;
-  }
+  // Inicio de sesión con Apple
   static Future<void> signInWithApple(BuildContext context) async {
     try {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
@@ -188,124 +135,84 @@ class LoginScreenController {
       final user = authResult.user;
 
       if (user != null) {
-        // Manejar la autenticación exitosa y redirigir a la pantalla principal
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
+        final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
+        await storeUserData(user);
+        print('Inicio de sesión con Apple exitoso para ${user.displayName}');
+        _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
       }
     } catch (e) {
       print('Error durante el inicio de sesión con Apple: $e');
-      // Manejar errores o mostrar un mensaje al usuario
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Error"),
-            content: Text("No se pudo iniciar sesión con Apple. Inténtelo de nuevo."),
-            actions: [
-              TextButton(
-                child: Text("Aceptar"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      _showErrorDialog(context, 'No se pudo iniciar sesión con Apple. Inténtelo de nuevo.');
     }
   }
 
-  static Future<bool> _checkIfUserIsRegistered(String userId) async {
+  // Inicio de sesión con Google
+  static Future<void> signInWithGoogle(BuildContext context) async {
     try {
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(userId).get();
-      return userDoc.exists;
+      final googleSignInAccount = await GoogleSignIn().signIn();
+      if (googleSignInAccount != null) {
+        final googleAuth = await googleSignInAccount.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
+        final user = authResult.user;
+
+        if (user != null) {
+          final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
+          await storeUserData(user);
+          print('Inicio de sesión con Google exitoso para ${user.displayName}');
+          _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
+        }
+      }
     } catch (e) {
-      print('Error al verificar el registro del usuario: $e');
-      return false;
+      print('Error durante el inicio de sesión con Google: $e');
+      _showErrorDialog(context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
     }
   }
 
-  Future<User?> login(
-    BuildContext context,
-    TextEditingController emailController,
-    TextEditingController passwordController,
-  ) async {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  // Inicio de sesión con email y contraseña
+  Future<User?> login(BuildContext context, String email, String password) async {
     try {
-      final UserCredential userCredential =
-          await _auth.signInWithEmailAndPassword(
-        email: emailController.text,
-        password: passwordController.text,
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      final User? user = userCredential.user;
-
+      final user = userCredential.user;
       if (user != null) {
         if (user.emailVerified) {
-          String? token = await getToken();
-
-          final displayName = user.displayName;
-          final email = user.email;
-          final phoneNumber = user.phoneNumber;
-          final imagePath = user.photoURL;
-
-          final ServiceResponse = await apiService.sendTokenAndUserDataToServer(
-            token: token,
-            displayName: displayName,
-            email: email,
-            phoneNumber: phoneNumber,
-            imagePath: imagePath,
-          );
-
+          await storeUserData(user);
           _navigateToRegisterScreen(context);
+          return user;
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'El correo electrónico no ha sido verificado. Por favor, verifica tu correo electrónico.',
-              ),
-              duration: Duration(seconds: 5),
-            ),
-          );
-          _signOutUser();
+          _showErrorDialog(context, 'Por favor, verifica tu correo electrónico.');
+          await FirebaseAuth.instance.signOut();
         }
-      } else {
-        _showFailedLoginDialog(context);
       }
-
-      return user; // Return the user after the login attempt
     } catch (e) {
-      print("Error al iniciar sesión: $e");
-      _showFailedLoginDialog(context);
-      return null;
+      print('Error al iniciar sesión: $e');
+      _showErrorDialog(context, 'Email o contraseña incorrectos.');
     }
+    return null;
   }
 
-  static void _signOutUser() async {
-    await FirebaseAuth.instance.signOut();
-  }
-
-  static void _showFailedLoginDialog(BuildContext context) {
+  // Mostrar error en diálogo
+  static void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Inicio de sesión fallido"),
-          content:
-              const Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
-          actions: [
-            TextButton(
-              child: const Text("Aceptar"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
     );
   }
 }
