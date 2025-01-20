@@ -99,7 +99,7 @@ class _ProfessionalServicesScreenState
       acceptedTerms: true,
       id: '',
       status: status, // Utiliza el objeto Status obtenido de StatusUtils
-      expertises: expertises, subcategoryName: '', devicesId: '', // Usa la lista de Expertises
+      expertises: expertises, subcategoryName: '', devicesId: '', hasOffer: false, offers: [], // Usa la lista de Expertises
     );
 
     // Llama al formulario del servicio con el serviceRequest y los ids de categoría y subcategoría

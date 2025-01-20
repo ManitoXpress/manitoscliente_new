@@ -24,16 +24,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-
-
 class LoginScreenController {
   static final ApiService apiService = ApiService();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static const String _tokenCollection = 'user_tokens';
+  static const String _tokenCollection = '';
 
   // Almacena datos del usuario en Firestore si no existen
   static Future<void> storeUserData(User user) async {
-    final userRef = _firestore.collection('workers').doc(user.uid);
+    final userRef = _firestore.collection('users').doc(user.uid);
     final userDoc = await userRef.get();
 
     if (!userDoc.exists) {
@@ -93,7 +91,7 @@ class LoginScreenController {
   // Verifica si el usuario ya está registrado
   static Future<bool> _checkIfUserIsRegistered(String userId) async {
     try {
-      final userDoc = await _firestore.collection('workers').doc(userId).get();
+      final userDoc = await _firestore.collection('users').doc(userId).get();
       return userDoc.exists;
     } catch (e) {
       print('Error al verificar el registro del usuario: $e');

@@ -2,7 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 
 class ServiceDataFetcher {
-  Future<WorkerDetails?> fetchWorkerDetails(String workerId) async {
+  // Obtener los detalles del trabajador
+  Future<WorkerDetails?> fetchWorkerDetails(String? workerId) async {
+    if (workerId == null || workerId.isEmpty) {
+      print('workerId está vacío o es nulo');
+      return null;
+    }
+
     try {
       final workerSnapshot = await FirebaseFirestore.instance
           .collection('workers')
@@ -11,6 +17,8 @@ class ServiceDataFetcher {
 
       if (workerSnapshot.exists) {
         return WorkerDetails.fromMap(workerSnapshot.data()!);
+      } else {
+        print('No se encontró al trabajador con ID: $workerId');
       }
     } catch (e) {
       print('Error al obtener los detalles del trabajador: $e');
@@ -18,7 +26,13 @@ class ServiceDataFetcher {
     return null;
   }
 
-  Future<double?> fetchOfferedPrice(String serviceId) async {
+  // Obtener el precio ofertado para un servicio específico
+  Future<double?> fetchOfferedPrice(String? serviceId) async {
+    if (serviceId == null || serviceId.isEmpty) {
+      print('serviceId está vacío o es nulo');
+      return null;
+    }
+
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('offers')
@@ -29,6 +43,8 @@ class ServiceDataFetcher {
       if (querySnapshot.docs.isNotEmpty) {
         final offerData = querySnapshot.docs.first.data();
         return double.tryParse(offerData['offeredPrice'].toString());
+      } else {
+        print('No se encontró oferta para el servicio con ID: $serviceId');
       }
     } catch (e) {
       print('Error al obtener el precio ofertado: $e');

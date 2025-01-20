@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,61 +21,53 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // Handler para mensajes en segundo plano
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  }
   print("Handling a background message: ${message.messageId}");
-
-  // Manejar la notificación en segundo plano con NotificationService
-
 }
 
-
-
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Configurar el handler para mensajes en segundo plano
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Inicializar Firebase App Check
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
   );
 
-  // Inicializar el servicio de notificaciones
-  await FCMService().init();
-
-
-
-  // Obtener y guardar Device ID
   final deviceId = await obtenerDeviceId();
   print("Device ID: $deviceId");
 
   runApp(MyApp(deviceId: deviceId));
 }
+
 Future<String> obtenerDeviceId() async {
   try {
     final deviceInfo = DeviceInfoPlugin();
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
-      final id = androidInfo.id?.toString() ?? 'Unknown Device ID';
-      return id;
+      return androidInfo.id?.toString() ?? 'Unknown Device ID';
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
-      final id = iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
-      return id;
+      return iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
     } else {
       return 'Unsupported Platform';
     }
-  } catch (e) {
+  } catch (e, stackTrace) {
     print('Error obteniendo Device ID: $e');
+    FirebaseCrashlytics.instance.recordError(e, stackTrace);
     return 'Error Device ID';
   }
 }
+
 
 class MyApp extends StatefulWidget {
   final String deviceId;

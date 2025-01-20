@@ -59,35 +59,7 @@ class _LoginFormState extends State<LoginScreen> {
     );
   }
 
-  Future<void> fetchData(String userId, String token) async {
-    try {
-      String column = "serviceType";
-      String value = "pipe-repair";
-      String type = "match";
-
-      final response = await ApiService2().getByUserId(
-        userId,
-        token,
-        column,
-        value,
-        type,
-        deviceId: '',
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        setState(() {
-          serviceRequests =
-              data.map((item) => ServiceRequest.fromSnapshot(item)).toList();
-        });
-      } else {
-        print(
-            'Error al obtener datos del backend. Código de estado: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-    }
-  }
-
+  
   @override
   void initState() {
     super.initState();

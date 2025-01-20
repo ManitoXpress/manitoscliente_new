@@ -82,7 +82,7 @@ void _handleFCMMessage(RemoteMessage message) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'En ManitosXpress, estamos aquí para ayudarte a encontrar soluciones a tus problemas. ¿Necesitas ayuda con algún servicio en específico? ¡Tenemos una amplia gama de servicios disponibles!',
+                'En ManitosXpress, estamos para ayudarte a encontrar soluciones a tus problemas. ¿Necesitas ayuda con algún servicio en específico? ¡Tenemos una amplia gama de servicios disponibles!',
                 style: TextStyle(
                   fontSize: 16.0,
                   color: Colors.black54,
@@ -318,7 +318,7 @@ void _handleFCMMessage(RemoteMessage message) {
                               selectedTime: '',
                               acceptedTerms: true,
                               expertises: [],
-                              status: status, subcategoryName: '', devicesId: '',
+                              status: status, subcategoryName: '', devicesId: '', hasOffer: false, offers: [],
                             );
                             navigateToHomeServices(context, serviceRequest);
                             break;

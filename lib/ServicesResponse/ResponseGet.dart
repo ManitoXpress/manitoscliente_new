@@ -49,28 +49,44 @@ class ApiService2 {
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
-  Future<http.Response> getAllServices(String authToken, String column, String value, String type) async {
-    try {
-      final String? authTokenValue = await AuthUtils.getToken();
+  Future<http.Response> getAllServices(String authToken, String column, String value, String type, String deviceId) async {
+  try {
+    final String? authTokenValue = await AuthUtils.getToken();
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/services?columns=$column&values=$value&type=$type'),
-        headers: <String, String>{
-          'Authorization': 'Bearer $authTokenValue',
-        },
-      );
+    // Imprimir los valores de los parámetros para depuración
+    print('Parámetro column: $column');
+    print('Parámetro value: $value');
+    print('Parámetro type: $type');
+    print('Parámetro deviceId: $deviceId');
 
-      if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
-      } else {
-        print('Solicitud HTTP fallida con código: ${response.statusCode}');
-      }
-      return response;
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al obtener datos del backend');
+    // Construir la URL con los parámetros
+    final url = Uri.parse(
+        '$baseUrl/services?userId=$value&columns=$column&values=$value&type=$type&deviceId=$deviceId'
+    );
+
+    // Imprimir la URL solicitada para depuración
+    print('URL solicitada: $url');
+
+    final response = await http.get(
+      url,
+      headers: <String, String>{
+        'Authorization': 'Bearer $authTokenValue',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('Datos recibidos del backend con éxito');
+    } else {
+      print('Solicitud HTTP fallida con código: ${response.statusCode}');
     }
+    return response;
+  } catch (e) {
+    print('Error en la solicitud HTTP: $e');
+    throw Exception('Error al obtener datos del backend');
   }
+}
+
+
 
   Future<String> getImageUrls(String userId, String imageName) async {
     try {
@@ -202,27 +218,39 @@ class ApiService2 {
     }
   }
 
-  Future<http.Response> getByUserId(String userId, String authToken, String column, String value, String type, {required String deviceId}) async {
-    try {
-      final String? authTokenValue = await AuthUtils.getToken();
-      final response = await http.get(
-        Uri.parse('$baseUrl/services?userId=$userId&columns=$column&values=$value&type=$type'),
-        headers: <String, String>{
-          'Authorization': 'Bearer $authTokenValue',
-        },
-      );
+Future<http.Response> getByUserId({
+  required String userId,
+  required String authToken,
+  required String column,
+  required String value,
+  required String type,
+  required String deviceId, // Añadir deviceId como parámetro
+}) async {
+  try {
+    // Asegúrate de que los parámetros estén correctamente codificados
+    final url = Uri.parse(
+   '$baseUrl/services?userId=$userId&columns=$column&values=$value&type=$type&deviceId=$deviceId'
+);
 
-      if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
-      } else {
-        print('Solicitud HTTP fallida: ${response.statusCode}');
-      }
-      return response;
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al obtener datos del backend');
+    final response = await http.get(
+      url,
+      headers: <String, String>{
+        'Authorization': 'Bearer $authToken',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('Datos recibidos del backend con éxito');
+    } else {
+      print('Solicitud HTTP fallida: ${response.statusCode}');
     }
+    return response;
+  } catch (e) {
+    print('Error en la solicitud HTTP: $e');
+    throw Exception('Error al obtener datos del backend');
   }
+}
+
   Future<http.Response> getServiceByIdAndName(
       String categoryId, String serviceName, String token) async {
     print('getServiceByIdAndName() called');

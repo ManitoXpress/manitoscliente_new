@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:flutter/material.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String userId;
@@ -18,8 +17,38 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final CollectionReference _chatsCollection =
-  FirebaseFirestore.instance.collection('chats');
+  final CollectionReference _chatsCollection = FirebaseFirestore.instance.collection('chats');
+  String? userDisplayName;
+  String? workerDisplayName;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDisplayNames();
+  }
+
+  // Función para obtener los displayName de worker y user
+  void _fetchDisplayNames() async {
+    try {
+      // Obtener el displayName del user
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
+      if (userDoc.exists) {
+        setState(() {
+          userDisplayName = userDoc['displayName'];
+        });
+      }
+
+      // Obtener el displayName del worker
+      final workerDoc = await FirebaseFirestore.instance.collection('workers').doc(widget.workerId).get();
+      if (workerDoc.exists) {
+        setState(() {
+          workerDisplayName = workerDoc['displayName'];
+        });
+      }
+    } catch (e) {
+      print("Error al obtener displayName: $e");
+    }
+  }
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
@@ -41,7 +70,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat con ${widget.workerId}'),
+        title: Text('Chat con ${workerDisplayName ?? "Trabajador"}'),
       ),
       body: Column(
         children: [
@@ -64,21 +93,38 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final isSentByMe = message['senderId'] == widget.userId;
+                    final isSentByUser = message['senderId'] == widget.userId;
+                    final senderName = isSentByUser
+                        ? userDisplayName ?? "Usuario"
+                        : workerDisplayName ?? "Trabajador";
 
                     return Align(
-                      alignment: isSentByMe
+                      alignment: isSentByUser
                           ? Alignment.topRight
                           : Alignment.topLeft,
                       child: Container(
                         padding: EdgeInsets.all(12.0),
-                        margin: EdgeInsets.symmetric(
-                            vertical: 4.0, horizontal: 8.0),
+                        margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                         decoration: BoxDecoration(
-                          color: isSentByMe ? Colors.blue[200] : Colors.grey[200],
+                          color: isSentByUser
+                              ? Colors.blue[200]  // Color para mensajes del usuario
+                              : Colors.green[200],  // Color para mensajes del trabajador
                           borderRadius: BorderRadius.circular(20.0),
                         ),
-                        child: Text(message['text'] ?? ''),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              senderName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(message['text'] ?? ''),
+                          ],
+                        ),
                       ),
                     );
                   },

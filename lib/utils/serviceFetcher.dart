@@ -1,0 +1,170 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
+import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
+import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/main.dart';
+import 'package:manitoscliente_new/utils/cacheLocal.dart';
+import 'package:http/http.dart' as http;
+
+import 'dart:convert';
+class ServiceRepository {
+  final ApiService apiService;
+  final FirebaseFirestore firestore;
+
+  ServiceRepository({required this.apiService, required this.firestore});
+
+  // Función pública que permite filtrar servicios por estado desde Firestore
+  Future<List<ServiceRequest>> fetchServicesByStatus(String status, String userId, String column, String token) async {
+    // Obtener la lista de estados válidos desde Firestore
+    List<String> validStatuses = await _getValidStatusesFromFirestore();
+
+    // Validar el estado proporcionado con los valores de Firestore
+    if (!validStatuses.contains(status)) {
+      throw ArgumentError('Estado no válido: $status');
+    }
+
+    // Llamar al método privado para realizar la lógica principal
+    return await _fetchServicesByStatus(status, column, userId, token);
+  }
+
+  // Método privado para obtener los estados válidos desde Firestore
+  Future<List<String>> _getValidStatusesFromFirestore() async {
+    try {
+      QuerySnapshot querySnapshot = await firestore.collection('services').get();
+
+      Set<String> statusSet = {};
+
+      for (var doc in querySnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        if (data.containsKey('status')) {
+          statusSet.add(data['status'] as String);
+        }
+      }
+
+      if (statusSet.isNotEmpty) {
+        return statusSet.toList();
+      } else {
+        throw Exception('No se encontraron estados válidos en Firestore.');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener estados desde Firestore: $e');
+    }
+  }
+
+  Future<List<ServiceRequest>> _fetchServicesByStatus(String type, String column, String userId, String token) async {
+    try {
+      final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
+      if (cachedRequest != null) {
+        print('Datos del caché encontrados. Mostrando datos del caché...');
+        return [cachedRequest];
+      } else {
+        final deviceId = await obtenerDeviceId();
+
+        print('Parámetro type: $type');
+        print('Parámetro column: $column');
+        print('Parámetro userId: $userId');
+        print('Parámetro deviceId: $deviceId');
+
+        final response = await ApiService2().getAllServices(
+          token,
+          column,
+          userId,
+          type,
+          deviceId,
+        );
+
+        if (response.statusCode == 200) {
+          final List<Map<String, dynamic>> servicesData = List<Map<String, dynamic>>.from(
+            json.decode(response.body),
+          );
+
+          if (servicesData.isNotEmpty) {
+            try {
+              final List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
+                final statusName = item['status'] as String? ?? 'available';
+                final statusObject = Status(id: statusName, name: Status.getNameById(statusName));
+
+                final List<dynamic> expertisesArray = item['expertises'] as List<dynamic>? ?? [];
+                final Map<String, dynamic> expertiseItem = expertisesArray.isNotEmpty ? expertisesArray.first : {};
+
+                return ServiceRequest(
+                  expertises: [
+                    Expertises(
+                      id: expertiseItem['id'] ?? '',
+                      name: expertiseItem['name'] ?? '',
+                    )
+                  ],
+                  id: item['id'] ?? '',
+                  serviceDateTime: item['serviceDateTime'] ?? '',
+                  description: item['description'] ?? '',
+                  images: (item['images'] as List<dynamic>?)
+                          ?.map((image) => image as String? ?? '')
+                          .toList() ?? [],
+                  location: Map<String, double>.from(
+                    (item['location'] as Map<String, dynamic>?)
+                            ?.map((key, value) {
+                          return MapEntry(key, (value is int) ? value.toDouble() : value);
+                        }) ?? {},
+                  ),
+                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                  userId: item['userId'] ?? '',
+                  workerId: item['workerId'] ?? '',
+                  status: statusObject,
+                  isFavorite: item['isFavorite'] as bool? ?? false,
+                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                  serviceType: ServiceType(
+                    name: item['serviceType'] ?? '',
+                    id: '',
+                    selectedDate: '',
+                    selectedTime: '',
+                  ),
+                  subcategoryName: item['subcategoryName'] ?? '',
+                  devicesId: '',
+                  hasOffer: false,
+                  offers: [],
+                );
+              }).toList();
+
+              serviceRequestsList.forEach((request) {
+                LocalCacheService.cacheServiceRequest(request);
+              });
+
+              print('Servicios cargados con éxito.');
+              return serviceRequestsList;
+            } catch (e) {
+              print('Error al procesar los datos del servicio: $e');
+              return [];
+            }
+          } else {
+            print('No se encontraron servicios disponibles.');
+            return [];
+          }
+        } else {
+          print('Error en la solicitud HTTP: ${response.statusCode}');
+          return [];
+        }
+      }
+    } catch (e) {
+      print('Error en la solicitud: $e');
+      return [];
+    }
+  }
+
+  double _parseOfferedPrice(dynamic value) {
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('Error al convertir el precio ofrecido a double: $e');
+        return 0.0;
+      }
+    } else if (value is num) {
+      return value.toDouble();
+    }
+    return 0.0;
+  }
+}

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/Historial.dart';
 import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
@@ -25,8 +26,8 @@ class ServiceFormPage extends StatefulWidget {
   final DateTime? selectedDate;
   final String selectedServiceTitle;
   final String token;
-  final String categoryId; // Agregar esta variable
-  final String subcategoryId; // Agregar esta variable
+  final String categoryId;
+  final String subcategoryId;
   final String subcategoryName;
 
   ServiceFormPage({
@@ -36,10 +37,10 @@ class ServiceFormPage extends StatefulWidget {
     required this.serviceRequests,
     required this.selectedDate,
     required this.selectedServiceTitle,
-    required this.token, required String selectedTime,
-    required this.categoryId, // Definir esta variable en el constructor
-    required this.subcategoryId, // Definir esta variable en el constructor
-    required this.subcategoryName,
+    required this.token,
+    required this.categoryId,
+    required this.subcategoryId,
+    required this.subcategoryName, required String selectedTime,
   }) : super(key: key);
 
   @override
@@ -54,235 +55,25 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   late final LocationAndFavoritesWizard locationAndFavoritesWizard;
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? token; // Variable para almacenar el token de autenticación
-  final ApiDataProvider apiDataProvider = ApiDataProvider();
+  String? fcmToken; // Variable para almacenar el fcmToken
+ 
   bool isSubmitting = false;
-  
-
-  bool validateServiceData() {
-    final serviceRequest = widget.serviceRequest;
-
-    if (serviceRequest.isServiceNameEmpty()) {
-      return false;
-    }
-
-    if (serviceRequest.isServiceTypeEmpty()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  bool validateDateTime() {
-    final serviceRequest = widget.serviceRequest;
-
-    if (serviceRequest.selectedDate == null) {
-      return false;
-    }
-
-    if (serviceRequest.selectedTime == null) {
-      return false;
-    }
-
-    return true;
-  }
-  void onSubmit() async {
-  if (widget.acceptTerms && token != null && !isSubmitting) {
-    setState(() {
-      isSubmitting = true; // Bloquear envío adicional
-    });
-
-    // Mostrar un cuadro de diálogo de carga
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Evitar que se cierre al hacer clic fuera del diálogo
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text("Enviando datos..."),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    final apiService = ApiService();
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      widget.serviceRequest.userId = user.uid;
-      widget.serviceRequest.status = StatusUtils.getStatusById('available');
-
-      try {
-        final expertisesJson = jsonEncode(
-          widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
-        );
-
-        // Nueva lista para almacenar URLs de imágenes
-        List<String> imageUrls = [];
-
-        // Filtrar las imágenes con rutas válidas
-        List<String> validImagePaths = widget.serviceRequest.images.where((path) => path.isNotEmpty).toList();
-
-        // Subir imágenes a Firebase Storage y obtener las URLs
-        for (var imagePath in validImagePaths) {
-          try {
-            final file = File(imagePath);
-            final compressedFile = await compressAndResizeImage(file);
-
-            // Subir la imagen y obtener la URL
-            String downloadUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-            imageUrls.add(downloadUrl); // Almacenar la URL descargable
-          } catch (e) {
-            print('Error al cargar imagen: $e');
-          }
-        }
-
-        if (imageUrls.isEmpty) {
-          Navigator.of(context).pop(); // Cerrar el diálogo de carga
-          showErrorDialog(context, 'Error: No se subió ninguna imagen.');
-          return;
-        }
-
-        // Obtener el devicesId (puedes cambiar este valor según tu implementación)
-        String? token = await AuthUtils.getToken();
-        String? devicesId = await AuthUtils.getDeviceId();
-        // Construir el formulario con las URLs de las imágenes subidas
-        final formData = {
-          'Profesional': widget.subcategoryName,
-          'serviceDateTime': widget.serviceRequest.selectedDate ?? '',
-          'description': widget.serviceRequest.description ?? '',
-          'images': imageUrls, // Asegurarse de que las URLs están aquí
-          'location': widget.serviceRequest.location ?? {},
-          'offeredPrice': widget.serviceRequest.offeredPrice ?? 0,
-          'userId': widget.serviceRequest.userId ?? '',
-          'status': widget.serviceRequest.status.id ?? '',
-          'expertises': expertisesJson,
-          'categoryId': widget.categoryId,
-          'subcategoryId': widget.subcategoryId,
-          'devicesId': devicesId, // Aquí agregas el devicesId
-        };
-
-        // Enviar datos al backend
-        final response = await apiService.sendDataToBackend(
-          widget.serviceRequest,
-          token!,
-          widget.serviceRequest.status.id,
-          expertisesJson,
-          widget.categoryId,
-          widget.subcategoryId,
-          widget.serviceRequest.status,
-          widget.subcategoryName,
-          imageUrls,
-          devicesId, // Aquí también pasas el devicesId al método de envío
-        );
-
-        Navigator.of(context).pop(); // Cerrar el diálogo de carga
-
-        if (response.statusCode == 201) {
-          showSuccessDialog(context, 'Servicio creado con éxito.');
-        } else {
-          showErrorDialog(context, 'Error al crear el servicio. Código: ${response.statusCode}');
-        }
-      } catch (error) {
-        Navigator.of(context).pop(); // Cerrar el diálogo de carga
-        showErrorDialog(context, 'Error durante la creación del servicio: $error');
-      } finally {
-        setState(() {
-          isSubmitting = false; // Desbloquear después de enviar
-        });
-      }
-    } else {
-      Navigator.of(context).pop(); // Cerrar el diálogo de carga
-      showErrorDialog(context, 'Error: No hay usuario autenticado.');
-    }
-  } else {
-    showErrorDialog(context, 'Error: Términos no aceptados, token nulo o ya se está enviando.');
-  }
-}
-
-
-
-
-
-
-void showSuccessDialog(BuildContext context, String s) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('¡Servicio creado con éxito!'),
-        content: const Text('Tu servicio ha sido creado con éxito.'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HomeScreen(initialPageIndex: 1), // Redirige a Historial
-                ),
-                (route) => false,
-              );
-            },
-            child: const Text('Ir a Historial'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-void showErrorDialog(BuildContext context, String s) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Error al crear el servicio'),
-        content: const Text('Hubo un error al crear el servicio. Inténtalo nuevamente.'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-
-
-
-
-
-
-  Future<void> fetchDataForUserId() async {
-    final List<ServiceRequest> data = await apiDataProvider.fetchDataForUserId();
-    setState(() {
-      widget.serviceRequests = data;
-    });
-
-    // Esperar a que la interfaz de usuario se actualice antes de acceder al valor
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      // Acceder a widget.serviceRequest.offeredPrice aquí
-    });
-  }
 
   @override
   void initState() {
     super.initState();
-    
 
-    // Llama a la función para obtener el token de autenticación
+    // Obtener el token de autenticación
     AuthUtils.getToken().then((value) {
       setState(() {
         token = value;
+      });
+    });
+
+    // Obtener el FCM Token
+    FirebaseMessaging.instance.getToken().then((value) {
+      setState(() {
+        fcmToken = value;
       });
     });
 
@@ -299,9 +90,7 @@ void showErrorDialog(BuildContext context, String s) {
       onPriceSelected: (price) {
         widget.serviceRequest.offeredPrice = price as double;
       },
-      onNextStep: () {
-        // Aquí puedes definir qué hacer cuando se avance al siguiente paso.
-      },
+      onNextStep: () {},
       services: widget.serviceRequests,
       maxImageCount: 3,
     );
@@ -331,9 +120,7 @@ void showErrorDialog(BuildContext context, String s) {
           });
         }
       },
-      onNextStep: () {
-        // Aquí puedes definir qué hacer cuando se avance al siguiente paso.
-      },
+      onNextStep: () {},
       selectedTime: null,
     );
 
@@ -347,10 +134,8 @@ void showErrorDialog(BuildContext context, String s) {
       onFavoritesSelected: (favorite) {
         widget.serviceRequest.isFavorite = favorite;
       },
-      onNextStep: () {
-        // Aquí puedes definir qué hacer cuando se avance al siguiente paso.
-      },
-      location: widget.serviceRequest.location,  // Pasa la ubicación aquí
+      onNextStep: () {},
+      location: widget.serviceRequest.location,
     );
 
     termsWizard = TermsAndConditionsWizard(
@@ -358,8 +143,193 @@ void showErrorDialog(BuildContext context, String s) {
       onAcceptTerms: (accepted) {
         widget.serviceRequest.acceptedTerms = accepted;
       },
-      onNextStep: () {
-        // Aquí puedes definir qué hacer cuando se avance al siguiente paso.
+      onNextStep: () {},
+    );
+  }
+
+  bool validateServiceData() {
+    final serviceRequest = widget.serviceRequest;
+
+    if (serviceRequest.isServiceNameEmpty()) {
+      return false;
+    }
+
+    if (serviceRequest.isServiceTypeEmpty()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool validateDateTime() {
+    final serviceRequest = widget.serviceRequest;
+
+    if (serviceRequest.selectedDate == null) {
+      return false;
+    }
+
+    if (serviceRequest.selectedTime == null) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void onSubmit() async {
+    if (widget.acceptTerms && token != null && !isSubmitting) {
+      setState(() {
+        isSubmitting = true; // Bloquear envío adicional
+      });
+
+      // Mostrar un cuadro de diálogo de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text("Enviando datos..."),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      final apiService = ApiService();
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        widget.serviceRequest.userId = user.uid;
+        widget.serviceRequest.status = StatusUtils.getStatusById('available');
+
+        try {
+          final expertisesJson = jsonEncode(
+            widget.serviceRequest.expertises.map((e) => e.toMap()).toList(),
+          );
+
+          // Nueva lista para almacenar URLs de imágenes
+          List<String> imageUrls = [];
+
+          // Filtrar las imágenes con rutas válidas
+          List<String> validImagePaths = widget.serviceRequest.images.where((
+              path) => path.isNotEmpty).toList();
+
+          // Subir imágenes a Firebase Storage y obtener las URLs
+          for (var imagePath in validImagePaths) {
+            try {
+              final file = File(imagePath);
+              final compressedFile = await compressAndResizeImage(file);
+
+              // Subir la imagen y obtener la URL
+              String downloadUrl = await apiService
+                  .uploadImageToFirebaseStorage(compressedFile, user.uid);
+              imageUrls.add(downloadUrl); // Almacenar la URL descargable
+            } catch (e) {
+              print('Error al cargar imagen: $e');
+            }
+          }
+
+          if (imageUrls.isEmpty) {
+            Navigator.of(context).pop(); // Cerrar el diálogo de carga
+            showErrorDialog(context, 'Error: No se subió ninguna imagen.');
+            return;
+          }
+
+          // Obtener el devicesId y fcmToken
+          String? devicesId = await AuthUtils.getDeviceId();
+          String? token = await AuthUtils.getToken();
+
+          // Enviar datos al backend
+          final response = await apiService.sendDataToBackend(
+            widget.serviceRequest,
+            token!,
+            widget.serviceRequest.status.id,
+            expertisesJson,
+            widget.categoryId,
+            widget.subcategoryId,
+            widget.serviceRequest.status,
+            widget.subcategoryName,
+            imageUrls,
+            devicesId,
+            fcmToken, // Pasar el fcmToken al backend
+          );
+
+          Navigator.of(context).pop(); // Cerrar el diálogo de carga
+
+          if (response.statusCode == 201) {
+            showSuccessDialog(context, 'Servicio creado con éxito.');
+          } else {
+            showErrorDialog(context,
+                'Error al crear el servicio. Código: ${response.statusCode}');
+          }
+        } catch (error) {
+          Navigator.of(context).pop(); // Cerrar el diálogo de carga
+          showErrorDialog(
+              context, 'Error durante la creación del servicio: $error');
+        } finally {
+          setState(() {
+            isSubmitting = false; // Desbloquear después de enviar
+          });
+        }
+      } else {
+        Navigator.of(context).pop(); // Cerrar el diálogo de carga
+        showErrorDialog(context, 'Error: No hay usuario autenticado.');
+      }
+    } else {
+      showErrorDialog(context,
+          'Error: Términos no aceptados, token nulo o ya se está enviando.');
+    }
+  }
+
+  void showSuccessDialog(BuildContext context, String s) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('¡Servicio creado con éxito!'),
+          content: const Text('Tu servicio ha sido creado con éxito.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        HomeScreen(initialPageIndex: 1), // Redirige a Historial
+                  ),
+                      (route) => false,
+                );
+              },
+              child: const Text('Ir a Historial'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showErrorDialog(BuildContext context, String s) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error al crear el servicio'),
+          content: const Text(
+              'Hubo un error al crear el servicio. Inténtalo nuevamente.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
       },
     );
   }
@@ -370,7 +340,8 @@ void showErrorDialog(BuildContext context, String s) {
       onPressed: onPressed,
       child: Text(label),
       style: TextButton.styleFrom(
-        foregroundColor: Colors.white, shape: RoundedRectangleBorder(
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30.0),
         ),
         backgroundColor: Color(0xFF1A819A),
@@ -383,72 +354,100 @@ void showErrorDialog(BuildContext context, String s) {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Formulario de Servicio',
-          style: MyTextStyles.buttonTextStyle,),
-      ),
-      body: Form(
-        key: _formKey,
-        child: Stepper(
-          currentStep: currentStep,
-          controlsBuilder: (BuildContext context, ControlsDetails controlsDetails) {
-            return Row(
-              children: <Widget>[
-                _customStepperButton(
-                  label: 'Cancelar',
-                  onPressed: currentStep > 0
-                      ? () {
-                    setState(() {
-                      currentStep -= 1;
-                    });
-                  }
-                      : () {},
-                ),
-                SizedBox(width: 8.0),
-                _customStepperButton(
-                  label: currentStep < 3 ? 'Continuar' : 'Enviar', // Cambio de etiqueta en el último paso
-                  onPressed: () {
-                    setState(() {
-                      if (currentStep == 0 && !validateServiceData()) {
-                        return;
-                      }
-                      if (currentStep == 1 && !validateDateTime()) {
-                        return;
-                      }
-                      if (currentStep < 2) {
-                        currentStep += 1;
-                      } else {
-                        onSubmit(); // Llama a onSubmit en el último paso
-                      }
-                    });
-                  },
-                ),
-              ],
-            );
-          },
-          steps: [
-            Step(
-              title: const Text('Datos del Servicio',
-                style: MyTextStyles.servicesButtonTextStyle,
-              ),
-              content: dataWizard,
-              isActive: currentStep == 0,
-            ),
-            Step(
-              title: const Text('Fecha y Hora',
-                style: MyTextStyles.servicesButtonTextStyle,
-              ),
-              content: dateTimeWizard,
-              isActive: currentStep == 1,
-            ),
-            Step(
-              title: const Text('Ubicación y Favoritos',
-                style: MyTextStyles.servicesButtonTextStyle,
-              ),
-              content: locationAndFavoritesWizard,
-              isActive: currentStep == 2,
-            ),
-          ],
+        title: const Text(
+          'Formulario de Servicio',
+          style: MyTextStyles.drawerButtonTextStyle3,
         ),
+        actions: <Widget>[
+          if (currentStep == 2)
+            _customStepperButton(
+              label: 'Enviar',
+              onPressed: onSubmit,
+            ),
+        ],
+      ),
+      body: Stepper(
+        type: StepperType.vertical,
+        currentStep: currentStep,
+        onStepContinue: () {
+          if (currentStep < 2) {
+            setState(() {
+              currentStep++;
+            });
+          } else {
+            onSubmit();
+          }
+        },
+        onStepCancel: () {
+          if (currentStep > 0) {
+            setState(() {
+              currentStep--;
+            });
+          }
+        },
+        controlsBuilder: (BuildContext context, ControlsDetails details) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              if (currentStep > 0)
+                ElevatedButton(
+                  onPressed: details.onStepCancel,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancelar',
+                    style: MyTextStyles.drawerButtonLabelTextStyle,
+                  ),
+                ),
+              ElevatedButton(
+                onPressed: details.onStepContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  'Continuar',
+                  style: MyTextStyles.drawerButtonLabelTextStyle,
+                ),
+              ),
+            ],
+          );
+        },
+        steps: <Step>[
+          Step(
+            title: Text(
+              'Datos del servicio',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: dataWizard,
+            isActive: currentStep >= 0,
+            state: currentStep > 0 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Fecha y hora',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: dateTimeWizard,
+            isActive: currentStep >= 1,
+            state: currentStep > 1 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Ubicación',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: locationAndFavoritesWizard,
+            isActive: currentStep >= 2,
+            state: currentStep > 2 ? StepState.complete : StepState.indexed,
+          ),
+        ],
       ),
     );
   }

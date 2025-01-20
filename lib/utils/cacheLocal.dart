@@ -25,7 +25,7 @@ class LocalCacheService {
       final String? serviceRequestJson = prefs.getString(serviceRequestKey);
       if (serviceRequestJson != null) {
         final Map<String, dynamic> serviceRequestMap = jsonDecode(serviceRequestJson);
-        return ServiceRequest.fromSnapshot(serviceRequestMap as DocumentSnapshot<Object?>);
+        return ServiceRequest.fromSnapshot(serviceRequestMap);
 
       }
     } catch (e) {

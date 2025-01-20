@@ -7,13 +7,74 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/metodos/RegisController.dart';
 import 'package:manitoscliente_new/metodos/baseurl.dart';
-
 class ApiService {
-  final String baseUrl = ApiConfiguration
-      .baseUrl; // Utiliza la URL base desde la clase de configuración
+  final String baseUrl = ApiConfiguration.baseUrl; // URL base de la API
   String? getToken;
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseStorage storage = FirebaseStorage.instance;
+
+  // Método para obtener el token de autenticación desde Firebase
+  Future<String?> _getAuthToken() async {
+  try {
+    final User? user = auth.currentUser;
+    if (user == null) {
+      print('Usuario no autenticado. Por favor, inicia sesión.');
+      return null;
+    }
+    final token = await user.getIdToken(true); // Fuerza la renovación del token
+    print('Token obtenido: $token');
+    return token;
+  } catch (e) {
+    print('Error al obtener el token: $e');
+    return null;
+  }
+}
+
+
+  // Método para realizar la solicitud GET a la API del backend
+  Future<List<Map<String, dynamic>>> getServices(
+    String? userId, 
+    String status,  
+    String? token, 
+    String deviceId) async {
+  // Obtener userId y token si no se pasan como parámetros
+  userId ??= auth.currentUser?.uid;
+  token ??= await _getAuthToken();
+
+  if (userId == null || userId.isEmpty) {
+    print('Error: userId no está disponible.');
+    return [];
+  }
+
+
+  final url = Uri.parse('$baseUrl/services?');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+    'Device-Id': deviceId,
+  };
+
+  try {
+    print('Realizando solicitud a $url');
+    print('Encabezados: $headers');
+
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      print('Respuesta recibida: ${response.body}');
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    } else {
+      print('Error al obtener servicios: Código ${response.statusCode}, Respuesta: ${response.body}');
+      return [];
+    }
+  } catch (e) {
+    print('Excepción al obtener servicios: $e');
+    return [];
+  }
+}
+
+
 
   Future<http.Response> sendTokenAndUserDataToServer({
     required String? token,
@@ -179,6 +240,7 @@ class ApiService {
       String subcategoryName,
       List<String> imageUrls,
       String? devicesId, // Asegúrate de que este parámetro esté aquí
+      String? fcmToken,
    
       ) async {
     print('sendDataToBackend() called');
@@ -191,7 +253,7 @@ class ApiService {
     // Construir expertises con el serviceType y el subcategoryId
     final expertisesList = [
       {
-        'id': subcategoryId,
+        'id': serviceRequest.serviceType.id,
         'name': serviceRequest.serviceType.name,
       }
     ];
@@ -209,8 +271,11 @@ class ApiService {
       'userId': serviceRequest.userId,
       'status': status.id,
       'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
-      'categoryId': categoryId,
+      'categoryId':  categoryId,
+      'subcategory':{'id': subcategoryId, 'name': subcategoryName},
       'devicesId': devicesId, // Agrega devicesId aquí
+      'fcmToken': fcmToken,
+      'token':token,
   
     };
 

@@ -70,6 +70,24 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
         .doc(widget.serviceId)
         .update({'status': 'pending_confirmation2'});
 
+    // Actualizar el estado de la oferta asociada al servicio
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('offers')
+        .where('serviceId', isEqualTo: widget.serviceId)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      String offerId = querySnapshot.docs.first.id;
+      await FirebaseFirestore.instance
+          .collection('offers')
+          .doc(offerId)
+          .update({'status': 'pending_confirmation2'});
+      print('Estado de la oferta actualizado a pending_confirmation2.');
+    } else {
+      print('No se encontró ninguna oferta asociada al servicio.');
+    }
+
     // Monitorear el cambio de estado del servicio
     FirebaseFirestore.instance
         .collection('services')
@@ -85,7 +103,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
           });
           // Cerrar el diálogo después de que el estado sea 'completed'
           Future.delayed(Duration(seconds: 1), () {
-            Navigator.of(context).pop(true);  // Cerrar el cuadro de diálogo
+            Navigator.of(context).pop(true); // Cerrar el cuadro de diálogo
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (context) => HomeScreen(initialPageIndex: 1),
@@ -107,6 +125,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
     );
   }
 }
+
 
 
   @override
