@@ -47,7 +47,7 @@ class NavigationUtils {
         isFavorite: map['isFavorite'] ?? false,
         acceptedTerms: true, id: '', status: map['status'] ?? '',
         subcategoryName: map['subcategoryName'] ??
-            '', hasOffer: false, offers: [], // Establece acceptedTerms como ⁠ true ⁠
+            '', hasOffer: false, offers: [], 
       );
 
       Navigator.push(

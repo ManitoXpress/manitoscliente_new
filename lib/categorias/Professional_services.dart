@@ -50,7 +50,7 @@ class _ProfessionalServicesScreenState
 
   void openNewPage(
       ServiceType serviceType,
-      List<Expertises> expertises, // Cambia el tipo a List<Expertises>
+      List<Expertise> expertises, // Cambio aquí: usaremos List<Expertise>
       String categoryId,
       String subcategoryId,
       String subcategoryName,
@@ -99,7 +99,11 @@ class _ProfessionalServicesScreenState
       acceptedTerms: true,
       id: '',
       status: status, // Utiliza el objeto Status obtenido de StatusUtils
-      expertises: expertises, subcategoryName: '', devicesId: '', hasOffer: false, offers: [], // Usa la lista de Expertises
+      expertises: expertises, // Usa la lista de Expertises (debería ser List<Expertise>)
+      subcategoryName: '', 
+      devicesId: '', 
+      hasOffer: false, 
+      offers: [], // Usa la lista de Expertises
     );
 
     // Llama al formulario del servicio con el serviceRequest y los ids de categoría y subcategoría
@@ -125,6 +129,7 @@ class _ProfessionalServicesScreenState
 
     print('Formulario abierto');
   }
+
 
   // Define una función para cargar los servicios
   Future<void> _loadServices() async {
@@ -458,8 +463,15 @@ Widget build(BuildContext context) {
                             []; // Aquí debes obtener los expertises correspondientes.
 
                         // Llama a openNewPage con todos los argumentos necesarios
-                        openNewPage(serviceType, expertises, categoryId!,
-                            subcategoryId, subcategoryName, context);
+                        openNewPage(
+                          serviceType,
+                          List<Expertise>.from(expertises), // Conversión explícita de Expertises a Expertise
+                          categoryId!,
+                          subcategoryId,
+                          subcategoryName,
+                          context,
+                        );
+
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF20819A),

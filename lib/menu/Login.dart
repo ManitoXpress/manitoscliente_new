@@ -227,24 +227,13 @@ class _LoginFormState extends State<LoginScreen> {
     }
   }
   Future<void> signInWithApple() async {
-    setState(() => isLoadingApple = true);
+    setState(() => isLoadingGoogle = true);
     try {
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [AppleIDAuthorizationScopes.email],
-      );
-
-      final oauthCredential = OAuthProvider("apple.com").credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
-
-      final userCredential = await _auth.signInWithCredential(oauthCredential);
-
-      _navigateToCardScreenPage(); 
+      await LoginScreenController.signInWithApple(context);
     } catch (e) {
-      print('Error al iniciar sesión con Apple: $e');
+      print('Error al iniciar sesión con Google: $e');
     } finally {
-      setState(() => isLoadingApple = false);
+      setState(() => isLoadingGoogle = false);
     }
   }
 
