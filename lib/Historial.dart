@@ -106,21 +106,25 @@ class _HistorialState extends State<Historial>
       hasOffer: false,
       offers: [],
       workerDetails: WorkerDetails(
-        id: '',
-        phoneNumber: '',
-        certificateImagePaths: [],
-        idDocumentImagePath: '',
-        imagePath: '',
-        displayName: '',
-        email: '',
-        expLevel: [],
-        expertises: [],
-        criminalRecordImagePath: '',
-        fcmToken: '',
-        location: '',
-        verificationStatus: '',
-        idCardNumber: '',
-      ),
+          id: '',
+          phoneNumber: '',
+          certificateImagePaths: [],
+          idDocumentImagePath: '',
+          imagePath: '',
+          displayName: '',
+          email: '',
+          expLevel: [],
+          expertises: [],
+          criminalRecordImagePath: '',
+          fcmToken: '',
+          location: Location(
+            lat: 0.0, // Latitud predeterminada
+            lng: 0.0, // Longitud predeterminada
+          ),
+          verificationStatus: '',
+          idCardNumber: '',
+        ),
+
     );
     registrationData = RegistrationData(
       userId: '',
@@ -210,7 +214,10 @@ Future<void> _refreshHistorial() async {
       expertises: [],
       criminalRecordImagePath: '',
       fcmToken: '',
-      location: '',
+      location: Location(
+            lat: 0.0, // Latitud predeterminada
+            lng: 0.0, // Longitud predeterminada
+          ),
       verificationStatus: '',
       idCardNumber: '',
     ),

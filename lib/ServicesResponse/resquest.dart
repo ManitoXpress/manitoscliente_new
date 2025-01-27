@@ -326,7 +326,7 @@ class WorkerDetails {
   final List<Expertise> expertises;
   final String criminalRecordImagePath;
   final String fcmToken;
-  final String location;
+  final Location location; // Cambiado a un objeto Location
   final String verificationStatus;
   final String idCardNumber;
 
@@ -347,26 +347,8 @@ class WorkerDetails {
     required this.idCardNumber,
   });
 
+  // Constructor fromMap
   factory WorkerDetails.fromMap(Map<String, dynamic> map) {
-    if (map == null) {
-      return WorkerDetails(
-        id: '',
-        certificateImagePaths: [],
-        idDocumentImagePath: '',
-        imagePath: '',
-        phoneNumber: '',
-        displayName: '',
-        email: '',
-        expLevel: [],
-        expertises: [],
-        criminalRecordImagePath: '',
-        fcmToken: '',
-        location: '',
-        verificationStatus: '',
-        idCardNumber: '',
-      );
-    }
-
     return WorkerDetails(
       id: map['id'] ?? '',
       certificateImagePaths: List<String>.from(map['certificateImagePaths'] ?? []),
@@ -382,13 +364,15 @@ class WorkerDetails {
           [],
       criminalRecordImagePath: map['criminalRecordImagePath'] ?? '',
       fcmToken: map['fcmToken'] ?? '',
-      location: map['location'] ?? '',
+      location: map['location'] != null
+          ? Location.fromMap(map['location']) // Mapeo del objeto Location
+          : Location(lat: 0.0, lng: 0.0), // Valor por defecto
       verificationStatus: map['verificationStatus'] ?? '',
       idCardNumber: map['idCardNumber'] ?? '',
     );
   }
 
-  // Método toMap para convertir el objeto a un mapa
+  // Método toMap
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -402,38 +386,63 @@ class WorkerDetails {
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'criminalRecordImagePath': criminalRecordImagePath,
       'fcmToken': fcmToken,
-      'location': location,
+      'location': location.toMap(), // Convertir objeto Location a mapa
       'verificationStatus': verificationStatus,
       'idCardNumber': idCardNumber,
     };
   }
 }
 
+// Clase Location
+class Location {
+  final double lat;
+  final double lng;
 
-
-class Expertise {
-  String id;
-  String name;
-
-  Expertise({
-    required this.id,
-    required this.name,
+  Location({
+    required this.lat,
+    required this.lng,
   });
+
+  factory Location.fromMap(Map<String, dynamic> map) {
+    return Location(
+      lat: (map['lat'] ?? 0.0).toDouble(),
+      lng: (map['lng'] ?? 0.0).toDouble(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'name': name,
+      'lat': lat,
+      'lng': lng,
     };
   }
+}
+
+// Clase Expertise
+class Expertise {
+  final String name;
+  final String id;
+
+  Expertise({
+    required this.name,
+    required this.id,
+  });
 
   factory Expertise.fromMap(Map<String, dynamic> map) {
     return Expertise(
-      id: map['id'] ?? '',
       name: map['name'] ?? '',
+      id: map['id'] ?? '',
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'id': id,
+    };
+  }
 }
+
 
 
 class category {
