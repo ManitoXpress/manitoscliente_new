@@ -15,12 +15,85 @@ import 'package:http/http.dart' as http;
 class OfferRepository {
   final ApiService2 apiService2;
   final ServiceDataFetcher serviceDataFetcher;
+  final FirebaseFirestore firestore;
 
   OfferRepository({
     required this.apiService2,
     required this.serviceDataFetcher,
-    required FirebaseFirestore firestore,
+    required this.firestore,
   });
+
+  Future<List<ServiceRequest>> fetchServicesByStatus(
+  String status,
+  String userId,
+  String deviceId,
+  String token,
+  List<Offer> offers,
+) async {
+  // Obtener la lista de estados válidos desde Firestore
+  List<String> validStatuses = await _getValidStatusesFromFirestore();
+
+  // Validar el estado proporcionado
+  if (!validStatuses.contains(status)) {
+    throw ArgumentError('Estado no válido: $status');
+  }
+
+  // Construir un servicio de ejemplo para pasar a fetchOffersForUser
+  // Esto puede variar según tu lógica, aquí asumimos que hay un ServiceRequest inicial
+  ServiceRequest service = ServiceRequest(
+    id: '',
+    serviceDateTime: DateTime.now().toString(),
+    description: '',
+    expertises: [],
+    images: [],
+    location: {},
+    offeredPrice: 0.0,
+    userId: userId,
+    workerId: '',
+    status: Status(id: status, name: Status.getNameById(status)),
+    isFavorite: false,
+    acceptedTerms: false,
+    serviceType: ServiceType(name: '', id: '', selectedDate: '', selectedTime: ''),
+    subcategoryName: '',
+    devicesId: '',
+    hasOffer: false,
+    offers: [],
+  );
+
+  // Retornar los servicios con sus ofertas
+  return await fetchOffersForUser(
+    status,
+    userId,
+    token,
+    service,
+    deviceId, // Reemplaza esto con el deviceId real si lo tienes
+  );
+}
+
+
+  Future<List<String>> _getValidStatusesFromFirestore() async {
+    try {
+      QuerySnapshot querySnapshot =
+          await firestore.collection('services').get();
+
+      Set<String> statusSet = {};
+
+      for (var doc in querySnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        if (data.containsKey('status')) {
+          statusSet.add(data['status'] as String);
+        }
+      }
+
+      if (statusSet.isNotEmpty) {
+        return statusSet.toList();
+      } else {
+        throw Exception('No se encontraron estados válidos en Firestore.');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener estados desde Firestore: $e');
+    }
+  }
 
   Future<List<ServiceRequest>> fetchOffersForUser(
   String status,

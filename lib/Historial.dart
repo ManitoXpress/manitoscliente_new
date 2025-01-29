@@ -677,7 +677,12 @@ Widget _buildServiceListByStatus(
           images: [],
           location: {},
           offeredPrice: 0.0,
-          serviceType: ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
+          serviceType: ServiceType(
+            id: '',
+            name: '',
+            selectedDate: '',
+            selectedTime: '',
+          ),
           userId: '',
           workerId: '',
           isFavorite: false,
@@ -693,13 +698,39 @@ Widget _buildServiceListByStatus(
       break;
 
     case 'available':
-    case 'in_progress':
-      future = _serviceRepository.fetchServicesByStatus(
+    future = _serviceRepository.fetchServicesByStatus(
         statusIds,
-        'status',
+        'available', // Aquí indicas que deseas filtrar por status
         userId,
         token,
-        [],
+        [], // Si necesitas algún filtro adicional, lo puedes agregar aquí
+      );
+      break;
+    case 'in_progress':
+    future = _serviceRepository.fetchServicesByStatus(
+        statusIds,
+        'in_progress', 
+        userId,
+        token,
+        [], 
+      );
+      break;
+    case 'complete':
+    future = _serviceRepository.fetchServicesByStatus(
+        statusIds,
+        'complete', 
+        userId,
+        token,
+        [], 
+      );
+      break;
+    case 'cancelled':
+      future = _serviceRepository.fetchServicesByStatus(
+        statusIds,
+        'cancelled', 
+        userId,
+        token,
+        [], 
       );
       break;
 
@@ -723,16 +754,33 @@ Widget _buildServiceListByStatus(
       }
 
       final services = snapshot.data!;
+      if (statusIds == 'available') {
+        final services = snapshot.data!;
+        return _buildServiceList(services, screenWidth, screenHeight, userId);
+      }
 
       if (statusIds == 'offer') {
         final offers = services.expand((service) => service.offers).toList();
         return _buildOfferList(offers, screenWidth, screenHeight, userId);
+      }
+      if (statusIds == 'in_progress') {
+        final services = snapshot.data!;
+        return _buildServiceList(services, screenWidth, screenHeight, userId);
+      }
+      if (statusIds == 'complete') {
+        final services = snapshot.data!;
+        return _buildServiceList(services, screenWidth, screenHeight, userId);
+      }
+      if (statusIds == 'cancelled') {
+        final services = snapshot.data!;
+        return _buildServiceList(services, screenWidth, screenHeight, userId);
       } else {
         return _buildServiceList(services, screenWidth, screenHeight, userId);
       }
     },
   );
 }
+
 
 Widget _buildOfferList(List<Offer> offers, double screenWidth,
     double screenHeight, String userId) {

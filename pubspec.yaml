@@ -2,7 +2,7 @@ name: manitoscliente_new
 description: "Projecto ManitosXpress."
 publish_to: 'none'
 
-version: 1.6.1+6
+version: 1.6.1+7
 
 environment:
   sdk: '>=3.2.6 <4.0.0'

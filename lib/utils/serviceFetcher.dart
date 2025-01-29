@@ -13,7 +13,6 @@ import 'package:manitoscliente_new/utils/cacheLocal.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:convert';
-
 class ServiceRepository {
   final ApiService apiService;
   final FirebaseFirestore firestore;
@@ -23,24 +22,23 @@ class ServiceRepository {
 
   // Función pública que permite filtrar servicios por estado desde Firestore
   Future<List<ServiceRequest>> fetchServicesByStatus(
-  String status,
-  String userId,
-  String column,
-  String token,
-  List<Offer> offers,  // Agregado el parámetro de ofertas
-) async {
-  // Obtener la lista de estados válidos desde Firestore
-  List<String> validStatuses = await _getValidStatusesFromFirestore();
+    String status,
+    String userId,
+    String column,
+    String token,
+    List<Offer> offers, // Agregado el parámetro de ofertas
+  ) async {
+    // Obtener la lista de estados válidos desde Firestore
+    List<String> validStatuses = await _getValidStatusesFromFirestore();
 
-  // Validar el estado proporcionado con los valores de Firestore
-  if (!validStatuses.contains(status)) {
-    throw ArgumentError('Estado no válido: $status');
+    // Validar el estado proporcionado con los valores de Firestore
+    if (!validStatuses.contains(status)) {
+      throw ArgumentError('Estado no válido: $status');
+    }
+
+    // Llamar al método privado para realizar la lógica principal
+    return await _fetchServicesByStatus(status, column, userId, token, offers);
   }
-
-  // Llamar al método privado para realizar la lógica principal
-  return await _fetchServicesByStatus(status, column, userId, token, offers);
-}
-
 
   // Método privado para obtener los estados válidos desde Firestore
   Future<List<String>> _getValidStatusesFromFirestore() async {
@@ -68,160 +66,166 @@ class ServiceRepository {
   }
 
   // Método privado para obtener los servicios por estado
-Future<List<ServiceRequest>> _fetchServicesByStatus(
-  String type, String column, String userId, String token,List<Offer> offers,
-) async {
-  try {
-    final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-    if (cachedRequest != null) {
-      print('Datos del caché encontrados. Mostrando datos del caché...');
-      return [cachedRequest];
-    } else {
-      final deviceId = await obtenerDeviceId();
+  Future<List<ServiceRequest>> _fetchServicesByStatus(
+    String type,
+    String column,
+    String userId,
+    String token,
+    List<Offer> offers,
+  ) async {
+    try {
+      final cachedRequest =
+          await LocalCacheService.getCachedServiceRequest(userId);
+      if (cachedRequest != null) {
+        print('Datos del caché encontrados. Mostrando datos del caché...');
+        return [cachedRequest];
+      } else {
+        final deviceId = await obtenerDeviceId();
 
-      print('Parámetro type: $type');
-      print('Parámetro column: $column');
-      print('Parámetro userId: $userId');
-      print('Parámetro deviceId: $deviceId');
+        print('Parámetro type: $type');
+        print('Parámetro column: $column');
+        print('Parámetro userId: $userId');
+        print('Parámetro deviceId: $deviceId');
 
-      final response = await ApiService2().getAllServices(
-        token,
-        column,
-        userId,
-        type,
-        deviceId,
-      );
-
-      if (response.statusCode == 200) {
-        final List<Map<String, dynamic>> servicesData = List<Map<String, dynamic>>.from(
-          json.decode(response.body),
+        final response = await ApiService2().getAllServices(
+          token,
+          column,
+          userId,
+          type,
+          deviceId,
         );
 
-        if (servicesData.isNotEmpty) {
-          try {
-            // Mapeamos los datos para crear una lista de ServiceRequest
-            final List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
-              final statusName = item['status'] as String? ?? 'available';
-              final statusObject = Status(
-                  id: statusName, name: Status.getNameById(statusName));
+        if (response.statusCode == 200) {
+          final List<Map<String, dynamic>> servicesData =
+              List<Map<String, dynamic>>.from(
+            json.decode(response.body),
+          );
 
-              final List<dynamic> expertisesArray = item['expertises'] as List<dynamic>? ?? [];
-              final Map<String, dynamic> expertiseItem =
-                  expertisesArray.isNotEmpty ? expertisesArray.first : {};
-
-              return ServiceRequest(
-                expertises: [
-                  Expertise(
-                    id: expertiseItem['id'] ?? '',
-                    name: expertiseItem['name'] ?? '',
-                  )
-                ],
-                id: item['id'] ?? '',
-                serviceDateTime: item['serviceDateTime'] ?? '',
-                description: item['description'] ?? '',
-                images: (item['images'] as List<dynamic>?)
-                        ?.map((image) => image as String? ?? '')
-                        .toList() ??
-                    [],
-                location: Map<String, double>.from(
-                  (item['location'] as Map<String, dynamic>?)
-                          ?.map((key, value) {
-                        return MapEntry(
-                            key, (value is int) ? value.toDouble() : value);
-                      }) ??
-                      {},
-                ),
-                offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                userId: item['userId'] ?? '',
-                workerId: item['workerId'] ?? '',
-                status: statusObject,
-                isFavorite: item['isFavorite'] as bool? ?? false,
-                acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                serviceType: ServiceType(
-                  name: item['serviceType'] ?? '',
-                  id: '',
-                  selectedDate: '',
-                  selectedTime: '',
-                ),
-                subcategoryName: item['subcategoryName'] ?? '',
-                devicesId: '',
-                hasOffer: false,
-                offers: [], // Lista vacía inicialmente
-              );
-            }).toList();
-
-            // Cacheamos las solicitudes de servicio
-            serviceRequestsList.forEach((request) {
-              LocalCacheService.cacheServiceRequest(request);
-            });
-
-            // Ahora obtenemos las ofertas de forma asincrónica
-            List<Future> requests = serviceRequestsList.map((serviceRequest) async {
-              print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
-              try {
-                final offerResponses = await ApiService2().getOffers(
-                  type, 
-                  userId, 
-                  token, 
-                  [serviceRequest], // Pasar la instancia dentro de una lista
+          if (servicesData.isNotEmpty) {
+            try {
+              // Mapeamos los datos para crear una lista de ServiceRequest
+              final List<ServiceRequest> serviceRequestsList =
+                  servicesData.map((item) {
+                final statusName = item['status'] as String? ?? 'available';
+                final statusObject = Status(
+                  id: statusName,
+                  name: Status.getNameById(statusName),
                 );
 
+                final List<dynamic> expertisesArray =
+                    item['expertises'] as List<dynamic>? ?? [];
+                final Map<String, dynamic> expertiseItem =
+                    expertisesArray.isNotEmpty ? expertisesArray.first : {};
 
-                // Mapear las ofertas
-                List<Offer> offers = offerResponses.map((serviceOffer) {
+                return ServiceRequest(
+                  expertises: [
+                    Expertise(
+                      id: expertiseItem['id'] ?? '',
+                      name: expertiseItem['name'] ?? '',
+                    )
+                  ],
+                  id: item['id'] ?? '',
+                  serviceDateTime: item['serviceDateTime'] ?? '',
+                  description: item['description'] ?? '',
+                  images: (item['images'] as List<dynamic>?)
+                          ?.map((image) => image as String? ?? '')
+                          .toList() ??
+                      [],
+                  location: Map<String, double>.from(
+                    (item['location'] as Map<String, dynamic>?)
+                            ?.map((key, value) {
+                          return MapEntry(
+                              key, (value is int) ? value.toDouble() : value);
+                        }) ??
+                        {},
+                  ),
+                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                  userId: item['userId'] ?? '',
+                  workerId: item['workerId'] ?? '',
+                  status: statusObject,
+                  isFavorite: item['isFavorite'] as bool? ?? false,
+                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                  serviceType: ServiceType(
+                    name: item['serviceType'] ?? '',
+                    id: '',
+                    selectedDate: '',
+                    selectedTime: '',
+                  ),
+                  subcategoryName: item['subcategoryName'] ?? '',
+                  devicesId: '',
+                  hasOffer: false,
+                  offers: [], // Lista vacía inicialmente
+                );
+              }).toList();
+
+              // Cacheamos las solicitudes de servicio
+              serviceRequestsList.forEach((request) {
+                LocalCacheService.cacheServiceRequest(request);
+              });
+
+              // Ahora obtenemos las ofertas de forma asincrónica
+              List<Future> requests =
+                  serviceRequestsList.map((serviceRequest) async {
+                print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
+                try {
+                  final offerResponses = await ApiService2().getOffers(
+                    type,
+                    userId,
+                    token,
+                    [serviceRequest], // Pasar la instancia dentro de una lista
+                  );
+
+                  // Mapear las ofertas
+                  List<Offer> offers = offerResponses.map((serviceOffer) {
                     return Offer(
                       id: serviceOffer.id ?? '',
                       workerId: serviceOffer.workerId ?? '',
                       offeredPrice: serviceOffer.offeredPrice?.toDouble() ?? 0.0,
                       hasOffer: serviceOffer.hasOffer ?? false,
-                      serviceId: '', 
-                      extraCosts: 0.0, 
-                      totalPrice: 0.0, 
-                      status: serviceOffer.status, 
-                      userToken: '', 
-                      createdAt: DateTime.now(), expertises: [], subcategoryName: '',  // Asigna la fecha actual
+                      serviceId: '',
+                      extraCosts: 0.0,
+                      totalPrice: 0.0,
+                      status: serviceOffer.status,
+                      userToken: '',
+                      createdAt: DateTime.now(),
+                      expertises: [],
+                      subcategoryName: '',
                     );
                   }).toList();
 
+                  // Asignar las ofertas al servicio correspondiente
+                  serviceRequest.offers = offers;
 
-                // Asignar las ofertas al servicio correspondiente
-                serviceRequest.offers = offers;
+                  // Imprimir la cantidad de ofertas obtenidas
+                  print('Ofertas obtenidas para el servicio ${serviceRequest.id}: ${offers.length}');
+                } catch (e) {
+                  print('Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
+                }
+              }).toList();
 
-                // Imprimir la cantidad de ofertas obtenidas
-                print('Ofertas obtenidas para el servicio ${serviceRequest.id}: ${offers.length}');
-              } catch (e) {
-                print('Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
-              }
-            }).toList();
+              // Esperar a que todas las solicitudes de ofertas terminen
+              await Future.wait(requests);
 
-            // Esperar a que todas las solicitudes de ofertas terminen
-            await Future.wait(requests);
-
-            // Retornar la lista de solicitudes de servicio con sus ofertas
-            return serviceRequestsList;
-
-          } catch (e) {
-            print('Error al procesar los datos del servicio: $e');
+              // Retornar la lista de solicitudes de servicio con sus ofertas
+              return serviceRequestsList;
+            } catch (e) {
+              print('Error al procesar los datos del servicio: $e');
+              return [];
+            }
+          } else {
+            print('No se encontraron servicios disponibles.');
             return [];
           }
         } else {
-          print('No se encontraron servicios disponibles.');
+          print('Error en la solicitud HTTP: ${response.statusCode}');
           return [];
         }
-      } else {
-        print('Error en la solicitud HTTP: ${response.statusCode}');
-        return [];
       }
+    } catch (e) {
+      print('Error en la solicitud: $e');
+      return [];
     }
-  } catch (e) {
-    print('Error en la solicitud: $e');
-    return [];
   }
-}
-
-
-
-
 
   // Método privado para parsear el precio ofrecido
   double _parseOfferedPrice(dynamic value) {
