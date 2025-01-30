@@ -240,7 +240,7 @@ Future<void> _refreshHistorial() async {
       ),
       _serviceRepository.fetchServicesByStatus(
         'in_progress,pending_confirmation',
-        'in_progress',
+        'pending_confirmation2',
         userId,
         token ?? '',
         [],
@@ -573,7 +573,7 @@ Future<void> _refreshHistorial() async {
       case 'available':
         future = _serviceRepository.fetchServicesByStatus(
           statusIds,
-          'available',
+          'status',
           userId,
           token,
           [], // Si necesitas algún filtro adicional, lo puedes agregar aquí
@@ -582,7 +582,7 @@ Future<void> _refreshHistorial() async {
       case 'in_progress':
         future = _serviceRepository.fetchServicesByStatus(
           statusIds,
-          'in_progress',
+          'status',
           userId,
           token,
           [],
@@ -591,7 +591,7 @@ Future<void> _refreshHistorial() async {
       case 'complete':
         future = _serviceRepository.fetchServicesByStatus(
           statusIds,
-          'complete',
+          'status',
           userId,
           token,
           [],
@@ -600,7 +600,7 @@ Future<void> _refreshHistorial() async {
       case 'cancelled':
         future = _serviceRepository.fetchServicesByStatus(
           statusIds,
-          'cancelled',
+          'status',
           userId,
           token,
           [],
@@ -640,7 +640,7 @@ Future<void> _refreshHistorial() async {
             final offers = services.expand((s) => s.offers).toList();
             
             return ServiceListBuilder.buildOfferList(
-              services.first, // Servicio asociado
+              services, // Servicio asociado
               offers,
               screenWidth,
               screenHeight,

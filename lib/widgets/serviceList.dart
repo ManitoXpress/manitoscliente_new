@@ -8,7 +8,7 @@ import 'package:manitoscliente_new/metodos/ticketController.dart';
 import 'package:manitoscliente_new/utils/timeLines.dart';
 
 class ServiceListBuilder {
-  static Widget buildOfferList(ServiceRequest service,List<Offer> offers, double screenWidth,
+  static Widget buildOfferList(List<ServiceRequest> services,List<Offer> offers, double screenWidth,
       double screenHeight, String userId, final UserData userData) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
@@ -17,6 +17,11 @@ class ServiceListBuilder {
         itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
+          // Busca el ServiceRequest correspondiente a esta oferta
+          final service = services.firstWhere(
+            (s) => s.id == offer.serviceId,
+            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+          );
           return GestureDetector(
             onTap: () async {
               try {
@@ -159,7 +164,7 @@ class ServiceListBuilder {
       height: screenHeight * 0.24,
       child: CustomPaint(
         size: Size(screenWidth, screenHeight * 0.35),
-        painter: CustomTicketShapePainter(status: Status(id: '', name: '')),
+        painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
             service.subcategoryName,
             service.expertises.map((e) => e.name).join(', '),

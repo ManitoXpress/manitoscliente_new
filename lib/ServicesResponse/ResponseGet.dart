@@ -140,6 +140,7 @@ Future<List<ServiceRequest>> getOffers(
   String type,
   String deviceId,
   List<ServiceRequest> services,
+  String status, // Nuevo parámetro para filtrar por estado
 ) async {
   try {
     final String? authTokenValue = await AuthUtils.getToken();
@@ -156,7 +157,12 @@ Future<List<ServiceRequest>> getOffers(
 
     List<Future> requests = services.map((service) async {
       final url = Uri.parse(
-        '$baseUrl/offers/${service.id}?columns=$column&values=$value&type=$type&deviceId=$deviceId',
+        '$baseUrl/offers/${service.id}?'
+        'columns=$column&'
+        'values=$value&'
+        'type=$type&'
+        'deviceId=$deviceId&'
+        'status=$status', // Añadir parámetro de estado
       );
 
       final response = await http.get(
@@ -168,8 +174,10 @@ Future<List<ServiceRequest>> getOffers(
 
       if (response.statusCode == 200) {
         List<dynamic> offersJson = json.decode(response.body);
-        allOffers.addAll(
-            offersJson.map((offer) => ServiceRequest.fromSnapshot(offer)).toList());
+        allOffers.addAll(offersJson
+            .map((offer) => ServiceRequest.fromSnapshot(offer))
+            .where((offer) => offer.status.id == status) // Filtro adicional en cliente
+            .toList());
       } else {
         print('Error al obtener ofertas para el servicio ${service.id}: ${response.statusCode}');
       }

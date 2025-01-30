@@ -188,11 +188,12 @@ class OfferRepository {
                     'Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
                 try {
                   final offerResponses = await ApiService2().getOffers(
-                    "",   // column (nombre del campo a filtrar)
-                    userId,      // value (valor del usuario)
-                    type,        // tipo de servicio
-                    deviceId,    // ID del dispositivo
-                    [serviceRequest], // Lista de servicios
+                    "userId",    // Columna a filtrar
+                    userId,      // Valor del usuario
+                    "",    // Tipo de filtro
+                    deviceId,
+                    [serviceRequest],
+                    "offer", 
                   );
                   
 
