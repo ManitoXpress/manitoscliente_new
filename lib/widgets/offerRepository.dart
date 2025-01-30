@@ -188,10 +188,11 @@ class OfferRepository {
                     'Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
                 try {
                   final offerResponses = await ApiService2().getOffers(
-                    type,
-                    userId,
-                    token,
-                    [serviceRequest], // Pasar la instancia dentro de una lista
+                    "",   // column (nombre del campo a filtrar)
+                    userId,      // value (valor del usuario)
+                    type,        // tipo de servicio
+                    deviceId,    // ID del dispositivo
+                    [serviceRequest], // Lista de servicios
                   );
                   
 
@@ -200,7 +201,10 @@ class OfferRepository {
                   List<Offer> offers = offerResponses.map((serviceOffer) {
                     // 1. Acceder directamente a las propiedades del objeto ServiceRequest
                     final statusName = serviceOffer.status.id; // <--- Cambio clave aquí
-                    final statusObject = serviceOffer.status;  // Usar el status existente
+                    final statusObject = Status(
+                        id: statusName,
+                        name: Status.getNameById(statusName),
+                      ); // Usar el status existente
                     
                     // 2. Obtener precios desde el objeto real
                     final offeredPrice = serviceOffer.offeredPrice;

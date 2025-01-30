@@ -8,7 +8,7 @@ import 'package:manitoscliente_new/metodos/ticketController.dart';
 import 'package:manitoscliente_new/utils/timeLines.dart';
 
 class ServiceListBuilder {
-  static Widget buildOfferList(List<Offer> offers, double screenWidth,
+  static Widget buildOfferList(ServiceRequest service,List<Offer> offers, double screenWidth,
       double screenHeight, String userId, final UserData userData) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
@@ -72,7 +72,7 @@ class ServiceListBuilder {
                 print('Error al cargar los detalles del trabajador: $e');
               }
             },
-            child: _buildOfferCard(offer, screenWidth, screenHeight),
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
           );
         },
       ),
@@ -151,7 +151,7 @@ class ServiceListBuilder {
     );
   }
 
-  static Widget _buildOfferCard(
+  static Widget _buildOfferCard(ServiceRequest service,
       Offer offer, double screenWidth, double screenHeight) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.02),
@@ -161,8 +161,8 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: Status(id: '', name: '')),
         child: _buildCardContent(
-            offer.subcategoryName,
-            offer.expertises.map((e) => e.name).join(', '),
+            service.subcategoryName,
+            service.expertises.map((e) => e.name).join(', '),
             offer.offeredPrice,
             screenHeight),
       ),

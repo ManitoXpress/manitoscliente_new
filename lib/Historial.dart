@@ -464,15 +464,35 @@ Future<void> _refreshHistorial() async {
               controller: _tabController,
               children: [
                 _buildServiceListByStatus(
-                    'available', screenWidth, screenHeight, userId, authToken),
+                    'available',
+                      screenWidth,
+                      screenHeight,
+                      userId,
+                      token,
+                      deviceId,),
                 _buildServiceListByStatus(
-                    'offer', screenWidth, screenHeight, userId, authToken),
+                    'offer',
+                    screenWidth,
+                    screenHeight,
+                    userId,
+                    token,
+                    deviceId,),
                 _buildServiceListByStatus('in_progress,pending_confirmation',
-                    screenWidth, screenHeight, userId, authToken),
+                    screenWidth,
+                    screenHeight,
+                    userId,
+                    token,
+                    deviceId,),
                 _buildServiceListByStatus(
-                    'completed', screenWidth, screenHeight, userId, authToken),
-                _buildServiceListByStatus(
-                    'cancelled', screenWidth, screenHeight, userId, authToken),
+                    'completed',screenWidth,
+                    screenHeight,
+                    userId,
+                    token,
+                    deviceId,),
+                _buildServiceListByStatus('cancelled',screenWidth,screenHeight,
+                    userId,
+                    token,
+                    deviceId,),
               ],
             ),
           ),
@@ -487,6 +507,7 @@ Future<void> _refreshHistorial() async {
     double screenHeight,
     String userId,
     String token,
+    String deviceId,
   ) {
     Future<List<ServiceRequest>>? future;
 
@@ -614,10 +635,19 @@ Future<void> _refreshHistorial() async {
         }
 
         if (statusIds == 'offer') {
-          final offers = services.expand((service) => service.offers).toList();
-          return ServiceListBuilder.buildOfferList(
-              offers, screenWidth, screenHeight, userId, userData);
-        }
+            final services = snapshot.data!;
+            // Extrae todas las ofertas de los servicios
+            final offers = services.expand((s) => s.offers).toList();
+            
+            return ServiceListBuilder.buildOfferList(
+              services.first, // Servicio asociado
+              offers,
+              screenWidth,
+              screenHeight,
+              userId,
+              userData,
+            );
+          }
 
         if (statusIds == 'in_progress' ||
             statusIds == 'complete' ||

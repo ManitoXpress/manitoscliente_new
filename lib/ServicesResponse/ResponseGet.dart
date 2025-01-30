@@ -135,14 +135,14 @@ class ApiService2 {
   }
 
 Future<List<ServiceRequest>> getOffers(
-  String status,
-  String userId,
-  String authToken,
+  String column,
+  String value,
+  String type,
+  String deviceId,
   List<ServiceRequest> services,
 ) async {
   try {
     final String? authTokenValue = await AuthUtils.getToken();
-    final deviceId = await obtenerDeviceId();
 
     if (authTokenValue == null) {
       throw Exception('Token de autorización no encontrado');
@@ -154,9 +154,11 @@ Future<List<ServiceRequest>> getOffers(
 
     List<ServiceRequest> allOffers = [];
 
-    // Recorrer todos los servicios y obtener las ofertas para cada uno
     List<Future> requests = services.map((service) async {
-      final url = Uri.parse('$baseUrl/offers/${service.id}');
+      final url = Uri.parse(
+        '$baseUrl/offers/${service.id}?columns=$column&values=$value&type=$type&deviceId=$deviceId',
+      );
+
       final response = await http.get(
         url,
         headers: <String, String>{
@@ -180,7 +182,6 @@ Future<List<ServiceRequest>> getOffers(
     throw Exception('Error al obtener ofertas');
   }
 }
-
 
 
 

@@ -169,11 +169,12 @@ class ServiceRepository {
                 print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
                 try {
                   final offerResponses = await ApiService2().getOffers(
-                    type,
-                    userId,
-                    token,
-                    [serviceRequest], // Pasar la instancia dentro de una lista
-                  );
+                  serviceRequest.id,   // column (nombre del campo a filtrar)
+                  userId,      // value (valor del usuario)
+                  type,        // tipo de servicio
+                  deviceId,    // ID del dispositivo
+                  [serviceRequest], // Lista de servicios
+                );
 
                   // Mapear las ofertas
                   List<Offer> offers = offerResponses.map((serviceOffer) {
