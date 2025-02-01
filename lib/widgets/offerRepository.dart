@@ -134,7 +134,7 @@ class OfferRepository {
               // Mapeamos los datos para crear una lista de ServiceRequest
               final List<ServiceRequest> serviceRequestsList =
                   servicesData.map((item) {
-                final statusName = item['status'] as String? ?? 'available';
+                final statusName = item['status'] as String? ?? 'offer';
                 final statusObject = Status(
                   id: statusName,
                   name: Status.getNameById(statusName),
@@ -190,7 +190,7 @@ class OfferRepository {
                   final offerResponses = await ApiService2().getOffers(
                     "userId",    // Columna a filtrar
                     userId,      // Valor del usuario
-                    "",    // Tipo de filtro
+                    "offer",    // Tipo de filtro
                     deviceId,
                     [serviceRequest],
                     "offer", 
@@ -262,48 +262,7 @@ class OfferRepository {
     }
   }
 
-  List<ServiceRequest> _processServiceRequests(List<dynamic> servicesData) {
-    return servicesData
-        .map((item) {
-          try {
-            final serviceUserId = item['userId']?.toString() ?? '';
-            if (serviceUserId.isEmpty) return null;
 
-            final statusName = item['status'] as String? ?? 'unknown';
-            final status =
-                Status(id: statusName, name: Status.getNameById(statusName));
-
-            return ServiceRequest(
-              expertises: _extractExpertises(item),
-              id: item['id'] ?? '',
-              serviceDateTime: item['serviceDateTime'] ?? '',
-              description: item['description'] ?? '',
-              images: List<String>.from(item['images'] ?? []),
-              location: Map<String, double>.from(item['location'] ?? {}),
-              offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-              userId: item['userId'] ?? '',
-              workerId: item['workerId'] ?? '',
-              status: status,
-              isFavorite: item['isFavorite'] as bool? ?? false,
-              acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-              serviceType: ServiceType(
-                  name: item['serviceType'] ?? '',
-                  id: '',
-                  selectedDate: '',
-                  selectedTime: ''),
-              subcategoryName: item['subcategoryName'] ?? '',
-              devicesId: item['devicesId'] ?? '',
-              hasOffer: false,
-              offers: [],
-            );
-          } catch (e) {
-            print('Error al procesar los datos: $e');
-            return null;
-          }
-        })
-        .whereType<ServiceRequest>()
-        .toList();
-  }
 
   List<Expertise> _extractExpertises(Map<String, dynamic> item) {
     final expertisesArray = item['expertises'] as List<dynamic>? ?? [];

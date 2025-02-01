@@ -24,7 +24,10 @@ import 'package:manitoscliente_new/metodos/serviceFetcher.dart';
 import 'package:manitoscliente_new/metodos/ticketController.dart';
 import 'package:manitoscliente_new/utils/cacheLocal.dart';
 import 'package:manitoscliente_new/utils/notification.dart';
+import 'package:manitoscliente_new/utils/serviceCancelled.dart';
+import 'package:manitoscliente_new/utils/serviceComplete.dart';
 import 'package:manitoscliente_new/utils/serviceFetcher.dart';
+import 'package:manitoscliente_new/utils/serviceInProgress.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 
 import 'package:manitoscliente_new/utils/timeLines.dart';
@@ -70,6 +73,18 @@ class _HistorialState extends State<Historial>
   String value = '';
 
   final ServiceRepository _serviceRepository = ServiceRepository(
+    apiService: ApiService(),
+    firestore: FirebaseFirestore.instance,
+  );
+  final ServiceRepository2 _serviceRepository2 = ServiceRepository2(
+    apiService: ApiService2(),
+    firestore: FirebaseFirestore.instance,
+  );
+  final ServiceRepository3 _serviceRepository3 = ServiceRepository3(
+    apiService: ApiService(),
+    firestore: FirebaseFirestore.instance,
+  );
+  final ServiceRepository4 _serviceRepository4 = ServiceRepository4(
     apiService: ApiService(),
     firestore: FirebaseFirestore.instance,
   );
@@ -154,7 +169,7 @@ void initState() {
   // Configurar el controlador de pestañas
   _tabController = TabController(length: 5, vsync: this);
 
-  _refreshHistorial();
+
   _offerRepository = OfferRepository(
     apiService2: ApiService2(),
     serviceDataFetcher: ServiceDataFetcher(),
@@ -186,7 +201,7 @@ Future<void> _refreshHistorial() async {
     final futures = [
       _serviceRepository.fetchServicesByStatus(
         'available',
-        'available',
+        'status',  // Corregido de 'available' a 'status'
         userId,
         token ?? '',
         [],
@@ -238,12 +253,13 @@ Future<void> _refreshHistorial() async {
         ),
         userId,
       ),
-      _serviceRepository.fetchServicesByStatus(
-        'in_progress,pending_confirmation',
-        'pending_confirmation2',
-        userId,
-        token ?? '',
+      _serviceRepository2.fetchServicesByInProgress(
+        'offer',           // type: String
+        'status',          // column: String (nombre de columna para filtrar)
+        userId,            // userId: String
+        token ?? '',       // token: String
         [],
+    
       ),
       _serviceRepository.fetchServicesByStatus(
         'completed',
@@ -464,35 +480,46 @@ Future<void> _refreshHistorial() async {
               controller: _tabController,
               children: [
                 _buildServiceListByStatus(
-                    'available',
-                      screenWidth,
-                      screenHeight,
-                      userId,
-                      token,
-                      deviceId,),
+                  'available',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
                 _buildServiceListByStatus(
-                    'offer',
-                    screenWidth,
-                    screenHeight,
-                    userId,
-                    token,
-                    deviceId,),
-                _buildServiceListByStatus('in_progress,pending_confirmation',
-                    screenWidth,
-                    screenHeight,
-                    userId,
-                    token,
-                    deviceId,),
+                  'offer',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
                 _buildServiceListByStatus(
-                    'completed',screenWidth,
-                    screenHeight,
-                    userId,
-                    token,
-                    deviceId,),
-                _buildServiceListByStatus('cancelled',screenWidth,screenHeight,
-                    userId,
-                    token,
-                    deviceId,),
+                  'in_progress',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
+                _buildServiceListByStatus(
+                  'complete',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
+                // Agrega esta quinta pestaña
+                _buildServiceListByStatus(
+                  'cancelled',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
               ],
             ),
           ),
@@ -518,6 +545,15 @@ Future<void> _refreshHistorial() async {
     );
 
     switch (statusIds) {
+      case 'available':
+      future = _serviceRepository.fetchServicesByStatus(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
       case 'offer':
   future = offerRepository.fetchOffersForUser(
     statusIds,          // type: String
@@ -569,43 +605,35 @@ Future<void> _refreshHistorial() async {
 
   );
   break;
+  case 'in_progress':
+      future = _serviceRepository2.fetchServicesByInProgress(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+         [],
+        
+      );
+      break;
+  case 'complete':
+      future = _serviceRepository3.fetchServicesByComplete(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
 
-      case 'available':
-        future = _serviceRepository.fetchServicesByStatus(
-          statusIds,
-          'status',
-          userId,
-          token,
-          [], // Si necesitas algún filtro adicional, lo puedes agregar aquí
-        );
-        break;
-      case 'in_progress':
-        future = _serviceRepository.fetchServicesByStatus(
-          statusIds,
-          'status',
-          userId,
-          token,
-          [],
-        );
-        break;
-      case 'complete':
-        future = _serviceRepository.fetchServicesByStatus(
-          statusIds,
-          'status',
-          userId,
-          token,
-          [],
-        );
-        break;
-      case 'cancelled':
-        future = _serviceRepository.fetchServicesByStatus(
-          statusIds,
-          'status',
-          userId,
-          token,
-          [],
-        );
-        break;
+  case 'cancelled':
+      future = _serviceRepository4.fetchServicesByCancelled(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
 
       default:
         return Center(child: Text("Estado no válido."));
@@ -648,14 +676,22 @@ Future<void> _refreshHistorial() async {
               userData,
             );
           }
-
-        if (statusIds == 'in_progress' ||
-            statusIds == 'complete' ||
-            statusIds == 'cancelled') {
+        if (statusIds == 'in_progress') {
           final services = snapshot.data!;
           return ServiceListBuilder.buildServiceList(
               services, screenWidth, screenHeight, userId, userData);
         }
+        if (statusIds == 'complete') {
+          final services = snapshot.data!;
+          return ServiceListBuilder.buildServiceList(
+              services, screenWidth, screenHeight, userId, userData);
+        }
+        if (statusIds == 'cancelled') {
+          final services = snapshot.data!;
+          return ServiceListBuilder.buildServiceList(
+              services, screenWidth, screenHeight, userId, userData);
+        }
+
 
         return ServiceListBuilder.buildServiceList(
             services, screenWidth, screenHeight, userId, userData);

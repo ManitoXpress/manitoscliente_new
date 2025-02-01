@@ -15,6 +15,31 @@ class ApiService2 {
   ServiceRequest? serviceRequest;
 
   final String baseUrl = ApiConfiguration.baseUrl;
+
+  Future<http.Response> getWorkerDetails(String workerId) async {
+    final url = Uri.parse('$baseUrl/workers/$workerId');
+    
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $getToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('Worker encontrado: ${response.body}');
+      } else {
+        print('Error al obtener workerId: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+      
+      return response;
+    } catch (e) {
+      print('Error en la solicitud de workerId: $e');
+      throw Exception('Error al obtener los detalles del trabajador');
+    }
+  }
   Future<List<ServiceRequest>> fetchServicesByUserId(String userId) async {
     try {
       // Construir la URL para la solicitud

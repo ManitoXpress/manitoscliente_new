@@ -460,6 +460,19 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         if (serviceData == null) {
           return Center(child: Text('No se encontraron datos del servicio'));
         }
+        final String? workerId = serviceData['workerId'];
+        if (workerId == null || workerId.isEmpty) {
+          print("workerId está vacío o es nulo");
+        } else {
+          print("workerId asignado correctamente: $workerId");
+        }
+   
+        final double lat = (serviceData['location']?['lat'] ?? 0.0).toDouble();
+        final double lng = (serviceData['location']?['lng'] ?? 0.0).toDouble();
+        final List<String> images = (serviceData['images'] != null)
+            ? List<String>.from(serviceData['images'])
+            : [];
+
 
         // Asignar datos del servicio
         // Extraer datos relevantes del servicio
@@ -482,7 +495,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           serviceData['location']?['lng'] ?? 0.0,
         );
 
-        final List<String> images = List<String>.from(serviceData['images'] ?? []);
         final String description = serviceData['description'] ?? 'Sin descripción';
         final String categoryName = serviceData['categoryId'] ?? 'Sin categoría';
         final String subcategoryName = serviceData['subcategoryName'] ?? 'Sin subcategoría';

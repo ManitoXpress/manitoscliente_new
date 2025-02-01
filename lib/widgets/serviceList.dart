@@ -83,6 +83,82 @@ class ServiceListBuilder {
       ),
     );
   }
+  // ignore: non_constant_identifier_names
+  static Widget in_progressList(List<ServiceRequest> services,List<Offer> offers, double screenWidth,
+      double screenHeight, String userId, final UserData userData) {
+    final serviceDataFetcher = ServiceDataFetcher();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: ListView.builder(
+        itemCount: offers.length,
+        itemBuilder: (context, index) {
+          final offer = offers[index];
+          // Busca el ServiceRequest correspondiente a esta oferta
+          final service = services.firstWhere(
+            (s) => s.id == offer.serviceId,
+            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+          );
+          return GestureDetector(
+            onTap: () async {
+              try {
+                final workerDetails =
+                    await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+                if (workerDetails == null) return;
+                if (userData is UserData) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ServiceFormWithTimeline(
+                        serviceRequest: ServiceRequest(
+                          id: offer.serviceId,
+                          serviceDateTime: '',
+                          devicesId: '',
+                          description: '',
+                          images: [],
+                          location: {},
+                          offeredPrice: offer.offeredPrice,
+                          serviceType: ServiceType(
+                              id: '',
+                              name: '',
+                              selectedDate: '',
+                              selectedTime: ''),
+                          workerId: offer.workerId,
+                          isFavorite: false,
+                          acceptedTerms: false,
+                          expertises: offer.expertises,
+                          status: Status(id: '', name: ''),
+                          subcategoryName: offer.subcategoryName,
+                          hasOffer: false,
+                          offers: [],
+                          workerDetails: workerDetails,
+                          userId: '',
+                        ),
+                        initialStatus: offer.status.id,
+                        onComplete: (status) {
+                          print('Estado completado: $status');
+                        },
+                        onStatusChanged: (newStatus) {
+                          print('Estado cambiado a: $newStatus');
+                        },
+                        userData: userData, // Solo lo pasa si es UserData
+                        workerId: offer.workerId,
+                        workerDetails: workerDetails,
+                        offers: [],
+                        images: [],
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                print('Error al cargar los detalles del trabajador: $e');
+              }
+            },
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
+          );
+        },
+      ),
+    );
+  }
 
   static Widget buildServiceList(
       List<ServiceRequest> services,

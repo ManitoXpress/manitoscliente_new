@@ -88,7 +88,7 @@ class ServiceRequest {
   String description;
   List<String> images;
   Map<String, double> location;
-  double offeredPrice = 0.0;
+  double offeredPrice;
   ServiceType serviceType;
   String userId;
   String workerId;
@@ -103,6 +103,7 @@ class ServiceRequest {
   List<Offer> offers;
   WorkerDetails? workerDetails;
 
+  // Constructor principal
   ServiceRequest({
     required this.serviceDateTime,
     required this.id,
@@ -126,7 +127,36 @@ class ServiceRequest {
     this.workerDetails,
   });
 
-  // Sobrescribir el método toString para mejorar la salida en consola
+  // Factory constructor para instancia vacía
+  factory ServiceRequest.empty() {
+    return ServiceRequest(
+      serviceDateTime: '',
+      id: '',
+      devicesId: '',
+      description: '',
+      images: [],
+      location: {},
+      offeredPrice: 0.0,
+      serviceType: ServiceType(
+        id: '',
+        name: '',
+        selectedDate: '',
+        selectedTime: '',
+      ),
+      userId: '',
+      workerId: '',
+      isFavorite: false,
+      acceptedTerms: false,
+      expertises: [],
+      status: Status(id: '', name: ''),
+      subcategoryName: '',
+      hasOffer: false,
+      offers: [],
+      workerDetails: null,
+    );
+  }
+
+  // Resto de métodos (se mantienen igual)
   @override
   String toString() {
     return 'ServiceRequest{id: $id, description: $description, serviceDateTime: $serviceDateTime, offeredPrice: $offeredPrice}';
@@ -160,7 +190,7 @@ class ServiceRequest {
   factory ServiceRequest.fromSnapshot(Map<String, dynamic> map) {
     return ServiceRequest(
       serviceDateTime: map['serviceDateTime'] ?? '',
-      id: map['serviceId'] ?? '', // Se asegura de usar el ID del servicio correcto
+      id: map['serviceId'] ?? '',
       devicesId: map['devicesId'] ?? '',
       description: map['description'] ?? '',
       images: List<String>.from(map['images'] ?? []),
@@ -193,16 +223,8 @@ class ServiceRequest {
     );
   }
 
-
-
-  // Método para verificar si el nombre del servicio está vacío
-  bool isServiceNameEmpty() {
-    return description.isEmpty;
-  }
-
-  bool isServiceTypeEmpty() {
-    return description.isEmpty;
-  }
+  bool isServiceNameEmpty() => description.isEmpty;
+  bool isServiceTypeEmpty() => description.isEmpty;
 
   static double _parseOfferedPrice(dynamic value) {
     if (value is String) {
