@@ -607,14 +607,21 @@ Future<void> _refreshHistorial() async {
   break;
   case 'in_progress':
       future = _serviceRepository2.fetchServicesByInProgress(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
+        'in_progress',
         userId,
+        'status',
         token,
-         
-        
-      );
+      ).then((servicesInProgress) async {
+        final pendingConfirmationServices = await _serviceRepository2.fetchServicesByInProgress(
+          'pending_confirmation',
+          userId,
+          'status',
+          token,
+        );
+        return [...servicesInProgress, ...pendingConfirmationServices];
+      });
       break;
+
   case 'complete':
       future = _serviceRepository3.fetchServicesByComplete(
         statusIds,
