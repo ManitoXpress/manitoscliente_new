@@ -254,11 +254,11 @@ Future<void> _refreshHistorial() async {
         userId,
       ),
       _serviceRepository2.fetchServicesByInProgress(
-        'offer',           // type: String
+        'in_progress',           // type: String
         'status',          // column: String (nombre de columna para filtrar)
         userId,            // userId: String
         token ?? '',       // token: String
-        [],
+        
     
       ),
       _serviceRepository.fetchServicesByStatus(
@@ -611,7 +611,7 @@ Future<void> _refreshHistorial() async {
         'status',  // Corregido de 'available' a 'status'
         userId,
         token,
-         [],
+         
         
       );
       break;
