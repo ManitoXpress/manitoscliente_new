@@ -79,32 +79,43 @@ class ServiceRepository2 {
       }
 
       final List<Map<String, dynamic>> servicesData = List<Map<String, dynamic>>.from(json.decode(response.body));
-      List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
-        return ServiceRequest(
-          id: item['id']?.toString() ?? '',
-          serviceDateTime: item['serviceDateTime']?.toString() ?? '',
-          description: item['description']?.toString() ?? '',
-          expertises: _extractExpertises(item),
-          images: (item['images'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? [],
-          location: Map<String, double>.from((item['location'] as Map<String, dynamic>?)?.map((key, value) => MapEntry(key, (value as num).toDouble())) ?? {}),
-          offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-          userId: item['userId']?.toString() ?? '',
-          workerId: '',
-          status: Status(id: status, name: Status.getNameById(status)),
-          isFavorite: item['isFavorite'] as bool? ?? false,
-          acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-          serviceType: ServiceType(
-            name: item['serviceType']?['name']?.toString() ?? '',
-            id: item['serviceType']?['id']?.toString() ?? '',
-            selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
-            selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
-          ),
-          subcategoryName: item['subcategoryName']?.toString() ?? '',
-          devicesId: item['devicesId']?.toString() ?? '',
-          hasOffer: false,
-          offers: [],
-        );
-      }).toList();
+
+        // Filtrar solo los que tienen status "in_progress"
+        final filteredServices = servicesData.where((item) => item['status'] == 'in_progress').toList();
+
+        List<ServiceRequest> serviceRequestsList = filteredServices.map((item) {
+          final statusName = item['status'] as String? ?? 'in_progress';
+          final statusObject = Status(
+            id: statusName,
+            name: Status.getNameById(statusName),
+          );
+
+          return ServiceRequest(
+            id: item['id']?.toString() ?? '',
+            serviceDateTime: item['serviceDateTime']?.toString() ?? '',
+            description: item['description']?.toString() ?? '',
+            expertises: _extractExpertises(item),
+            images: (item['images'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? [],
+            location: Map<String, double>.from((item['location'] as Map<String, dynamic>?)?.map((key, value) => MapEntry(key, (value as num).toDouble())) ?? {}),
+            offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+            userId: item['userId']?.toString() ?? '',
+            workerId: '',
+            status: statusObject,
+            isFavorite: item['isFavorite'] as bool? ?? false,
+            acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+            serviceType: ServiceType(
+              name: item['serviceType']?['name']?.toString() ?? '',
+              id: item['serviceType']?['id']?.toString() ?? '',
+              selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
+              selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
+            ),
+            subcategoryName: item['subcategoryName']?.toString() ?? '',
+            devicesId: item['devicesId']?.toString() ?? '',
+            hasOffer: false,
+            offers: [],
+          );
+        }).toList();
+
 
       List<ServiceRequest> validServices = [];
       for (var service in serviceRequestsList) {

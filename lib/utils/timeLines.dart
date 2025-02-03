@@ -141,8 +141,13 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               // Solo llamar el diálogo si la pantalla está visible
               if (mounted) {
-                showConfirmCompletionDialog(context, widget.serviceRequest.id);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                showConfirmCompletionDialog(context, widget.serviceRequest.id!);
               }
+            });
+          }
+
             });
           }
 
@@ -480,13 +485,18 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         // Detectar cambio a pending_confirmation y mostrar cuadro de diálogo
         if (newStatus == 'pending_confirmation' && _currentStatus != 'pending_confirmation') {
+        if (widget.serviceRequest.id != null) {
           setState(() {
             _currentStatus = newStatus;
           });
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            showConfirmCompletionDialog(context, widget.serviceRequest.id);
+            showConfirmCompletionDialog(context, widget.serviceRequest.id!);
           });
+        } else {
+          print('Error: serviceId es nulo');
         }
+      }
+
 
         // Actualizar el estado actual
         _currentStatus = newStatus;
