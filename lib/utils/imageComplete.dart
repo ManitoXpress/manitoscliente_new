@@ -32,6 +32,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   void initState() {
     super.initState();
     _fetchCompletionImage();
+    
   }
 
   Future<void> _fetchCompletionImage() async {

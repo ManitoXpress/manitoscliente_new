@@ -606,15 +606,33 @@ Future<void> _refreshHistorial() async {
   );
   break;
   case 'in_progress':
-      future = _serviceRepository2.fetchServicesByInProgress(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-         
-        
-      );
-      break;
+  future = Future.wait([
+    _serviceRepository2.fetchServicesByInProgress(
+      'in_progress',
+      userId,
+      'status',
+      token,
+    ).catchError((e) {
+      print("Error al obtener in_progress: $e");
+      return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+    }),
+    _serviceRepository2.fetchServicesByInProgress(
+      'pending_confirmation',
+      userId,
+      'status',
+      token,
+    ).catchError((e) {
+      print("Error al obtener pending_confirmation: $e");
+      return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+    }),
+  ]).then((results) {
+    final servicesInProgress = results[0] ?? [];
+    final pendingConfirmationServices = results[1] ?? [];
+    return [...servicesInProgress, ...pendingConfirmationServices];
+  });
+  break;
+
+
   case 'complete':
       future = _serviceRepository3.fetchServicesByComplete(
         statusIds,

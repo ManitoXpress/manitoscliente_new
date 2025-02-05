@@ -108,6 +108,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         _hasOffer = true;
       }
     }
+    
 
 
     // Inicializar el stream
@@ -211,8 +212,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         return ServiceCompletionDialog(
           serviceId: serviceId,
           workerDetails: _workerDetails,
-          fetchedOfferedPrice:
-          _fetchedOfferedPrice, // Aquí pasas el precio ofertado
+          fetchedOfferedPrice: _fetchedOfferedPrice ?? widget.serviceRequest.offeredPrice, // Aquí pasas el precio ofertado
         );
       },
     ).then((confirmed) {
