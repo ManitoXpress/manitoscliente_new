@@ -605,35 +605,46 @@ Future<void> _refreshHistorial() async {
 
   );
   break;
-  case 'in_progress':
-  future = Future.wait([
-    _serviceRepository2.fetchServicesByInProgress(
-      'in_progress',
-      userId,
-      'status',
-      token,
-    ).catchError((e) {
-      print("Error al obtener in_progress: $e");
-      return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-    }),
-    _serviceRepository2.fetchServicesByInProgress(
-      'pending_confirmation',
-      userId,
-      'status',
-      token,
-    ).catchError((e) {
-      print("Error al obtener pending_confirmation: $e");
-      return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-    }),
-  ]).then((results) {
-    final servicesInProgress = results[0] ?? [];
-    final pendingConfirmationServices = results[1] ?? [];
-    return [...servicesInProgress, ...pendingConfirmationServices];
-  });
-  break;
+    case 'in_progress':
+    future = Future.wait([
+      _serviceRepository2.fetchServicesByInProgress(
+        'in_progress',
+        userId,
+        'status',
+        token,
+      ).catchError((e) {
+        print("Error al obtener in_progress: $e");
+        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+      }),
+      _serviceRepository2.fetchServicesByInProgress(
+        'pending_confirmation',
+        userId,
+        'status',
+        token,
+      ).catchError((e) {
+        print("Error al obtener pending_confirmation: $e");
+        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+      }),
+      _serviceRepository2.fetchServicesByInProgress(
+        'pending_confirmation2',
+        userId,
+        'status',
+        token,
+      ).catchError((e) {
+        print("Error al obtener pending_confirmation2: $e");
+        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+      }),
+    ]).then((results) {
+      final servicesInProgress = results[0] ?? [];
+      final pendingConfirmationServices = results[1] ?? [];
+      final pendingConfirmationServices2 = results[2] ?? [];
+      return [...servicesInProgress, ...pendingConfirmationServices, ...pendingConfirmationServices2];
+    });
+    break;
 
 
-  case 'complete':
+
+  case 'completed':
       future = _serviceRepository3.fetchServicesByComplete(
         statusIds,
         'status',  // Corregido de 'available' a 'status'
@@ -699,7 +710,7 @@ Future<void> _refreshHistorial() async {
           return ServiceListBuilder.buildServiceList(
               services, screenWidth, screenHeight, userId, userData);
         }
-        if (statusIds == 'complete') {
+        if (statusIds == 'completed') {
           final services = snapshot.data!;
           return ServiceListBuilder.buildServiceList(
               services, screenWidth, screenHeight, userId, userData);

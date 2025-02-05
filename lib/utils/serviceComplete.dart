@@ -105,7 +105,7 @@ class ServiceRepository3 {
               // Mapeamos los datos para crear una lista de ServiceRequest
               final List<ServiceRequest> serviceRequestsList =
                   servicesData.map((item) {
-                final statusName = item['status'] as String? ?? 'complete';
+                final statusName = item['status'] as String? ?? 'completed';
                 final statusObject = Status(
                   id: statusName,
                   name: Status.getNameById(statusName),
@@ -155,7 +155,7 @@ class ServiceRepository3 {
                   hasOffer: false,
                   offers: [], // Lista vacía inicialmente
                 );
-              }).where((service) => service.status.id == 'complete') // Filtro añadido
+              }).where((service) => service.status.id == 'completed') // Filtro añadido
             .toList();
 
               // Cacheamos las solicitudes de servicio
