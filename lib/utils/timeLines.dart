@@ -141,13 +141,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               // Solo llamar el diálogo si la pantalla está visible
               if (mounted) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                showConfirmCompletionDialog(context, widget.serviceRequest.id!);
+                showConfirmCompletionDialog(context, widget.serviceRequest.id);
               }
-            });
-          }
-
             });
           }
 
@@ -465,19 +460,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         if (serviceData == null) {
           return Center(child: Text('No se encontraron datos del servicio'));
         }
-        final String? workerId = serviceData['workerId'];
-        if (workerId == null || workerId.isEmpty) {
-          print("workerId está vacío o es nulo");
-        } else {
-          print("workerId asignado correctamente: $workerId");
-        }
-   
-        final double lat = (serviceData['location']?['lat'] ?? 0.0).toDouble();
-        final double lng = (serviceData['location']?['lng'] ?? 0.0).toDouble();
-        final List<String> images = (serviceData['images'] != null)
-            ? List<String>.from(serviceData['images'])
-            : [];
-
 
         // Asignar datos del servicio
         // Extraer datos relevantes del servicio
@@ -485,18 +467,13 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         // Detectar cambio a pending_confirmation y mostrar cuadro de diálogo
         if (newStatus == 'pending_confirmation' && _currentStatus != 'pending_confirmation') {
-        if (widget.serviceRequest.id != null) {
           setState(() {
             _currentStatus = newStatus;
           });
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            showConfirmCompletionDialog(context, widget.serviceRequest.id!);
+            showConfirmCompletionDialog(context, widget.serviceRequest.id);
           });
-        } else {
-          print('Error: serviceId es nulo');
         }
-      }
-
 
         // Actualizar el estado actual
         _currentStatus = newStatus;
@@ -505,6 +482,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           serviceData['location']?['lng'] ?? 0.0,
         );
 
+        final List<String> images = List<String>.from(serviceData['images'] ?? []);
         final String description = serviceData['description'] ?? 'Sin descripción';
         final String categoryName = serviceData['categoryId'] ?? 'Sin categoría';
         final String subcategoryName = serviceData['subcategoryName'] ?? 'Sin subcategoría';

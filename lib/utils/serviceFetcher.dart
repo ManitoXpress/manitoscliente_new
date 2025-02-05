@@ -95,11 +95,12 @@ class ServiceRepository {
 
         final response = await ApiService2().getAllServices(
           token,
-          column,
-          userId,
+          "userId", // Aquí pasamos "userId" como columna de filtro
+          column,   // Aquí realmente está el userId, por lo que se pasa como valor
           type,
           deviceId,
         );
+
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
@@ -110,8 +111,7 @@ class ServiceRepository {
           if (servicesData.isNotEmpty) {
             try {
               // Mapeamos los datos para crear una lista de ServiceRequest
-              final List<ServiceRequest> serviceRequestsList =
-                  servicesData.map((item) {
+              final List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
                 final statusName = item['status'] as String? ?? 'available';
                 final statusObject = Status(
                   id: statusName,
@@ -162,8 +162,10 @@ class ServiceRepository {
                   hasOffer: false,
                   offers: [], // Lista vacía inicialmente
                 );
-              }).where((service) => service.status.id == 'available') // Filtro añadido
-            .toList();
+              }).where((service) =>
+                  service.status.id == 'available' && service.userId == column) // Filtrar por userId
+              .toList();
+
 
               // Cacheamos las solicitudes de servicio
               serviceRequestsList.forEach((request) {

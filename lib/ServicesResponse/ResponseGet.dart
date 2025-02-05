@@ -115,7 +115,9 @@ class ApiService2 {
 
       // Construir la URL con los parámetros
       final url = Uri.parse(
-          '$baseUrl/services?userId=$value&columns=$column&values=$value&type=$type&deviceId=$deviceId');
+        '$baseUrl/services?userId=$column&columns=status&values=$value&type=$type&deviceId=$deviceId'
+      );
+
 
       // Imprimir la URL solicitada para depuración
       print('URL solicitada: $url');

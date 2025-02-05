@@ -158,8 +158,11 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                       ),
                     ],
                   ),
+                  
+                  
                   textAlign: TextAlign.start,
                 ),
+                
               ),
               SizedBox(height: 16.0),
               Align(
@@ -174,7 +177,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Nuevo precio total: Bs ${(widget.fetchedOfferedPrice! + 3.0).toStringAsFixed(2)}',
+                  'Nuevo precio total: Bs ${((widget.fetchedOfferedPrice ?? 0.0) + 3.0).toStringAsFixed(2)}',
                   style: MyTextStyles.formServiceTextStyle,
                   textAlign: TextAlign.start,
                 ),
