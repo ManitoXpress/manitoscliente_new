@@ -58,9 +58,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   double? _fetchedOfferedPrice;
   late String _currentStatus;
   late LatLng _initialPosition;
-  final ServiceActions _serviceActions = ServiceActions();
-  final ServiceDialogs _serviceDialogs = ServiceDialogs();
-  final ServiceDataFetcher _serviceDataFetcher = ServiceDataFetcher();
   bool _hasOffer = false;
   late Map<String, dynamic> serviceData;
   late List<String> imageFiles;
@@ -478,15 +475,17 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         // Actualizar el estado actual
         _currentStatus = newStatus;
         _initialPosition = LatLng(
-          serviceData['location']?['lat'] ?? 0.0,
-          serviceData['location']?['lng'] ?? 0.0,
-        );
+  (serviceData['location']?['lat'] as num?)?.toDouble() ?? 0.0,
+  (serviceData['location']?['lng'] as num?)?.toDouble() ?? 0.0,
+);
+
 
         final List<String> images = List<String>.from(serviceData['images'] ?? []);
         final String description = serviceData['description'] ?? 'Sin descripción';
         final String categoryName = serviceData['categoryId'] ?? 'Sin categoría';
         final String subcategoryName = serviceData['subcategoryName'] ?? 'Sin subcategoría';
-        final double? offeredPrice = serviceData['offeredPrice'];
+        final double? offeredPrice = (serviceData['offeredPrice'] as num?)?.toDouble();
+
         final WorkerDetails? workerDetails = widget.workerDetails;
         final List<Map<String, dynamic>> expertises = List<Map<String, dynamic>>.from(serviceData['expertises'] ?? []);
 

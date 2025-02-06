@@ -321,21 +321,6 @@ Future<void> _refreshHistorial() async {
   }
 }
 
-
-
-  Future<void> _checkForOffers() async {
-    // Espera a que se carguen los datos
-    await Future.delayed(Duration(seconds: 2));
-
-    final hasOffers =
-        serviceRequests.any((request) => request.status.id == 'offer');
-
-    if (hasOffers) {
-      // Cambia a la pestaña de 'Ofertados' si hay servicios en oferta
-      _tabController.animateTo(1);
-    }
-  }
-
   @override
   void dispose() {
     _tabController.dispose();
@@ -504,7 +489,7 @@ Future<void> _refreshHistorial() async {
                   deviceId,
                 ),
                 _buildServiceListByStatus(
-                  'complete',
+                  'completed',
                   screenWidth,
                   screenHeight,
                   userId,
@@ -653,6 +638,7 @@ Future<void> _refreshHistorial() async {
         [],
       );
       break;
+
 
   case 'cancelled':
       future = _serviceRepository4.fetchServicesByCancelled(

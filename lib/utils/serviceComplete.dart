@@ -7,7 +7,6 @@ import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
 import 'package:manitoscliente_new/main.dart';
 import 'package:manitoscliente_new/metodos/baseurl.dart';
 import 'package:manitoscliente_new/utils/cacheLocal.dart';
-
 class ServiceRepository3 {
   final ApiService apiService;
   final FirebaseFirestore firestore;
@@ -15,6 +14,7 @@ class ServiceRepository3 {
 
   ServiceRepository3({required this.apiService, required this.firestore});
 
+  // Función pública que permite filtrar servicios por estado desde Firestore
   Future<List<ServiceRequest>> fetchServicesByComplete(
     String status,
     String userId,
@@ -31,7 +31,7 @@ class ServiceRepository3 {
     }
 
     // Llamar al método privado para realizar la lógica principal
-    return await _fetchServicesByInprogress(status, column, userId, token, offers);
+    return await _fetchServicesByStatus(status, column, userId, token, offers);
    
   }
 
@@ -60,7 +60,8 @@ class ServiceRepository3 {
     }
   }
 
-  Future<List<ServiceRequest>> _fetchServicesByInprogress(
+  // Método privado para obtener los servicios por estado
+  Future<List<ServiceRequest>> _fetchServicesByStatus(
     String type,
     String column,
     String userId,
@@ -71,7 +72,7 @@ class ServiceRepository3 {
       final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
     if (cachedRequest != null) {
       // Verificar si el estado del servicio en caché es 'available'
-      if (cachedRequest.status.id == 'available') {
+      if (cachedRequest.status.id == 'completed') {
         print('Datos del caché encontrados y filtrados por available...');
         return [cachedRequest];
       } else {
@@ -88,11 +89,12 @@ class ServiceRepository3 {
 
         final response = await ApiService2().getAllServices(
           token,
-          column,
-          userId,
+          "userId", // Aquí pasamos "userId" como columna de filtro
+          column,   // Aquí realmente está el userId, por lo que se pasa como valor
           type,
           deviceId,
         );
+
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
@@ -103,8 +105,7 @@ class ServiceRepository3 {
           if (servicesData.isNotEmpty) {
             try {
               // Mapeamos los datos para crear una lista de ServiceRequest
-              final List<ServiceRequest> serviceRequestsList =
-                  servicesData.map((item) {
+              final List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
                 final statusName = item['status'] as String? ?? 'completed';
                 final statusObject = Status(
                   id: statusName,
@@ -155,8 +156,10 @@ class ServiceRepository3 {
                   hasOffer: false,
                   offers: [], // Lista vacía inicialmente
                 );
-              }).where((service) => service.status.id == 'completed') // Filtro añadido
-            .toList();
+              }).where((service) =>
+                  service.status.id == 'completed' && service.userId == column) // Filtrar por userId
+              .toList();
+
 
               // Cacheamos las solicitudes de servicio
               serviceRequestsList.forEach((request) {
