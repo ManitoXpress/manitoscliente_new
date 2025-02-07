@@ -45,6 +45,8 @@ Future<void> main() async {
 
   final deviceId = await obtenerDeviceId();
   print("Device ID: $deviceId");
+  await FCMService().init();
+
 
   runApp(MyApp(deviceId: deviceId));
 }
