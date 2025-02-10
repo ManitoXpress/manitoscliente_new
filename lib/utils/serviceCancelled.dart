@@ -156,7 +156,7 @@ class ServiceRepository4 {
                
                   devicesId: '',
                   hasOffer: false,
-                  offers: [], // Lista vacía inicialmente
+                  offers: [], subcategoryName: '', // Lista vacía inicialmente
                 );
               }).where((service) => service.status.id == 'cancelled') // Filtro añadido
             .toList();

@@ -47,7 +47,7 @@ class NavigationUtils {
         selectedTime: map['selectedTime'] ?? '',
         isFavorite: map['isFavorite'] ?? false,
         acceptedTerms: true, id: '', status: map['status'] ?? '',
-        hasOffer: false, offers: [], 
+        hasOffer: false, offers: [], subcategoryName: '', 
       );
 
       Navigator.push(

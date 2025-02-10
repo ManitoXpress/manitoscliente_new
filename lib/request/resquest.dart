@@ -16,7 +16,7 @@ class Offer {
   final String userToken;
   final DateTime createdAt;
   List<Expertise> expertises;
-
+  final String subcategoryName;
   WorkerDetails? workerDetails;
   
   
@@ -33,7 +33,7 @@ class Offer {
     required this.userToken,
     required this.createdAt,
     required this.expertises,
-
+    required this.subcategoryName,
     this.workerDetails,
   });
 
@@ -51,7 +51,7 @@ class Offer {
       'userToken': userToken,
       'createdAt': createdAt.toIso8601String(),  // Usar toIso8601String para formato de fecha
       'expertises': expertises.map((e) => e.toMap()).toList(),
-
+      'subcategoryName': subcategoryName,
       'workerDetails': workerDetails?.toMap(),
     };
   }
@@ -76,7 +76,7 @@ class Offer {
           ? List<Expertise>.from(
               (map['expertises'] as List).map((e) => Expertise.fromMap(e)))
           : [],
-     
+      subcategoryName: map['subcategoryName'] ?? '',
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
           : null,
@@ -103,7 +103,7 @@ class ServiceRequest {
   bool acceptedTerms;
   List<Expertise> expertises;
   late Status status;
-
+  final String subcategoryName;
   bool hasOffer;
   List<Offer> offers;
   WorkerDetails? workerDetails;
@@ -126,7 +126,7 @@ class ServiceRequest {
     required this.acceptedTerms,
     required this.expertises,
     required this.status,
-
+    required this.subcategoryName,
     required this.hasOffer,
     required this.offers,
     this.workerDetails,
@@ -154,7 +154,7 @@ class ServiceRequest {
       acceptedTerms: false,
       expertises: [],
       status: Status(id: '', name: ''),
-   
+      subcategoryName: '',
       hasOffer: false,
       offers: [],
       workerDetails: null,
@@ -185,7 +185,7 @@ class ServiceRequest {
       'selectedTime': selectedTime,
       'acceptedTerms': acceptedTerms,
       'expertises': expertises.map((e) => e.toMap()).toList(),
-
+      'subcategoryName': subcategoryName,
       'hasOffer': hasOffer,
       'offers': offers.map((offer) => offer.toMap()).toList(),
       'workerDetails': workerDetails?.toMap(),
@@ -216,7 +216,7 @@ class ServiceRequest {
         id: map['status'] ?? '',
         name: Status.getNameById(map['status'] ?? ''),
       ),
-   
+      subcategoryName: map['subcategoryName'] ?? '',
       hasOffer: map['hasOffer'] ?? false,
       offers: map['offers'] != null
           ? List<Offer>.from(

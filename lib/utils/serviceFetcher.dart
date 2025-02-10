@@ -163,7 +163,7 @@ class ServiceRepository {
                 
                   devicesId: '',
                   hasOffer: false,
-                  offers: [], // Lista vacía inicialmente
+                  offers: [], subcategoryName: item ['subcategoryName'] ?? '', // Lista vacía inicialmente
                 );
               }).where((service) =>
                   service.status.id == 'available' && service.userId == column) // Filtrar por userId

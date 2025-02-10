@@ -320,7 +320,7 @@ void _handleFCMMessage(RemoteMessage message) {
                               selectedTime: '',
                               acceptedTerms: true,
                               expertises: [],
-                              status: status,  devicesId: '', hasOffer: false, offers: [],
+                              status: status,  devicesId: '', hasOffer: false, offers: [], subcategoryName: '',
                             );
                             navigateToHomeServices(context, serviceRequest);
                             break;

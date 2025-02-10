@@ -53,7 +53,7 @@ class ServiceListBuilder {
                           acceptedTerms: false,
                           expertises: offer.expertises,
                           status: Status(id: '', name: ''),
-                        
+                          subcategoryName: offer.subcategoryName,
                           hasOffer: false,
                           offers: [],
                           workerDetails: workerDetails,
@@ -129,7 +129,7 @@ class ServiceListBuilder {
                           acceptedTerms: false,
                           expertises: offer.expertises,
                           status: Status(id: '', name: ''),
-                
+                          subcategoryName: offer.subcategoryName,
                           hasOffer: false,
                           offers: [],
                           workerDetails: workerDetails,
@@ -202,7 +202,7 @@ class ServiceListBuilder {
                         acceptedTerms: false,
                         expertises: service.expertises,
                         status: Status(id: '', name: ''),
-                      
+                        subcategoryName: service.subcategoryName,
                         hasOffer: false,
                         offers: [],
                         workerDetails: workerDetails,
@@ -244,11 +244,10 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
-          service.expertises.isNotEmpty ? service.expertises.first.name : 'Sin especialidad',
-          service.expertises.map((e) => e.name).join(', '),
-          service.offeredPrice,
-          screenHeight),
-
+            service.subcategoryName,
+            service.expertises.map((e) => e.name).join(', '),
+            offer.offeredPrice,
+            screenHeight),
       ),
     );
   }
@@ -263,11 +262,10 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
-        service.expertises.isNotEmpty ? service.expertises.first.name : 'Sin especialidad',
-        service.expertises.map((e) => e.name).join(', '),
-        service.offeredPrice,
-        screenHeight),
-
+            service.subcategoryName,
+            service.expertises.map((e) => e.name).join(', '),
+            service.offeredPrice,
+            screenHeight),
       ),
     );
   }

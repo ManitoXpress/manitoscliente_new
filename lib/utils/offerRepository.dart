@@ -62,7 +62,7 @@ class OfferRepository {
 
       devicesId: '',
       hasOffer: false,
-      offers: [],
+      offers: [], subcategoryName: '',
     );
 
     // Retornar los servicios con sus ofertas
@@ -175,7 +175,7 @@ class OfferRepository {
                
                   devicesId: '',
                   hasOffer: false,
-                  offers: [], // Lista vacía inicialmente
+                  offers: [], subcategoryName: item['subcategoryName'] ?? '', // Lista vacía inicialmente
                 );
               }).toList();
 
@@ -224,7 +224,7 @@ class OfferRepository {
                       status: statusObject, // Usar el status del servicio
                       userToken: '',
                       createdAt: DateTime.now(),
-                      expertises: serviceOffer.expertises,
+                      expertises: serviceOffer.expertises, subcategoryName: serviceOffer.subcategoryName,
    
                     );
                   }).toList();

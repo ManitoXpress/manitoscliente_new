@@ -105,7 +105,7 @@ class _ProfessionalServicesScreenState
    
       devicesId: '', 
       hasOffer: false, 
-      offers: [], // Usa la lista de Expertises
+      offers: [], subcategoryName:subcategoryName, // Usa la lista de Expertises
     );
 
     // Llama al formulario del servicio con el serviceRequest y los ids de categoría y subcategoría

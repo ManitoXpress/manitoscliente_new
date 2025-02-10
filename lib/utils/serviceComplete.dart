@@ -157,7 +157,7 @@ class ServiceRepository3 {
                
                   devicesId: '',
                   hasOffer: false,
-                  offers: [], // Lista vacía inicialmente
+                  offers: [], subcategoryName: '', // Lista vacía inicialmente
                 );
               }).where((service) =>
                   service.status.id == 'completed' && service.userId == column) // Filtrar por userId

@@ -120,7 +120,7 @@ class ServiceRepository2 {
         
           devicesId: item['devicesId']?.toString() ?? '',
           hasOffer: false,
-          offers: [],
+          offers: [], subcategoryName: '',
         );
       }).whereType<ServiceRequest>().toList();
 

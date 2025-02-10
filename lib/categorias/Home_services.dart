@@ -97,7 +97,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
      
       devicesId: '', 
       hasOffer: false, 
-      offers: [], 
+      offers: [], subcategoryName: '', 
     );
 
     Navigator.push(

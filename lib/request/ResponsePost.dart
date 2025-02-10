@@ -230,35 +230,38 @@ class ApiService {
     }
   }
 
-    Future<http.Response> sendDataToBackend(
+  Future<http.Response> sendDataToBackend(
       ServiceRequest serviceRequest,
       String token,
       String id,
       String expertises,
       String categoryId,
-      String expertiseId,
+      String subcategoryId,
       Status status,
-      String expertiseName,
+      String subcategoryName,
       List<String> imageUrls,
-      String? devicesId,
-      String? fcmToken) async {
+      String? devicesId, // Asegúrate de que este parámetro esté aquí
+      String? fcmToken,
+   
+      ) async {
     print('sendDataToBackend() called');
     print('Enviando datos al backend:');
 
+    // Convierte la latitud y longitud a double o usa 0.0 si son nulas
     double latitude = serviceRequest.location['lat'] ?? 0.0;
     double longitude = serviceRequest.location['lng'] ?? 0.0;
 
-    final serviceTypeList = [
+    // Construir expertises con el serviceType y el subcategoryId
+    final expertisesList = [
       {
         'id': serviceRequest.serviceType.id,
         'name': serviceRequest.serviceType.name,
       }
     ];
 
-
-
+    // Crear una instancia de FormData
     final formData = {
-      'expertiseName': expertiseName,
+      'subcategoryName': subcategoryName,
       'serviceDateTime': serviceRequest.serviceDateTime,
       'description': serviceRequest.description,
       'images': imageUrls,
@@ -268,12 +271,13 @@ class ApiService {
       },
       'userId': serviceRequest.userId,
       'status': status.id,
-      'expertises': serviceTypeList,
-      'categoryId': categoryId,
-   
-      'devicesId': devicesId,
+      'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
+      'categoryId':  categoryId,
+      'subcategory':{'id': subcategoryId, 'name': subcategoryName},
+      'devicesId': devicesId, // Agrega devicesId aquí
       'fcmToken': fcmToken,
-      'token': token,
+      'token':token,
+  
     };
 
     print('FormData: $formData');

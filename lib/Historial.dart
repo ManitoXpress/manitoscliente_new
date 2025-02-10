@@ -144,7 +144,7 @@ void initState() {
       ),
       verificationStatus: '',
       idCardNumber: '',
-    ),
+    ), subcategoryName: '',
   );
   registrationData = RegistrationData(
     userId: '',
@@ -253,7 +253,7 @@ Future<void> _refreshHistorial() async {
             location: Location(lat: 0.0, lng: 0.0),
             verificationStatus: '',
             idCardNumber: '',
-          ),
+          ), subcategoryName: '',
         ),
         userId,
       ),
@@ -587,7 +587,7 @@ Future<void> _refreshHistorial() async {
         location: Location(lat: 0.0, lng: 0.0),
         verificationStatus: '',
         idCardNumber: '',
-      ),
+      ), subcategoryName: '',
       
     ),
     userId,
