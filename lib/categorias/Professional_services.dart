@@ -8,9 +8,11 @@ import 'package:manitoscliente_new/categorias/subcategory.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
 
 import 'package:manitoscliente_new/metodos/home_screen_functions.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
 
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
 import 'package:searchbar_animation/searchbar_animation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -52,8 +54,8 @@ class _ProfessionalServicesScreenState
       ServiceType serviceType,
       List<Expertise> expertises, // Cambio aquí: usaremos List<Expertise>
       String categoryId,
-      String subcategoryId,
-      String subcategoryName,
+      String expertiseId,
+      String expertiseName,
       BuildContext context) {
     print(
         'Abriendo formulario para ${expertises.map((e) => e.name).join(', ')}');
@@ -100,7 +102,7 @@ class _ProfessionalServicesScreenState
       id: '',
       status: status, // Utiliza el objeto Status obtenido de StatusUtils
       expertises: expertises, // Usa la lista de Expertises (debería ser List<Expertise>)
-      subcategoryName: '', 
+   
       devicesId: '', 
       hasOffer: false, 
       offers: [], // Usa la lista de Expertises
@@ -121,8 +123,8 @@ class _ProfessionalServicesScreenState
           selectedTime: '',
           serviceRequests: [], // Agrega el título del servicio
           categoryId: categoryId, // Pasa categoryId
-          subcategoryId: subcategoryId, // Pasa subcategoryId
-          subcategoryName: subcategoryName,
+          expertiseId: expertiseId, // Pasa subcategoryId
+          expertiseName: expertiseName,
         ),
       ),
     );

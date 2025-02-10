@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/menu/validators.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';

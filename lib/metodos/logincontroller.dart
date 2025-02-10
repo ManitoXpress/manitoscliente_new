@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/home.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -13,7 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/home.dart';
 
 import '../widgets/welcome.dart';

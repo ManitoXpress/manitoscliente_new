@@ -5,10 +5,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
-import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
+import 'package:manitoscliente_new/request/dataprofile.dart';
+import 'package:manitoscliente_new/request/requestWoker.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/metodos/serviceActions.dart';
 import 'package:manitoscliente_new/metodos/serviceDialog.dart';
@@ -483,7 +484,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         final List<String> images = List<String>.from(serviceData['images'] ?? []);
         final String description = serviceData['description'] ?? 'Sin descripción';
         final String categoryName = serviceData['categoryId'] ?? 'Sin categoría';
-        final String subcategoryName = serviceData['subcategoryName'] ?? 'Sin subcategoría';
+        final String expertiseName = serviceData['expertiseName'] ?? 'Sin subcategoría';
         final double? offeredPrice = (serviceData['offeredPrice'] as num?)?.toDouble();
 
         final WorkerDetails? workerDetails = widget.workerDetails;
@@ -515,7 +516,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     ),
                     const SizedBox(height: 16.0),
                     _buildRichText('Descripción:', description),
-                    _buildRichText('Especialidad:', subcategoryName),
+                    _buildRichText('Especialidad:', expertiseName),
                     _buildRichText('Precio ofertado:', offeredPrice?.toString() ?? 'No ofertado'),
                     const SizedBox(height: 16.0),
                     // Mostrar imágenes

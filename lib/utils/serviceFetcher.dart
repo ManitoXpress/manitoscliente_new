@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/main.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
 import 'package:manitoscliente_new/metodos/baseurl.dart';
@@ -157,7 +160,7 @@ class ServiceRepository {
                     selectedDate: '',
                     selectedTime: '',
                   ),
-                  subcategoryName: item['subcategoryName'] ?? '',
+                
                   devicesId: '',
                   hasOffer: false,
                   offers: [], // Lista vacía inicialmente

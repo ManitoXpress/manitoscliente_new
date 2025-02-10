@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/dataprofile.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/metodos/serviceFetcher.dart';
 import 'package:manitoscliente_new/metodos/ticketController.dart';
@@ -51,7 +53,7 @@ class ServiceListBuilder {
                           acceptedTerms: false,
                           expertises: offer.expertises,
                           status: Status(id: '', name: ''),
-                          subcategoryName: offer.subcategoryName,
+                        
                           hasOffer: false,
                           offers: [],
                           workerDetails: workerDetails,
@@ -127,7 +129,7 @@ class ServiceListBuilder {
                           acceptedTerms: false,
                           expertises: offer.expertises,
                           status: Status(id: '', name: ''),
-                          subcategoryName: offer.subcategoryName,
+                
                           hasOffer: false,
                           offers: [],
                           workerDetails: workerDetails,
@@ -200,7 +202,7 @@ class ServiceListBuilder {
                         acceptedTerms: false,
                         expertises: service.expertises,
                         status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
+                      
                         hasOffer: false,
                         offers: [],
                         workerDetails: workerDetails,
@@ -242,10 +244,11 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
-            service.subcategoryName,
-            service.expertises.map((e) => e.name).join(', '),
-            offer.offeredPrice,
-            screenHeight),
+          service.expertises.isNotEmpty ? service.expertises.first.name : 'Sin especialidad',
+          service.expertises.map((e) => e.name).join(', '),
+          service.offeredPrice,
+          screenHeight),
+
       ),
     );
   }
@@ -260,10 +263,11 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
-            service.subcategoryName,
-            service.expertises.map((e) => e.name).join(', '),
-            service.offeredPrice,
-            screenHeight),
+        service.expertises.isNotEmpty ? service.expertises.first.name : 'Sin especialidad',
+        service.expertises.map((e) => e.name).join(', '),
+        service.offeredPrice,
+        screenHeight),
+
       ),
     );
   }

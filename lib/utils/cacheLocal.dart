@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../ServicesResponse/resquest.dart';
+import '../request/resquest.dart';
 
 class LocalCacheService {
   static Future<void> cacheServiceRequest(ServiceRequest serviceRequest) async {

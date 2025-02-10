@@ -172,7 +172,7 @@ class OfferRepository {
                     selectedDate: '',
                     selectedTime: '',
                   ),
-             
+               
                   devicesId: '',
                   hasOffer: false,
                   offers: [], // Lista vacía inicialmente
@@ -225,7 +225,7 @@ class OfferRepository {
                       userToken: '',
                       createdAt: DateTime.now(),
                       expertises: serviceOffer.expertises,
-                
+   
                     );
                   }).toList();
 

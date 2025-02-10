@@ -9,11 +9,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
-import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
+import 'package:manitoscliente_new/request/dataprofile.dart';
+import 'package:manitoscliente_new/request/requestLocation.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/requestWoker.dart';
 
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/chatscreen.dart';
 import 'package:manitoscliente_new/main.dart';
@@ -119,7 +123,7 @@ void initState() {
     acceptedTerms: false,
     expertises: [],
     status: Status(id: '', name: ''),
-    subcategoryName: '',
+
     hasOffer: false,
     offers: [],
     workerDetails: WorkerDetails(
@@ -231,7 +235,7 @@ Future<void> _refreshHistorial() async {
           acceptedTerms: false,
           expertises: [],
           status: Status(id: '', name: ''),
-          subcategoryName: '',
+        
           hasOffer: false,
           offers: [],
           workerDetails: WorkerDetails(
@@ -565,7 +569,7 @@ Future<void> _refreshHistorial() async {
       acceptedTerms: false,
       expertises: [],
       status: Status(id: 'offer', name: 'Ofertado'), // Estado correcto
-      subcategoryName: '',
+ 
       hasOffer: false,
       offers: [],
       workerDetails: WorkerDetails(

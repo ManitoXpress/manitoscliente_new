@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
 
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
 
 import '../categorias/modifyServices.dart';
 

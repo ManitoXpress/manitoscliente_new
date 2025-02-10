@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
 
-import '../ServicesResponse/ResponseGet.dart';
-import '../ServicesResponse/ResponsePost.dart';
-import '../ServicesResponse/dataprofile.dart';
+import '../request/ResponseGet.dart';
+import '../request/ResponsePost.dart';
+import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../home.dart';
 import '../metodos/RegisController.dart';

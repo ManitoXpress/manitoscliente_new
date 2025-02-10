@@ -4,7 +4,8 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/metodos/RegisController.dart';
 import 'package:manitoscliente_new/metodos/baseurl.dart';
 class ApiService {
@@ -229,38 +230,35 @@ class ApiService {
     }
   }
 
-  Future<http.Response> sendDataToBackend(
+    Future<http.Response> sendDataToBackend(
       ServiceRequest serviceRequest,
       String token,
       String id,
       String expertises,
       String categoryId,
-      String subcategoryId,
+      String expertiseId,
       Status status,
-      String subcategoryName,
+      String expertiseName,
       List<String> imageUrls,
-      String? devicesId, // Asegúrate de que este parámetro esté aquí
-      String? fcmToken,
-   
-      ) async {
+      String? devicesId,
+      String? fcmToken) async {
     print('sendDataToBackend() called');
     print('Enviando datos al backend:');
 
-    // Convierte la latitud y longitud a double o usa 0.0 si son nulas
     double latitude = serviceRequest.location['lat'] ?? 0.0;
     double longitude = serviceRequest.location['lng'] ?? 0.0;
 
-    // Construir expertises con el serviceType y el subcategoryId
-    final expertisesList = [
+    final serviceTypeList = [
       {
         'id': serviceRequest.serviceType.id,
         'name': serviceRequest.serviceType.name,
       }
     ];
 
-    // Crear una instancia de FormData
+
+
     final formData = {
-      'subcategoryName': subcategoryName,
+      'expertiseName': expertiseName,
       'serviceDateTime': serviceRequest.serviceDateTime,
       'description': serviceRequest.description,
       'images': imageUrls,
@@ -270,13 +268,12 @@ class ApiService {
       },
       'userId': serviceRequest.userId,
       'status': status.id,
-      'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
-      'categoryId':  categoryId,
-      'subcategory':{'id': subcategoryId, 'name': subcategoryName},
-      'devicesId': devicesId, // Agrega devicesId aquí
+      'expertises': serviceTypeList,
+      'categoryId': categoryId,
+   
+      'devicesId': devicesId,
       'fcmToken': fcmToken,
-      'token':token,
-  
+      'token': token,
     };
 
     print('FormData: $formData');

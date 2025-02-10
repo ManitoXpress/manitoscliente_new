@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 
-import '../ServicesResponse/ResponseGet.dart'; // Asegúrate de importar correctamente la clase ServiceResponse
+import '../request/ResponseGet.dart'; // Asegúrate de importar correctamente la clase ServiceResponse
 
 class OfferDialog extends StatelessWidget {
   final List<ServiceResponse> offers;

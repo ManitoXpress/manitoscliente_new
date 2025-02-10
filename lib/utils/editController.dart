@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
 
 
-import '../ServicesResponse/ResponseGet.dart';
-import '../ServicesResponse/ResponsePost.dart';
+import '../request/ResponseGet.dart';
+import '../request/ResponsePost.dart';
 import '../Styles/stilo.dart';
 
 import '../metodos/RegisController.dart';

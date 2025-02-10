@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 // Importa la ubicación correcta de ServiceRequest
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
@@ -46,8 +47,7 @@ class NavigationUtils {
         selectedTime: map['selectedTime'] ?? '',
         isFavorite: map['isFavorite'] ?? false,
         acceptedTerms: true, id: '', status: map['status'] ?? '',
-        subcategoryName: map['subcategoryName'] ??
-            '', hasOffer: false, offers: [], 
+        hasOffer: false, offers: [], 
       );
 
       Navigator.push(
@@ -59,7 +59,7 @@ class NavigationUtils {
             serviceRequests: [], // Cambia 'services' a 'serviceRequests'
             selectedDate: selectedDate,
             token: token, selectedServiceTitle: '', selectedTime: '',
-            categoryId: '', subcategoryId: '', subcategoryName: '',
+            categoryId: '', expertiseId: '', expertiseName: '',
           ),
         ),
       );

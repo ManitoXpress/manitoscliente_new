@@ -7,8 +7,8 @@ import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 
-import '../ServicesResponse/ResponseGet.dart';
-import '../ServicesResponse/dataprofile.dart';
+import '../request/ResponseGet.dart';
+import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 
 import '../metodos/RegisController.dart';

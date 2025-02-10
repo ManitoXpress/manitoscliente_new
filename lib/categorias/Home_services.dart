@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
@@ -44,22 +46,20 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
 
  void openNewPage(
       ServiceType serviceType,
-      List<Expertise> expertises, // Cambio aquí: usaremos List<Expertise>
+      List<Expertise> expertises, 
       String categoryId,
-      String subcategoryId,
-      String subcategoryName,
+      String expertiseId,
+      String expertiseName,
       BuildContext context) {
     print(
         'Abriendo formulario para ${expertises.map((e) => e.name).join(', ')}');
 
-    // Obtén el objeto Status basado en el nombre del estado utilizando StatusUtils
     final status = StatusUtils.getStatusById(
         expertises.isNotEmpty ? expertises.first.id : '');
 
-    // Formatea la fecha y hora actual en formato ISO 8601
     final formattedDateTime = getFormattedDateTime();
 
-    // Formatea la fecha seleccionada en el formato requerido
+
     String? formattedSelectedDate;
     if (serviceType.selectedDate != null &&
         serviceType.selectedDate.isNotEmpty) {
@@ -72,12 +72,12 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
         return;
       }
     } else {
-      // Si selectedDate es nulo o está vacío, asignar la fecha y hora actual en formato ISO 8601
+    
       final now = DateTime.now().toUtc();
       formattedSelectedDate = now.toIso8601String();
     }
 
-    // Crea una instancia de ServiceRequest con la información del servicio
+
     final serviceRequest = ServiceRequest(
       serviceDateTime: formattedDateTime,
       description: '',
@@ -92,31 +92,30 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
       selectedTime: serviceType.selectedTime ?? '',
       acceptedTerms: true,
       id: '',
-      status: status, // Utiliza el objeto Status obtenido de StatusUtils
-      expertises: expertises, // Usa la lista de Expertises (debería ser List<Expertise>)
-      subcategoryName: '', 
+      status: status, 
+      expertises: expertises, 
+     
       devicesId: '', 
       hasOffer: false, 
-      offers: [], // Usa la lista de Expertises
+      offers: [], 
     );
 
-    // Llama al formulario del servicio con el serviceRequest y los ids de categoría y subcategoría
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ServiceFormPage(
           serviceRequest: serviceRequest,
           acceptTerms: true,
-          selectedDate: DateTime.now(), // Usar una fecha predeterminada
-          token: '', // Proporciona un token válido
+          selectedDate: DateTime.now(), 
+          token: '', 
           selectedServiceTitle: expertises
               .map((e) => e.name)
-              .join(', '), // Agrega los nombres de expertises
+              .join(', '), 
           selectedTime: '',
-          serviceRequests: [], // Agrega el título del servicio
-          categoryId: categoryId, // Pasa categoryId
-          subcategoryId: subcategoryId, // Pasa subcategoryId
-          subcategoryName: subcategoryName,
+          serviceRequests: [], 
+          categoryId: categoryId, 
+          expertiseId: expertiseId, 
+          expertiseName: expertiseName,
         ),
       ),
     );

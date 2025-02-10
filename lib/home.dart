@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:manitoscliente_new/Historial.dart';
-import 'package:manitoscliente_new/ServicesResponse/dataprofile.dart';
+import 'package:manitoscliente_new/request/dataprofile.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/categorias/service_screen.dart';
 import 'package:manitoscliente_new/maps.dart';

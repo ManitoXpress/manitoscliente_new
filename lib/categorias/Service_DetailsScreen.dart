@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/Historial.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/home.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
@@ -12,7 +12,7 @@ import 'package:manitoscliente_new/utils/compres.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:manitoscliente_new/wizards/dataservice.dart';
 import 'package:manitoscliente_new/wizards/datetime.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/categorias/terms.dart';
 import 'package:manitoscliente_new/wizards/datalocation.dart';
 import 'package:manitoscliente_new/metodos/Routes.dart';
@@ -27,8 +27,8 @@ class ServiceFormPage extends StatefulWidget {
   final String selectedServiceTitle;
   final String token;
   final String categoryId;
-  final String subcategoryId;
-  final String subcategoryName;
+  final String expertiseId;
+  final String expertiseName;
 
   ServiceFormPage({
     Key? key,
@@ -39,8 +39,8 @@ class ServiceFormPage extends StatefulWidget {
     required this.selectedServiceTitle,
     required this.token,
     required this.categoryId,
-    required this.subcategoryId,
-    required this.subcategoryName, required String selectedTime,
+    required this.expertiseId,
+    required this.expertiseName, required String selectedTime,
   }) : super(key: key);
 
   @override
@@ -253,9 +253,9 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
             widget.serviceRequest.status.id,
             expertisesJson,
             widget.categoryId,
-            widget.subcategoryId,
+            widget.expertiseId,
             widget.serviceRequest.status,
-            widget.subcategoryName,
+            widget.expertiseName,
             imageUrls,
             devicesId,
             fcmToken, // Pasar el fcmToken al backend

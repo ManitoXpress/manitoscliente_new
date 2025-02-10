@@ -1,4 +1,6 @@
-import '../ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+
+import '../request/resquest.dart';
 
 class StatusUtils {
   static Status getStatusById(String id) {

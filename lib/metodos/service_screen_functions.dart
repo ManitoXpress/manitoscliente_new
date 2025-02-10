@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:manitoscliente_new/categorias/Home_services.dart';
 import 'package:manitoscliente_new/categorias/Professional_services.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 
 void navigateToServiceDetails(BuildContext context, int index) {
   // Lógica para navegar a los detalles del servicio seleccionado

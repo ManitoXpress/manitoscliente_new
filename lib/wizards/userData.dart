@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rive/rive.dart' hide Image;
 
-import '../ServicesResponse/dataprofile.dart';
+import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../metodos/RegisController.dart';
 

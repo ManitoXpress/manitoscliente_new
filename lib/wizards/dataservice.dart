@@ -2,9 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponsePost.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 
 class ServiceDataWizard extends StatefulWidget {
   final ServiceRequest serviceRequest;

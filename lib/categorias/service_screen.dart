@@ -2,14 +2,16 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:manitoscliente_new/Historial.dart';
-import 'package:manitoscliente_new/ServicesResponse/resquest.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/metodos/auth_utils.dart';
 import 'package:manitoscliente_new/metodos/home_screen_functions.dart';
 import 'package:manitoscliente_new/metodos/service_screen_functions.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:searchbar_animation/searchbar_animation.dart';
-import 'package:manitoscliente_new/ServicesResponse/ResponseGet.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
 
 import 'package:flutter/material.dart';
 
@@ -318,7 +320,7 @@ void _handleFCMMessage(RemoteMessage message) {
                               selectedTime: '',
                               acceptedTerms: true,
                               expertises: [],
-                              status: status, subcategoryName: '', devicesId: '', hasOffer: false, offers: [],
+                              status: status,  devicesId: '', hasOffer: false, offers: [],
                             );
                             navigateToHomeServices(context, serviceRequest);
                             break;
