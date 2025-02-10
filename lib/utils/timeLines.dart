@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -56,6 +58,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late TextEditingController _cancelReasonController;
   late TextEditingController _priceController;
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _serviceRequestStream;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _subscription;
   double? _fetchedOfferedPrice;
   late String _currentStatus;
   late LatLng _initialPosition;
@@ -72,7 +75,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     "cancelled": "Cancelado",
     "blocked": "Bloqueado",
     "pending_confirmation": "Esperando confirmación",
-    "peding_confirmation2": "Esperando confirmación",
+    "pending_confirmation2": "Esperando confirmación",
   };
 
   @override
@@ -84,7 +87,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _initializeControllers();
     _workerDetails = widget.workerDetails;
 
-    // Inicializa serviceData y otras variables
+    // Inicializar serviceData y otras variables
     serviceData = widget.serviceRequest.toMap();
     imageFiles = List<String>.from(serviceData['images'] ?? []);
 
@@ -97,17 +100,11 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     if (widget.offers.isNotEmpty) {
       final offer = widget.offers.first;
       _fetchedOfferedPrice = offer.offeredPrice;
-
       if (_fetchedOfferedPrice != null) {
         _priceController.text = _fetchedOfferedPrice.toString();
       }
-
-      if (offer.hasOffer == true) {
-        _hasOffer = true;
-      }
+      _hasOffer = offer.hasOffer;
     }
-    
-
 
     // Inicializar el stream
     _initializeServiceStream();
@@ -118,27 +115,35 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController = TextEditingController();
   }
 
+  Future<bool> _checkHasOffers(String serviceId) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('offers')
+        .where('serviceId', isEqualTo: serviceId)
+        .where('hasOffer', isEqualTo: true) // Filtramos solo las que tienen ofertas
+        .get();
+
+    return querySnapshot.docs.isNotEmpty;
+  }
+
   void _initializeServiceStream() {
     _serviceRequestStream = FirebaseFirestore.instance
         .collection('services')
         .doc(widget.serviceRequest.id)
         .snapshots();
 
-    _serviceRequestStream.listen((snapshot) {
+    _subscription = _serviceRequestStream.listen((snapshot) async {
       if (snapshot.exists) {
         final data = snapshot.data();
         if (data != null) {
           final newStatus = data['status'] ?? _currentStatus;
+          bool hasOffer = await _checkHasOffers(widget.serviceRequest.id);
 
-          // Verificar si el estado cambió a "pending_confirmation"
           if (newStatus == 'pending_confirmation' && _currentStatus != 'pending_confirmation') {
             setState(() {
-              _currentStatus = newStatus; // Actualizar el estado antes de mostrar el diálogo
+              _currentStatus = newStatus;
             });
 
-            // Asegurarse de que el cuadro de diálogo se muestre después de que se haya renderizado la interfaz
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              // Solo llamar el diálogo si la pantalla está visible
               if (mounted) {
                 showConfirmCompletionDialog(context, widget.serviceRequest.id);
               }
@@ -147,20 +152,19 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
           setState(() {
             _currentStatus = newStatus;
-            serviceData = data; // Actualizar serviceData
-            _hasOffer = data['hasOffer'] ?? false;
+            serviceData = data;
+            _hasOffer = hasOffer;
           });
         }
       }
     });
   }
 
-
-
   @override
   void dispose() {
     _cancelReasonController.dispose();
     _priceController.dispose();
+    _subscription?.cancel(); // Cancelar la suscripción al stream
     super.dispose();
   }
 
@@ -668,118 +672,125 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
 
 // Widget para los botones de acción según el estado
-  Widget _buildActionButtons(BuildContext context) {
-    if (_hasOffer) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton.icon(
-            onPressed: () => _acceptProposal(),
-            icon: Icon(Icons.architecture, color: const Color(0xFF1A819A)),
-            label: Text(
-              "Aceptar Propuesta",
-              style: GoogleFonts.karla(
-                color: const Color(0xFF1A819A),
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: const Color(0xFF1A819A)),
-              ),
+ Widget _buildActionButtons(BuildContext context) {
+  debugPrint("Valor de _hasOffer: $_hasOffer"); // Depuración
+
+  if (_hasOffer == true) { // Comparación explícita
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton.icon(
+          onPressed: () => _acceptProposal(),
+          icon: Icon(Icons.architecture, color: const Color(0xFF1A819A)),
+          label: Text(
+            "Aceptar Propuesta",
+            style: GoogleFonts.karla(
+              color: const Color(0xFF1A819A),
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          ElevatedButton.icon(
-            onPressed: () =>
-                _cancelOffer(widget.serviceRequest.id, widget.workerId),
-            icon: Icon(Icons.dangerous, color: const Color(0xFF1A819A)),
-            label: Text(
-              "Cancelar Propuesta",
-              style: GoogleFonts.karla(
-                color: const Color(0xFF1A819A),
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: const Color(0xFF1A819A)),
-              ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              side: BorderSide(color: const Color(0xFF1A819A)),
             ),
           ),
-        ],
-      );
-    } else if (_currentStatus == 'in_progress') {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton.icon(
-            onPressed: _cancelService,
-            icon: Icon(Icons.dangerous, color: Colors.white),
-            label: Text(
-              "Cancelar Trabajo",
-              style: GoogleFonts.karla(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        ),
+        ElevatedButton.icon(
+          onPressed: () =>
+              _cancelOffer(widget.serviceRequest.id, widget.workerId),
+          icon: Icon(Icons.dangerous, color: const Color(0xFF1A819A)),
+          label: Text(
+            "Cancelar Propuesta",
+            style: GoogleFonts.karla(
+              color: const Color(0xFF1A819A),
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          ElevatedButton.icon(
-            onPressed: () => _openChat(widget.workerId, widget.serviceRequest.userId),
-            icon: Icon(Icons.chat, color: Colors.white),
-            label: Text(
-              "Chat",
-              style: GoogleFonts.karla(
-                color: Colors.white,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              side: BorderSide(color: const Color(0xFF1A819A)),
             ),
           ),
-        ],
-      );
-    }
-    else if (_currentStatus == 'available') {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton.icon(
-            onPressed: _cancelService,
-            icon: Icon(Icons.dangerous, color: Colors.white),
-            label: Text(
-              "Cancelar Trabajo",
-              style: GoogleFonts.karla(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-            ),
-          ),
-        ],
-      );
-    }
-    return SizedBox.shrink();
+        ),
+      ],
+    );
   }
+
+  if (_currentStatus == 'in_progress') {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _cancelService,
+          icon: Icon(Icons.dangerous, color: Colors.white),
+          label: Text(
+            "Cancelar Trabajo",
+            style: GoogleFonts.karla(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          ),
+        ),
+        ElevatedButton.icon(
+          onPressed: () => _openChat(widget.workerId, widget.serviceRequest.userId),
+          icon: Icon(Icons.chat, color: Colors.white),
+          label: Text(
+            "Chat",
+            style: GoogleFonts.karla(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  if (_currentStatus == 'available') {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _cancelService,
+          icon: Icon(Icons.dangerous, color: Colors.white),
+          label: Text(
+            "Cancelar Trabajo",
+            style: GoogleFonts.karla(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
+  return SizedBox.shrink();
+}
+
   void _openChat(String workerId, String userId) async {
     final chatId = _generateChatId(workerId, userId);
 
