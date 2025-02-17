@@ -36,7 +36,7 @@ import 'package:manitoscliente_new/utils/status.dart';
 
 import 'package:manitoscliente_new/utils/timeLines.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:manitoscliente_new/widgets/offerRepository.dart';
+import 'package:manitoscliente_new/utils/offerRepository.dart';
 import 'package:manitoscliente_new/widgets/serviceList.dart';
 
 class Historial extends StatefulWidget {
@@ -129,7 +129,7 @@ void initState() {
     workerDetails: WorkerDetails(
       id: '',
       phoneNumber: '',
-      certificateImagePaths: [],
+      certificateImagePaths: '',
       idDocumentImagePath: '',
       imagePath: '',
       displayName: '',
@@ -211,52 +211,51 @@ Future<void> _refreshHistorial() async {
         [],
       ),
       _offerRepository.fetchOffersForUser(
-        'offer',           // type: String
-        'status',          // column: String (nombre de columna para filtrar)
-        userId,            // userId: String
-        token ?? '',       // token: String
-        ServiceRequest(
-          serviceDateTime: '',
-          id: '',
-          devicesId: '',
-          description: '',
-          images: [],
-          location: {},
-          offeredPrice: 0.0,
-          serviceType: ServiceType(
-            id: '',
-            name: '',
-            selectedDate: '',
-            selectedTime: '',
-          ),
-          userId: '',
-          workerId: '',
-          isFavorite: false,
-          acceptedTerms: false,
-          expertises: [],
-          status: Status(id: '', name: ''),
-        
-          hasOffer: false,
-          offers: [],
-          workerDetails: WorkerDetails(
-            id: '',
-            phoneNumber: '',
-            certificateImagePaths: [],
-            idDocumentImagePath: '',
-            imagePath: '',
-            displayName: '',
-            email: '',
-            expLevel: [],
-            expertises: [],
-            criminalRecordImagePath: '',
-            fcmToken: '',
-            location: Location(lat: 0.0, lng: 0.0),
-            verificationStatus: '',
-            idCardNumber: '',
-          ), subcategoryName: '',
-        ),
-        userId,
-      ),
+  'offer',           // type: String (por ejemplo, el estado "offer")
+  userId,            // userId: String (ID del usuario autenticado)
+  token ?? '',       // token: String
+  ServiceRequest(
+    serviceDateTime: '',
+    id: '',
+    devicesId: '',
+    description: '',
+    images: [],
+    location: {},
+    offeredPrice: 0.0,
+    serviceType: ServiceType(
+      id: '',
+      name: '',
+      selectedDate: '',
+      selectedTime: '',
+    ),
+    userId: userId,  // Se asigna el userId real aquí
+    workerId: '',
+    isFavorite: false,
+    acceptedTerms: false,
+    expertises: [],
+    status: Status(id: 'offer', name: 'Ofertado'),
+    hasOffer: false,
+    offers: [],
+    workerDetails: WorkerDetails(
+      id: '',
+      phoneNumber: '',
+      certificateImagePaths: '',
+      idDocumentImagePath: '',
+      imagePath: '',
+      displayName: '',
+      email: '',
+      expLevel: [],
+      expertises: [],
+      criminalRecordImagePath: '',
+      fcmToken: '',
+      location: Location(lat: 0.0, lng: 0.0),
+      verificationStatus: '',
+      idCardNumber: '',
+    ),
+    subcategoryName: '',
+  ),
+  userId // Aquí se pasa el deviceId; si cuentas con un deviceId real, reemplázalo.
+),
       _serviceRepository2.fetchServicesByInProgress(
         'in_progress',           // type: String
         'status',          // column: String (nombre de columna para filtrar)
@@ -545,11 +544,10 @@ Future<void> _refreshHistorial() async {
       break;
       case 'offer':
   future = offerRepository.fetchOffersForUser(
-    statusIds,          // type: String
-    'offer',           // column: String (nombre de la columna en DB)
-    userId,             // userId: String
-    token,              // token: String
-    ServiceRequest(     // service: ServiceRequest
+    statusIds, // type: String (por ejemplo, el status que deseas filtrar)
+    userId,    // userId: String (ID del usuario autenticado)
+    token,     // token: String
+    ServiceRequest( // service: ServiceRequest de ejemplo
       id: '',
       serviceDateTime: '',
       devicesId: '',
@@ -563,19 +561,18 @@ Future<void> _refreshHistorial() async {
         selectedDate: '',
         selectedTime: '',
       ),
-      userId: userId,   // Usar el userId real
+      userId: userId, // se asigna el userId real
       workerId: '',
       isFavorite: false,
       acceptedTerms: false,
       expertises: [],
-      status: Status(id: 'offer', name: 'Ofertado'), // Estado correcto
- 
+      status: Status(id: 'offer', name: 'Ofertado'),
       hasOffer: false,
       offers: [],
       workerDetails: WorkerDetails(
         id: '',
         phoneNumber: '',
-        certificateImagePaths: [],
+        certificateImagePaths: '',
         idDocumentImagePath: '',
         imagePath: '',
         displayName: '',
@@ -587,13 +584,13 @@ Future<void> _refreshHistorial() async {
         location: Location(lat: 0.0, lng: 0.0),
         verificationStatus: '',
         idCardNumber: '',
-      ), subcategoryName: '',
-      
+      ),
+      subcategoryName: '',
     ),
-    userId,
-
+    userId // deviceId: aquí puedes usar el userId o reemplazarlo por el deviceId real
   );
   break;
+
     case 'in_progress':
     future = Future.wait([
       _serviceRepository2.fetchServicesByInProgress(

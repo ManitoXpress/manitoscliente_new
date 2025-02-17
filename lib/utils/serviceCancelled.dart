@@ -158,8 +158,9 @@ class ServiceRepository4 {
                   hasOffer: false,
                   offers: [], subcategoryName: '', // Lista vacía inicialmente
                 );
-              }).where((service) => service.status.id == 'cancelled') // Filtro añadido
-            .toList();
+              }).where((service) =>
+                  service.status.id == 'cancelled' && service.userId == column) // Filtrar por userId
+              .toList();
 
               // Cacheamos las solicitudes de servicio
               serviceRequestsList.forEach((request) {

@@ -3,7 +3,7 @@ import 'package:manitoscliente_new/request/requestLocation.dart';
 
 class WorkerDetails {
   final String id;
-  final List<String> certificateImagePaths;
+  final String certificateImagePaths;
   final String idDocumentImagePath;
   final String imagePath;
   final String phoneNumber;
@@ -38,7 +38,7 @@ class WorkerDetails {
   factory WorkerDetails.fromMap(Map<String, dynamic> map) {
     return WorkerDetails(
       id: map['id'] ?? '',
-      certificateImagePaths: List<String>.from(map['certificateImagePaths'] ?? []),
+      certificateImagePaths: map['certificateImagePaths'] ?? [],
       idDocumentImagePath: map['idDocumentImagePath'] ?? '',
       imagePath: map['imagePath'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
