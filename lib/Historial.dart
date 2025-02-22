@@ -103,226 +103,222 @@ class _HistorialState extends State<Historial>
   int cancelledServiceCount = 0;
 
   @override
-void initState() {
-  super.initState();
-  serviceRequest = ServiceRequest(
-    serviceDateTime: '',
-    id: '',
-    devicesId: '',
-    description: '',
-    images: [],
-    location: {},
-    offeredPrice: 0.0,
-    serviceType:
-        ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
-    userId: '',
-    workerId: '',
-    isFavorite: false,
-    selectedDate: null,
-    selectedTime: null,
-    acceptedTerms: false,
-    expertises: [],
-    status: Status(id: '', name: ''),
-
-    hasOffer: false,
-    offers: [],
-    workerDetails: WorkerDetails(
+  void initState() {
+    super.initState();
+    serviceRequest = ServiceRequest(
+      serviceDateTime: '',
       id: '',
-      phoneNumber: '',
-      certificateImagePaths: '',
-      idDocumentImagePath: '',
-      imagePath: '',
-      displayName: '',
-      email: '',
-      expLevel: [],
+      devicesId: '',
+      description: '',
+      images: [],
+      location: {},
+      offeredPrice: 0.0,
+      serviceType:
+          ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
+      userId: '',
+      workerId: '',
+      isFavorite: false,
+      selectedDate: null,
+      selectedTime: null,
+      acceptedTerms: false,
       expertises: [],
-      criminalRecordImagePath: '',
-      fcmToken: '',
-      location: Location(
-        lat: 0.0, // Latitud predeterminada
-        lng: 0.0, // Longitud predeterminada
+      status: Status(id: '', name: ''),
+      hasOffer: false,
+      offers: [],
+      workerDetails: WorkerDetails(
+        id: '',
+        phoneNumber: '',
+        certificateImagePaths: '',
+        idDocumentImagePath: '',
+        imagePath: '',
+        displayName: '',
+        email: '',
+        expLevel: [],
+        expertises: [],
+        criminalRecordImagePath: '',
+        fcmToken: '',
+        location: Location(
+          lat: 0.0, // Latitud predeterminada
+          lng: 0.0, // Longitud predeterminada
+        ),
+        verificationStatus: '',
+        idCardNumber: '',
       ),
-      verificationStatus: '',
-      idCardNumber: '',
-    ), subcategoryName: '',
-  );
-  registrationData = RegistrationData(
-    userId: '',
-    displayName: '',
-    phoneNumber: '',
-    paymentType: '',
-    selectedCountryCode: '',
-    location: {},
-    email: '',
-    devicesId: '',
-    fcmToken: '',
-  );
-
-  userData = UserData(
-    displayName: '',
-    email: '',
-    phoneNumber: '',
-    userId: '',
-    location: {},
-    paymentType: '',
-    selectedCountryCode: '',
-    registrationData: registrationData,
-    getToken: '',
-  );
-
-  // Configurar el controlador de pestañas
-  _tabController = TabController(length: 5, vsync: this);
-
-
-  _offerRepository = OfferRepository(
-    apiService2: ApiService2(),
-    serviceDataFetcher: ServiceDataFetcher(),
-    firestore: FirebaseFirestore.instance,
-  );
-}
-
-// Método corregido _refreshHistorial
-Future<void> _refreshHistorial() async {
-  setState(() {
-    isLoading = true;
-    availableServiceCount = 0;
-    offerServiceCount = 0;
-    inProgressServiceCount = 0;
-    completedServiceCount = 0;
-    cancelledServiceCount = 0;
-  });
-
-  try {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print("Usuario no autenticado.");
-      return;
-    }
-    final userId = user.uid;
-    final token = await user.getIdToken();
-
-    // Crear todas las llamadas en paralelo
-    final futures = [
-      _serviceRepository.fetchServicesByStatus(
-        'available',
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token ?? '',
-        [],
-      ),
-      _offerRepository.fetchOffersForUser(
-  'offer',           // type: String (por ejemplo, el estado "offer")
-  userId,            // userId: String (ID del usuario autenticado)
-  token ?? '',       // token: String
-  ServiceRequest(
-    serviceDateTime: '',
-    id: '',
-    devicesId: '',
-    description: '',
-    images: [],
-    location: {},
-    offeredPrice: 0.0,
-    serviceType: ServiceType(
-      id: '',
-      name: '',
-      selectedDate: '',
-      selectedTime: '',
-    ),
-    userId: userId,  // Se asigna el userId real aquí
-    workerId: '',
-    isFavorite: false,
-    acceptedTerms: false,
-    expertises: [],
-    status: Status(id: 'offer', name: 'Ofertado'),
-    hasOffer: false,
-    offers: [],
-    workerDetails: WorkerDetails(
-      id: '',
-      phoneNumber: '',
-      certificateImagePaths: '',
-      idDocumentImagePath: '',
-      imagePath: '',
+      subcategoryName: '',
+    );
+    registrationData = RegistrationData(
+      userId: '',
       displayName: '',
+      phoneNumber: '',
+      paymentType: '',
+      selectedCountryCode: '',
+      location: {},
       email: '',
-      expLevel: [],
-      expertises: [],
-      criminalRecordImagePath: '',
+      devicesId: '',
       fcmToken: '',
-      location: Location(lat: 0.0, lng: 0.0),
-      verificationStatus: '',
-      idCardNumber: '',
-    ),
-    subcategoryName: '',
-  ),
-  userId // Aquí se pasa el deviceId; si cuentas con un deviceId real, reemplázalo.
-),
-      _serviceRepository2.fetchServicesByInProgress(
-        'in_progress',           // type: String
-        'status',          // column: String (nombre de columna para filtrar)
-        userId,            // userId: String
-        token ?? '',       // token: String
-        
-    
-      ),
-      _serviceRepository.fetchServicesByStatus(
-        'completed',
-        'completed',
-        userId,
-        token ?? '',
-        [],
-      ),
-      _serviceRepository.fetchServicesByStatus(
-        'cancelled',
-        'cancelled',
-        userId,
-        token ?? '',
-        [],
-      ),
-    ];
-
-    // Ejecutar todas las llamadas en paralelo
-    final results = await Future.wait(futures);
-
-    // Extraer resultados
-    final availableServices = results[0] as List<ServiceRequest>;
-    final offerServices = results[1] as List<ServiceRequest>;
-    final inProgressServices = results[2] as List<ServiceRequest>;
-    final completedServices = results[3] as List<ServiceRequest>;
-    final cancelledServices = results[4] as List<ServiceRequest>;
-
-    // Calcular total de ofertas
-    final totalOffers = offerServices.fold<int>(
-      0,
-      (sum, service) => sum + service.offers.length,
     );
 
-    // Actualizar estado
+    userData = UserData(
+      displayName: '',
+      email: '',
+      phoneNumber: '',
+      userId: '',
+      location: {},
+      paymentType: '',
+      selectedCountryCode: '',
+      registrationData: registrationData,
+      getToken: '',
+    );
+
+    // Configurar el controlador de pestañas
+    _tabController = TabController(length: 5, vsync: this);
+
+    _offerRepository = OfferRepository(
+      apiService2: ApiService2(),
+      serviceDataFetcher: ServiceDataFetcher(),
+      firestore: FirebaseFirestore.instance,
+    );
+  }
+
+// Método corregido _refreshHistorial
+  Future<void> _refreshHistorial() async {
     setState(() {
-      availableServiceCount = availableServices.length;
-      offerServiceCount = totalOffers;
-      inProgressServiceCount = inProgressServices.length;
-      completedServiceCount = completedServices.length;
-      cancelledServiceCount = cancelledServices.length;
-      serviceRequests = [
-        ...availableServices,
-        ...offerServices,
-        ...inProgressServices,
-        ...completedServices,
-        ...cancelledServices,
-      ];
-      isLoading = false;
+      isLoading = true;
+      availableServiceCount = 0;
+      offerServiceCount = 0;
+      inProgressServiceCount = 0;
+      completedServiceCount = 0;
+      cancelledServiceCount = 0;
     });
 
-    // Navegar a ofertas si hay nuevas
-    if (totalOffers > 0) {
-      _tabController.animateTo(1);
-    }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print("Usuario no autenticado.");
+        return;
+      }
+      final userId = user.uid;
+      final token = await user.getIdToken();
 
-  } catch (e) {
-    print("Error al actualizar el historial: $e");
-    setState(() => isLoading = false);
+      // Crear todas las llamadas en paralelo
+      final futures = [
+        _serviceRepository.fetchServicesByStatus(
+          'available',
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token ?? '',
+          [],
+        ),
+        _offerRepository.fetchOffersForUser(
+            'offer', // type: String (por ejemplo, el estado "offer")
+            userId, // userId: String (ID del usuario autenticado)
+            token ?? '', // token: String
+            ServiceRequest(
+              serviceDateTime: '',
+              id: '',
+              devicesId: '',
+              description: '',
+              images: [],
+              location: {},
+              offeredPrice: 0.0,
+              serviceType: ServiceType(
+                id: '',
+                name: '',
+                selectedDate: '',
+                selectedTime: '',
+              ),
+              userId: userId, // Se asigna el userId real aquí
+              workerId: '',
+              isFavorite: false,
+              acceptedTerms: false,
+              expertises: [],
+              status: Status(id: 'offer', name: 'Ofertado'),
+              hasOffer: false,
+              offers: [],
+              workerDetails: WorkerDetails(
+                id: '',
+                phoneNumber: '',
+                certificateImagePaths: '',
+                idDocumentImagePath: '',
+                imagePath: '',
+                displayName: '',
+                email: '',
+                expLevel: [],
+                expertises: [],
+                criminalRecordImagePath: '',
+                fcmToken: '',
+                location: Location(lat: 0.0, lng: 0.0),
+                verificationStatus: '',
+                idCardNumber: '',
+              ),
+              subcategoryName: '',
+            ),
+            userId // Aquí se pasa el deviceId; si cuentas con un deviceId real, reemplázalo.
+            ),
+        _serviceRepository2.fetchServicesByInProgress(
+          'in_progress', // type: String
+          'status', // column: String (nombre de columna para filtrar)
+          userId, // userId: String
+          token ?? '', // token: String
+        ),
+        _serviceRepository.fetchServicesByStatus(
+          'completed',
+          'completed',
+          userId,
+          token ?? '',
+          [],
+        ),
+        _serviceRepository.fetchServicesByStatus(
+          'cancelled',
+          'cancelled',
+          userId,
+          token ?? '',
+          [],
+        ),
+      ];
+
+      // Ejecutar todas las llamadas en paralelo
+      final results = await Future.wait(futures);
+
+      // Extraer resultados
+      final availableServices = results[0] as List<ServiceRequest>;
+      final offerServices = results[1] as List<ServiceRequest>;
+      final inProgressServices = results[2] as List<ServiceRequest>;
+      final completedServices = results[3] as List<ServiceRequest>;
+      final cancelledServices = results[4] as List<ServiceRequest>;
+
+      // Calcular total de ofertas
+      final totalOffers = offerServices.fold<int>(
+        0,
+        (sum, service) => sum + service.offers.length,
+      );
+
+      // Actualizar estado
+      setState(() {
+        availableServiceCount = availableServices.length;
+        offerServiceCount = totalOffers;
+        inProgressServiceCount = inProgressServices.length;
+        completedServiceCount = completedServices.length;
+        cancelledServiceCount = cancelledServices.length;
+        serviceRequests = [
+          ...availableServices,
+          ...offerServices,
+          ...inProgressServices,
+          ...completedServices,
+          ...cancelledServices,
+        ];
+        isLoading = false;
+      });
+
+      // Navegar a ofertas si hay nuevas
+      if (totalOffers > 0) {
+        _tabController.animateTo(1);
+      }
+    } catch (e) {
+      print("Error al actualizar el historial: $e");
+      setState(() => isLoading = false);
+    }
   }
-}
 
   @override
   void dispose() {
@@ -335,6 +331,7 @@ Future<void> _refreshHistorial() async {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    double? _fetchedOfferedPrice;
 
     // Obtener el userId de Firebase Auth
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -469,6 +466,7 @@ Future<void> _refreshHistorial() async {
               children: [
                 _buildServiceListByStatus(
                   'available',
+                  _fetchedOfferedPrice,
                   screenWidth,
                   screenHeight,
                   userId,
@@ -477,6 +475,7 @@ Future<void> _refreshHistorial() async {
                 ),
                 _buildServiceListByStatus(
                   'offer',
+                  _fetchedOfferedPrice,
                   screenWidth,
                   screenHeight,
                   userId,
@@ -485,6 +484,7 @@ Future<void> _refreshHistorial() async {
                 ),
                 _buildServiceListByStatus(
                   'in_progress',
+                  _fetchedOfferedPrice,
                   screenWidth,
                   screenHeight,
                   userId,
@@ -493,6 +493,7 @@ Future<void> _refreshHistorial() async {
                 ),
                 _buildServiceListByStatus(
                   'completed',
+                  _fetchedOfferedPrice,
                   screenWidth,
                   screenHeight,
                   userId,
@@ -502,6 +503,7 @@ Future<void> _refreshHistorial() async {
                 // Agrega esta quinta pestaña
                 _buildServiceListByStatus(
                   'cancelled',
+                  _fetchedOfferedPrice,
                   screenWidth,
                   screenHeight,
                   userId,
@@ -518,6 +520,7 @@ Future<void> _refreshHistorial() async {
 
   Widget _buildServiceListByStatus(
     String statusIds,
+    double? _fetchedOfferedPrice,
     double screenWidth,
     double screenHeight,
     String userId,
@@ -534,122 +537,130 @@ Future<void> _refreshHistorial() async {
 
     switch (statusIds) {
       case 'available':
-      future = _serviceRepository.fetchServicesByStatus(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-        [],
-      );
-      break;
+        future = _serviceRepository.fetchServicesByStatus(
+          statusIds,
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token,
+          [],
+        );
+        break;
       case 'offer':
-  future = offerRepository.fetchOffersForUser(
-    statusIds, // type: String (por ejemplo, el status que deseas filtrar)
-    userId,    // userId: String (ID del usuario autenticado)
-    token,     // token: String
-    ServiceRequest( // service: ServiceRequest de ejemplo
-      id: '',
-      serviceDateTime: '',
-      devicesId: '',
-      description: '',
-      images: [],
-      location: {},
-      offeredPrice: 0.0,
-      serviceType: ServiceType(
-        id: '',
-        name: '',
-        selectedDate: '',
-        selectedTime: '',
-      ),
-      userId: userId, // se asigna el userId real
-      workerId: '',
-      isFavorite: false,
-      acceptedTerms: false,
-      expertises: [],
-      status: Status(id: 'offer', name: 'Ofertado'),
-      hasOffer: false,
-      offers: [],
-      workerDetails: WorkerDetails(
-        id: '',
-        phoneNumber: '',
-        certificateImagePaths: '',
-        idDocumentImagePath: '',
-        imagePath: '',
-        displayName: '',
-        email: '',
-        expLevel: [],
-        expertises: [],
-        criminalRecordImagePath: '',
-        fcmToken: '',
-        location: Location(lat: 0.0, lng: 0.0),
-        verificationStatus: '',
-        idCardNumber: '',
-      ),
-      subcategoryName: '',
-    ),
-    userId // deviceId: aquí puedes usar el userId o reemplazarlo por el deviceId real
-  );
-  break;
+        future = offerRepository.fetchOffersForUser(
+            statusIds, // type: String (por ejemplo, el status que deseas filtrar)
+            userId, // userId: String (ID del usuario autenticado)
+            token, // token: String
+            ServiceRequest(
+              // service: ServiceRequest de ejemplo
+              id: '',
+              serviceDateTime: '',
+              devicesId: '',
+              description: '',
+              images: [],
+              location: {},
+              offeredPrice: 0.0,
+              serviceType: ServiceType(
+                id: '',
+                name: '',
+                selectedDate: '',
+                selectedTime: '',
+              ),
+              userId: userId, // se asigna el userId real
+              workerId: '',
+              isFavorite: false,
+              acceptedTerms: false,
+              expertises: [],
+              status: Status(id: 'offer', name: 'Ofertado'),
+              hasOffer: false,
+              offers: [],
+              workerDetails: WorkerDetails(
+                id: '',
+                phoneNumber: '',
+                certificateImagePaths: '',
+                idDocumentImagePath: '',
+                imagePath: '',
+                displayName: '',
+                email: '',
+                expLevel: [],
+                expertises: [],
+                criminalRecordImagePath: '',
+                fcmToken: '',
+                location: Location(lat: 0.0, lng: 0.0),
+                verificationStatus: '',
+                idCardNumber: '',
+              ),
+              subcategoryName: '',
+            ),
+            userId // deviceId: aquí puedes usar el userId o reemplazarlo por el deviceId real
+            );
+        break;
 
-    case 'in_progress':
-    future = Future.wait([
-      _serviceRepository2.fetchServicesByInProgress(
-        'in_progress',
-        userId,
-        'status',
-        token,
-      ).catchError((e) {
-        print("Error al obtener in_progress: $e");
-        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-      }),
-      _serviceRepository2.fetchServicesByInProgress(
-        'pending_confirmation',
-        userId,
-        'status',
-        token,
-      ).catchError((e) {
-        print("Error al obtener pending_confirmation: $e");
-        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-      }),
-      _serviceRepository2.fetchServicesByInProgress(
-        'pending_confirmation2',
-        userId,
-        'status',
-        token,
-      ).catchError((e) {
-        print("Error al obtener pending_confirmation2: $e");
-        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-      }),
-    ]).then((results) {
-      final servicesInProgress = results[0] ?? [];
-      final pendingConfirmationServices = results[1] ?? [];
-      final pendingConfirmationServices2 = results[2] ?? [];
-      return [...servicesInProgress, ...pendingConfirmationServices, ...pendingConfirmationServices2];
-    });
-    break;
+      case 'in_progress':
+        future = Future.wait([
+          _serviceRepository2
+              .fetchServicesByInProgress(
+            'in_progress',
+            userId,
+            'status',
+            token,
+          )
+              .catchError((e) {
+            print("Error al obtener in_progress: $e");
+            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+          }),
+          _serviceRepository2
+              .fetchServicesByInProgress(
+            'pending_confirmation',
+            userId,
+            'status',
+            token,
+          )
+              .catchError((e) {
+            print("Error al obtener pending_confirmation: $e");
+            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+          }),
+          _serviceRepository2
+              .fetchServicesByInProgress(
+            'pending_confirmation2',
+            userId,
+            'status',
+            token,
+          )
+              .catchError((e) {
+            print("Error al obtener pending_confirmation2: $e");
+            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+          }),
+        ]).then((results) {
+          final servicesInProgress = results[0] ?? [];
+          final pendingConfirmationServices = results[1] ?? [];
+          final pendingConfirmationServices2 = results[2] ?? [];
+          return [
+            ...servicesInProgress,
+            ...pendingConfirmationServices,
+            ...pendingConfirmationServices2
+          ];
+        });
+        break;
 
+      case 'completed':
+        future = _serviceRepository3.fetchServicesByComplete(
+          statusIds,
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token,
+          [],
+        );
+        break;
 
-
-  case 'completed':
-      future = _serviceRepository3.fetchServicesByComplete(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-        [],
-      );
-      break;
-
-
-  case 'cancelled':
-      future = _serviceRepository4.fetchServicesByCancelled(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-        [],
-      );
-      break;
+      case 'cancelled':
+        future = _serviceRepository4.fetchServicesByCancelled(
+          statusIds,
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token,
+          [],
+        );
+        break;
 
       default:
         return Center(child: Text("Estado no válido."));
@@ -674,43 +685,82 @@ Future<void> _refreshHistorial() async {
         final services = snapshot.data!;
         if (statusIds == 'available') {
           final services = snapshot.data!;
+          final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceList(
-              services, screenWidth, screenHeight, userId, userData);
+            services, // Servicio asociado
+     
+            offers,
+            screenWidth,
+            screenHeight,
+            userId,
+            userData,
+          );
         }
 
         if (statusIds == 'offer') {
-            final services = snapshot.data!;
-            // Extrae todas las ofertas de los servicios
-            final offers = services.expand((s) => s.offers).toList();
-            
-            return ServiceListBuilder.buildOfferList(
-              services, // Servicio asociado
-              offers,
-              screenWidth,
-              screenHeight,
-              userId,
-              userData,
-            );
-          }
+          final services = snapshot.data!;
+          // Extrae todas las ofertas de los servicios
+          final offers = services.expand((s) => s.offers).toList();
+
+          return ServiceListBuilder.buildOfferList(
+            services, // Servicio asociado
+            offers,
+            screenWidth,
+            screenHeight,
+            userId,
+            userData,
+          );
+        }
         if (statusIds == 'in_progress') {
           final services = snapshot.data!;
+          final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceList(
-              services, screenWidth, screenHeight, userId, userData);
+            services, // Servicio asociado
+          
+            offers,
+            screenWidth,
+            screenHeight,
+            userId,
+            userData,
+          );
         }
         if (statusIds == 'completed') {
           final services = snapshot.data!;
+          final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceList(
-              services, screenWidth, screenHeight, userId, userData);
+            services, // Servicio asociado
+           
+            offers,
+            screenWidth,
+            screenHeight,
+            userId,
+            userData,
+          );
         }
         if (statusIds == 'cancelled') {
           final services = snapshot.data!;
+          final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceList(
-              services, screenWidth, screenHeight, userId, userData);
+            services, // Servicio asociado
+      
+            offers,
+            screenWidth,
+            screenHeight,
+            userId,
+            userData,
+          );
         }
-
-
+        final offers = services.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceList(
-            services, screenWidth, screenHeight, userId, userData);
+          services, // Servicio asociado
+        
+          offers,
+
+          screenWidth,
+          screenHeight,
+          userId,
+          userData,
+        );
       },
     );
   }

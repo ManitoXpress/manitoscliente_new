@@ -16,9 +16,80 @@ import 'dataprofile.dart';
 class ApiService2 {
   String? getToken; // Variable para almacenar el token del usuario
   ServiceRequest? serviceRequest;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseStorage storage = FirebaseStorage.instance;
 
   final String baseUrl = ApiConfiguration.baseUrl;
+   ApiService() {
+    _initializeToken();
+  }
 
+  Future<void> _initializeToken() async {
+    final user = auth.currentUser;
+    if (user != null) {
+      final idToken = await user.getIdToken();
+      getToken = idToken;
+      print('Token inicializado: $getToken'); // Log para verificar el token
+    } else {
+      print('Usuario no autenticado.');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getOffers2(String offerId) async {
+    await _initializeToken(); // Asegúrate de que el token esté actualizado
+    final response = await http.get(
+      Uri.parse('$baseUrl/offers/$offerId'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+      },
+    );
+
+    print('Respuesta de getOffers: ${response.statusCode} ${response.body}'); // Log de la respuesta
+
+    if (response.statusCode == 200) {
+      final offers = List<Map<String, dynamic>>.from(json.decode(response.body));
+      print('Ofertas obtenidas: $offers'); // Log de las ofertas obtenidas
+      return offers;
+    } else {
+      throw Exception('Failed to load offers: ${response.statusCode} ${response.body}');
+    }
+  }
+
+  Future<void> updateService(String serviceId, Map<String, dynamic> data) async {
+    await _initializeToken(); // Asegúrate de que el token esté actualizado
+    final response = await http.patch(
+      Uri.parse('$baseUrl/services/$serviceId'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(data),
+    );
+
+    print('Respuesta de updateService: ${response.statusCode} ${response.body}'); // Log de la respuesta
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update service: ${response.statusCode} ${response.body}');
+    }
+  }
+
+  Future<void> updateOffer(String offerId, Map<String, dynamic> data) async {
+    await _initializeToken(); // Asegúrate de que el token esté actualizado
+    final response = await http.patch(
+      Uri.parse('$baseUrl/offers/$offerId'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(data),
+    );
+
+    print('Respuesta de updateOffer: ${response.statusCode} ${response.body}'); // Log de la respuesta
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update offer: ${response.statusCode} ${response.body}');
+    }
+  }
   Future<http.Response> getWorkerDetails(String workerId) async {
     final url = Uri.parse('$baseUrl/workers/$workerId');
     

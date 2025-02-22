@@ -66,7 +66,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late Map<String, dynamic> serviceData;
   late List<String> imageFiles;
   WorkerDetails? _workerDetails;
-
+  final ApiService2 apiService = ApiService2();
   final Map<String, String> statusNames = {
     "available": "Disponible",
     "offer": "Ofertado",
@@ -95,6 +95,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     double latitude = serviceData['location']['lat'] ?? 0.0;
     double longitude = serviceData['location']['lng'] ?? 0.0;
     _initialPosition = LatLng(latitude, longitude);
+    
+    
 
     // Verificar ofertas activas
     if (widget.offers.isNotEmpty) {
@@ -272,13 +274,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   void _acceptProposal() async {
     try {
       // Actualiza el documento en la colección 'services'
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({
+       await apiService.updateService(widget.serviceRequest.id, {
         'status': 'in_progress',
         'hasOffer': false,
+    
       });
+
 
       // Actualiza todos los documentos en la colección 'offers' relacionados con el serviceId
       final batch = FirebaseFirestore.instance.batch();
@@ -480,16 +481,18 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         // Actualizar el estado actual
         _currentStatus = newStatus;
         _initialPosition = LatLng(
-  (serviceData['location']?['lat'] as num?)?.toDouble() ?? 0.0,
-  (serviceData['location']?['lng'] as num?)?.toDouble() ?? 0.0,
-);
-
+          (serviceData['location']?['lat'] as num?)?.toDouble() ?? 0.0,
+          (serviceData['location']?['lng'] as num?)?.toDouble() ?? 0.0,
+        );
 
         final List<String> images = List<String>.from(serviceData['images'] ?? []);
         final String description = serviceData['description'] ?? 'Sin descripción';
         final String categoryName = serviceData['categoryId'] ?? 'Sin categoría';
         final String expertiseName = serviceData['expertiseName'] ?? 'Sin subcategoría';
-        final double? offeredPrice = (serviceData['offeredPrice'] as num?)?.toDouble();
+
+        // Usar _fetchedOfferedPrice obtenido de ApiService
+        final double? offeredPrice = _fetchedOfferedPrice;
+        print('Precio Ofertado Obtenido: $offeredPrice'); // Depuración
 
         final WorkerDetails? workerDetails = widget.workerDetails;
         final List<Map<String, dynamic>> expertises = List<Map<String, dynamic>>.from(serviceData['expertises'] ?? []);
@@ -556,7 +559,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
                     // Mostrar detalles del trabajador si están disponibles o si el estado es 'in_progress'
                     if (workerDetails != null || _currentStatus == 'in_progress')
-                      _buildWorkerDetails(workerDetails!,serviceData),
+                      _buildWorkerDetails(workerDetails!, serviceData),
 
                     _buildActionButtons(context),
                     // Mostrar el botón "Hacer el pago" solo si el estado es 'pending_confirmation'

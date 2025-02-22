@@ -96,8 +96,8 @@ flutter:
   uses-material-design: true
 
   assets:
+
     - assets/images/LOGO1_COLOR.png
-    - assets/images/LOGO2_BLANCO.png
     - assets/images/LOGO1_NEGRO.png
     - assets/images/LOGO2_NEGRO.png
     - assets/images/LOGO2_COLOR.png
@@ -109,10 +109,31 @@ flutter:
     - assets/images/pexels.gif
     - assets/images/mundo.png
     - assets/animations/manito.png
-    - assets/map.jpeg
-
+    - assets/map.jpg
+    - assets/pantallaBlanca.png
+    - assets/gra.png
+    - assets/animations/manito_cliente.riv
   fonts:
-    - family: Xpress Heavy
+    - family: Xpress
       fonts:
         - asset: assets/fonts/Xpress_HeavyItalic.otf
+          weight: 900 # Peso aproximado para Heavy
+          style: italic # Estilo en cursiva
         - asset: assets/fonts/Xpress_Regular.otf
+          weight: 400 # Regular
+          style: normal
+        - asset: assets/fonts/Xpress_Heavy.otf
+          weight: 800 # Peso aproximado para Heavy
+          style: normal
+        - asset: assets/fonts/Xpress_Thin.otf
+          weight: 100 # Thin
+          style: normal
+        - asset: assets/fonts/Xpress_BoldItalic.otf
+          weight: 700 # Bold
+          style: italic
+        - asset: assets/fonts/Xpress_Bold.otf
+          weight: 700 # Bold
+          style: normal
+        - asset: assets/fonts/Xpress_ExtraLight.otf
+          weight: 200 # ExtraLight
+          style: normal
