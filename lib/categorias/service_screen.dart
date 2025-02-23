@@ -298,7 +298,7 @@ void _handleFCMMessage(RemoteMessage message) {
                             navigateToProfessionalServices(context);
                             break;
                           case 1:
-                            final String statusName = 'En Proceso';
+                            final String statusName = '';
                             final Status status = StatusUtils.getStatusById(statusName);
                             ServiceRequest serviceRequest = ServiceRequest(
                               serviceDateTime: '',

@@ -121,7 +121,7 @@ class MyTextStyles {
   static const TextStyle drawerButtonTextStyle5 = TextStyle(
     color: Color(0xFF000405),
     fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w800,
     fontSize: 15.0,
   );
 
