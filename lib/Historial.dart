@@ -685,11 +685,11 @@ class _HistorialState extends State<Historial>
         final services = snapshot.data!;
         if (statusIds == 'available') {
           final services = snapshot.data!;
-          final offers = services.expand((s) => s.offers).toList();
-          return ServiceListBuilder.buildServiceList(
+         
+          return ServiceListBuilder.buildServiceListAvailable(
             services, // Servicio asociado
      
-            offers,
+          
             screenWidth,
             screenHeight,
             userId,
@@ -716,7 +716,6 @@ class _HistorialState extends State<Historial>
           final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceList(
             services, // Servicio asociado
-          
             offers,
             screenWidth,
             screenHeight,
@@ -726,11 +725,11 @@ class _HistorialState extends State<Historial>
         }
         if (statusIds == 'completed') {
           final services = snapshot.data!;
-          final offers = services.expand((s) => s.offers).toList();
-          return ServiceListBuilder.buildServiceList(
+         
+          return ServiceListBuilder.buildServiceListComplete(
             services, // Servicio asociado
            
-            offers,
+   
             screenWidth,
             screenHeight,
             userId,
@@ -739,11 +738,11 @@ class _HistorialState extends State<Historial>
         }
         if (statusIds == 'cancelled') {
           final services = snapshot.data!;
-          final offers = services.expand((s) => s.offers).toList();
-          return ServiceListBuilder.buildServiceList(
+         
+          return ServiceListBuilder.buildServiceListCancelled(
             services, // Servicio asociado
       
-            offers,
+    
             screenWidth,
             screenHeight,
             userId,
@@ -755,7 +754,6 @@ class _HistorialState extends State<Historial>
           services, // Servicio asociado
         
           offers,
-
           screenWidth,
           screenHeight,
           userId,

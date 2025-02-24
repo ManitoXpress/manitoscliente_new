@@ -67,6 +67,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late Map<String, dynamic> serviceData;
   late List<String> imageFiles;
   WorkerDetails? _workerDetails;
+  double? _workerOfferedPrice;
   final ApiService2 apiService = ApiService2();
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -111,11 +112,38 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
     // Inicializar el stream
     _initializeServiceStream();
+    _fetchWorkerOffer();
   }
 
   void _initializeControllers() {
     _cancelReasonController = TextEditingController();
     _priceController = TextEditingController();
+  }
+
+  Future<void> _fetchWorkerOffer() async {
+    try {
+      final offerSnapshot = await FirebaseFirestore.instance
+          .collection('offers')
+          .where('serviceId', isEqualTo: widget.serviceRequest.id)
+          .where('workerId', isEqualTo: widget.workerId)
+          .get();
+
+      if (offerSnapshot.docs.isNotEmpty) {
+        setState(() {
+          _workerOfferedPrice =
+              offerSnapshot.docs.first.data()['offeredPrice']?.toDouble();
+        });
+      } else {
+        setState(() {
+          _workerOfferedPrice = null;
+        });
+      }
+    } catch (e) {
+      print('Error al obtener la oferta del trabajador: $e');
+      setState(() {
+        _workerOfferedPrice = null;
+      });
+    }
   }
 
   Future<bool> _checkHasOffers(String serviceId) async {
@@ -491,7 +519,7 @@ Widget build(BuildContext context) {
       final String expertiseName = serviceData['expertiseName'] ?? 'Sin subcategoría';
 
       // Usar _fetchedOfferedPrice obtenido de ApiService
-      final double? offeredPrice = _fetchedOfferedPrice;
+      final double? offeredPrice = _workerOfferedPrice;
       print('Precio Ofertado Obtenido: $offeredPrice'); // Depuración
 
       final WorkerDetails? workerDetails = widget.workerDetails;
@@ -523,8 +551,7 @@ Widget build(BuildContext context) {
                   ),
                   const SizedBox(height: 16.0),
                   _buildRichText('Descripción:', description),
-                  _buildRichText('Especialidad:', expertiseName),
-                  _buildRichText('Precio ofertado:', offeredPrice?.toString() ?? 'No ofertado'),
+                  _buildRichText('Precio Ofertado:', _workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'),
                   const SizedBox(height: 16.0),
                   // Mostrar imágenes
                   if (images.isNotEmpty)
@@ -674,8 +701,6 @@ Widget build(BuildContext context) {
         'Especialidad:',
         worker.expertises?.map((e) => e.name).join(', ') ?? 'No disponible',
       ),
-      const SizedBox(height: 16.0),
-      _buildRichText('Precio ofertado:', '${serviceData?['offeredPrice'] ?? 'No ofertado'}'),
     ],
   );
 }
