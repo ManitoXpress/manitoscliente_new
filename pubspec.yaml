@@ -2,7 +2,7 @@ name: manitoscliente_new
 description: "Projecto ManitosXpress."
 publish_to: 'none'
 
-version: 1.6.3+5
+version: 1.6.3+8
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -80,6 +80,7 @@ dependencies:
   flutter_ticket: ^1.0.1
   flutter_secure_storage: ^9.2.2
   jwt_decode: ^0.3.1
+  carousel_slider: ^5.0.0
 
 
 dev_dependencies:

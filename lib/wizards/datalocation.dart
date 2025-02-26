@@ -387,7 +387,7 @@ class _LocationAndFavoritesWizardState
                       fit: BoxFit.cover,
                     )
                         : Image.asset(
-                      'assets/map.jpeg',
+                      'assets/map.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
