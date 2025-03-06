@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:manitoscliente_new/request/requestExpertise.dart';
-import 'package:manitoscliente_new/request/requestLocation.dart';
 import 'package:manitoscliente_new/request/requestServiceType.dart';
 import 'package:manitoscliente_new/request/requestStatus.dart';
 import 'package:manitoscliente_new/request/requestWoker.dart';

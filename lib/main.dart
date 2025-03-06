@@ -19,6 +19,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 // Handler para mensajes en segundo plano
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (Firebase.apps.isEmpty) {
@@ -47,7 +48,6 @@ Future<void> main() async {
   print("Device ID: $deviceId");
   await FCMService().init();
 
-
   runApp(MyApp(deviceId: deviceId));
 }
 
@@ -70,7 +70,6 @@ Future<String> obtenerDeviceId() async {
   }
 }
 
-
 class MyApp extends StatefulWidget {
   final String deviceId;
 
@@ -80,18 +79,38 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool isLoading = true;
-
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.delayed(const Duration(seconds: 10), () {
       setState(() {
         isLoading = false;
       });
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // La aplicación ha vuelto a primer plano
+      print('App is in foreground');
+      // Aquí puedes reanudar tareas o verificar la autenticación
+    } else if (state == AppLifecycleState.paused) {
+      // La aplicación está en segundo plano
+      print('App is in background');
+      // Aquí puedes pausar tareas o manejar la desconexión
+    }
   }
 
   @override
@@ -110,7 +129,7 @@ class _MyAppState extends State<MyApp> {
         theme: ThemeData(
           primarySwatch: MaterialColor(
             0xFF1A819A,
-            <int, Color> {
+            <int, Color>{
               50: Color(0xFF1A819A),
               100: Color(0xFF1A819A),
               200: Color(0xFF1A819A),

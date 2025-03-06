@@ -283,7 +283,7 @@ class _LoginFormState extends State<LoginScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(
-                                        FontAwesomeIcons.google,
+                                        FontAwesomeIcons.apple,
                                         color: Color(0xFF1A819A),
                                       ),
                                       Text(

@@ -2,7 +2,7 @@ name: manitoscliente_new
 description: "Projecto ManitosXpress."
 publish_to: 'none'
 
-version: 1.6.3+8
+version: 1.6.3+10
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -110,7 +110,7 @@ flutter:
     - assets/images/pexels.gif
     - assets/images/mundo.png
     - assets/animations/manito.png
-    - assets/map.jpg
+    - assets/map.png
     - assets/pantallaBlanca.png
     - assets/gra.png
     - assets/animations/manito_cliente.riv

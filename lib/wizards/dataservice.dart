@@ -30,14 +30,13 @@ class ServiceDataWizard extends StatefulWidget {
   @override
   _ServiceDataWizardState createState() => _ServiceDataWizardState();
 }
+
 class _ServiceDataWizardState extends State<ServiceDataWizard> {
   final List<File?> _images = List.generate(3, (index) => null); // Lista para almacenar las imágenes
-  final List<File?> _image = []; // Lista para almacenar las imágenes
   late ServiceType selectedServiceType;
   TextEditingController detailController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   ApiService apiService = ApiService(); // Create an instance of ApiService
-
 
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
@@ -47,9 +46,10 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Selecciona la fuente de la imagen',
-           style: MyTextStyles.drawerButtonTextStyle4,
-           ),
+          title: Text(
+            'Selecciona la fuente de la imagen',
+            style: MyTextStyles.drawerButtonTextStyle4,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -97,9 +97,6 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
     }
   }
 
-
-
-
   Future<void> _showImagePreview(int index) async {
     await showDialog(
       context: context,
@@ -109,7 +106,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Mostrar la imagen
-              Image.file(_image[index]!),
+              Image.file(_images[index]!),
               SizedBox(height: 10),
 
               // Mostrar el precio ofrecido
@@ -121,7 +118,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    _image.removeAt(index);
+                    _images[index] = null;
                   });
                   Navigator.pop(context);
                 },
@@ -143,7 +140,6 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
     priceController.text = widget.serviceRequest.offeredPrice.toString();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -154,17 +150,13 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           widget.selectedServiceTitle, // Utiliza el título proporcionado
           style: MyTextStyles.formServiceTextStyle,
         ),
-        const SizedBox(height: 2.0),
-
-        // Mostrar la imagen deseada
-        AspectRatio(
-          aspectRatio: 4 / 3,
-          child: Image.network(
-            'https://i.imgur.com/1qPhnSi.png',
-            fit: BoxFit.cover,
+     Center(
+            child: Image.asset(
+              'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
+              width: 140, // Ancho reducido a la mitad
+              height: 140, // Alto reducido a la mitad (ajusta según la proporción original)
+            ),
           ),
-        ),
-        const SizedBox(height: 2.0),
 
         // Título para detalles del servicio
         Text(
@@ -224,10 +216,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
                       color: Color(0xA3C9D2D2),
                     ),
                   ),
-                ..._images
-                    .asMap()
-                    .entries
-                    .map((entry) {
+                ..._images.asMap().entries.map((entry) {
                   int idx = entry.key;
                   File? imageFile = entry.value;
                   double imageWidth = 200 / widget.maxImageCount; // Distribuye en base al máximo de imágenes
@@ -236,24 +225,23 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
                     child: GestureDetector(
                       onTap: () {
                         if (imageFile != null) {
-                          _showImagePreview(imageFile as int);
+                          _showImagePreview(idx);
                         }
                       },
                       child: imageFile != null
                           ? Image.file(
-                        imageFile,
-                        width: imageWidth,
-                        height: 200,
-                        fit: BoxFit.cover,
-                      )
+                              imageFile,
+                              width: imageWidth,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            )
                           : Container(
-                        width: imageWidth,
-                        height: 200,
-                      ),
+                              width: imageWidth,
+                              height: 200,
+                            ),
                     ),
                   );
-                })
-                    .toList(),
+                }).toList(),
               ],
             ),
           ),

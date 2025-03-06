@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -54,21 +53,15 @@ class _Step1FormState extends State<userDataWizard> {
   @override
   void initState() {
     super.initState();
-
   }
 
   bool isStep1Valid() {
     return fullNameController.text.isNotEmpty;
-
   }
-
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
+    double screenWidth = MediaQuery.of(context).size.width;
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -80,7 +73,8 @@ class _Step1FormState extends State<userDataWizard> {
           ),
           Image.asset(
             'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
-            width: 250, // Ajusta el ancho de la imagen según sea necesario
+            width: 100, // Ancho reducido a la mitad
+            height: 100, // Alto reducido a la mitad (ajusta según la proporción original)
           ),
           Container(
             padding: EdgeInsets.all(20.0),
@@ -99,9 +93,10 @@ class _Step1FormState extends State<userDataWizard> {
                   },
                   onChanged: (value) {
                     setState(() {
-
                       widget.registrationController.updateRegistrationData(
-                          displayName: value, paymentType: '', );
+                        displayName: value,
+                        paymentType: '',
+                      );
                       widget.userData.displayName = value;
                     });
                   },
@@ -140,23 +135,27 @@ class _Step1FormState extends State<userDataWizard> {
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.all(Radius.circular(10)),
-                            border: Border.all(color: const Color(0xFF1A819A),),
+                            border: Border.all(
+                              color: const Color(0xFF1A819A),
+                            ),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 10.0),
                             child: DropdownButton<String>(
                               value: widget.selectedWorkerType,
                               onChanged: (value) {
                                 setState(() {
                                   widget.selectedWorkerType = value!;
-                                  widget.registrationController.updateRegistrationData(
-                                    paymentType: value,);
+                                  widget.registrationController
+                                      .updateRegistrationData(
+                                    paymentType: value,
+                                  );
                                   widget.userData.paymentType = value;
                                 });
                               },
-                              items: ['Marque aqui', 'SI', 'NO'].map((
-                                  String value) {
+                              items: ['Marque aqui', 'SI', 'NO']
+                                  .map((String value) {
                                 return DropdownMenuItem<String>(
                                   value: value,
                                   child: Text(value),
