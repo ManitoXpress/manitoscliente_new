@@ -14,7 +14,7 @@ class RegistrationController {
 
       devicesId: '',
 
-      email: '', selectedCountryCode: '', fcmToken: '', );
+      email: '', selectedCountryCode: '', fcmToken: '', points: 0, );
   TextEditingController displayNameController = TextEditingController();
   TextEditingController idDocumentController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
@@ -45,7 +45,7 @@ class RegistrationController {
 
     String? phoneNumber,
     String? imagePath,
-    LatLng? location, required String paymentType,
+    LatLng? location, required String paymentType,required String referralCode,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
 
@@ -69,6 +69,7 @@ class RegistrationData {
   String selectedCountryCode;
   String devicesId;
   String fcmToken;
+  int points; // Puntos
 
 
   Map<String, double?>? location;
@@ -84,6 +85,7 @@ class RegistrationData {
     required String selectedCountryCode,
     required String devicesId,
     required String fcmToken,
+    required int points,
 
     required Map<String, double?>? location,
     required String email,
@@ -98,10 +100,12 @@ class RegistrationData {
 
 
         email = email,
+        points = points,
 
         devicesId = devicesId,
         fcmToken = fcmToken,
         location = location;
+        
 
 
   // Constructor adicional para inicializar desde el formulario
@@ -117,6 +121,7 @@ class RegistrationData {
     required this.selectedCountryCode,
 
     required this.email,
+    required this.points,
     required this.location,
   });
 

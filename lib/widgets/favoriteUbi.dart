@@ -1,0 +1,181 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:manitoscliente_new/Styles/stilo.dart';
+import 'package:manitoscliente_new/wizards/datalocation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class FavoriteLocationsScreen extends StatefulWidget {
+  @override
+  _FavoriteLocationsScreenState createState() =>
+      _FavoriteLocationsScreenState();
+}
+
+class _FavoriteLocationsScreenState extends State<FavoriteLocationsScreen> {
+  final TextEditingController _locationController = TextEditingController();
+  List<String> _favoriteLocations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteLocations();
+  }
+
+  void _navigateToLocationAndFavoritesWizard(Map<String, double> location) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationAndFavoritesWizard(
+          location: location,
+          onLocationSelected: (LatLng selectedLocation) {
+            // Acción que se realiza cuando se selecciona una ubicación
+            print('Ubicación seleccionada: $selectedLocation');
+          },
+          onFavoritesSelected: (bool isFavorite) {
+            // Acción que se realiza cuando se selecciona si es favorito
+            print('Es favorito: $isFavorite');
+          },
+          onNextStep: () {
+            // Acción que se realiza cuando se hace clic en el botón "Siguiente"
+            print('Avanzar al siguiente paso');
+          },
+        ),
+      ),
+    );
+  }
+
+  // Cargar ubicaciones favoritas desde SharedPreferences
+  _loadFavoriteLocations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _favoriteLocations = prefs.getStringList('favoriteLocations') ?? [];
+    });
+  }
+
+  // Guardar ubicación en SharedPreferences
+  _saveLocation() async {
+    if (_locationController.text.isNotEmpty) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      _favoriteLocations.add(_locationController.text);
+      await prefs.setStringList('favoriteLocations', _favoriteLocations);
+      _locationController.clear();
+      _loadFavoriteLocations();
+    }
+  }
+
+  // Eliminar una ubicación de la lista de favoritos
+  _removeFavoriteLocation(String location) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _favoriteLocations.remove(location); // Eliminar la ubicación de la lista
+    await prefs.setStringList('favoriteLocations',
+        _favoriteLocations); // Guardar la lista actualizada
+    setState(() {
+      // Actualizar el estado para reflejar el cambio en la interfaz
+    });
+  }
+
+  // Copiar una ubicación al portapapeles
+  _copyLocationToClipboard(String location) {
+    Clipboard.setData(ClipboardData(text: location)); // Copiar al portapapeles
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ubicación copiada al portapapeles')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text(
+          'Ubicaciones Favoritas',
+          style: MyTextStyles.buttonTextStyle,
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _locationController,
+              decoration: InputDecoration(
+                hintText: "Agregar Ubicacion",
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                ),
+                focusColor: Color(0xFF1A819A),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Color(0xFF1A819A),
+                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _saveLocation,
+              child: Text(
+                'Guardar Ubicación',
+                style: MyTextStyles.drawerButtonLabelTextStyle,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A819A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Ubicaciones Guardadas:',
+              style: MyTextStyles.drawerButtonTextStyle1,
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _favoriteLocations.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(
+                      _favoriteLocations[index],
+                      style: MyTextStyles.formServiceTextStyle,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Botón de copiar
+                        IconButton(
+                          icon: Icon(Icons.copy),
+                          onPressed: () => _copyLocationToClipboard(
+                              _favoriteLocations[index]),
+                        ),
+                        // Botón de eliminar
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _removeFavoriteLocation(
+                              _favoriteLocations[index]),
+                        ),
+                        // Botón de seleccionar para abrir LocationAndFavoritesWizard
+                        IconButton(
+                          icon: Icon(Icons.location_on),
+                          onPressed: () {
+                            // Navegar a la pantalla LocationAndFavoritesWizard y pasar la dirección seleccionada
+                            _navigateToLocationAndFavoritesWizard(
+                                _favoriteLocations[index]
+                                as Map<String, double>);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

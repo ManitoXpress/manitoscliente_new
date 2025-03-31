@@ -62,7 +62,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
         // Construir un nuevo RegistrationData con los cambios y mantener los valores antiguos si los campos están vacíos
         RegistrationData registrationData = RegistrationData(
-          userId: user.uid, displayName: '', phoneNumber: '', selectedCountryCode: '', email: '', location: {}, paymentType: '', devicesId: '', fcmToken: '',
+          userId: user.uid, displayName: '', phoneNumber: '', selectedCountryCode: '', email: '', location: {}, paymentType: '', devicesId: '', fcmToken: '', points: 0,
         );
         String? devicesId = await AuthUtils.getDeviceId();
         final response = await apiService.updateUser(

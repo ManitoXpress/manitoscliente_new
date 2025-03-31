@@ -18,11 +18,13 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 class HomeScreen extends StatefulWidget {
-  final int initialPageIndex; // Agregamos un parámetro para seleccionar la pestaña inicial.
+  final int
+  initialPageIndex; // Agregamos un parámetro para seleccionar la pestaña inicial.\
 
-  HomeScreen({this.initialPageIndex = 0}); // Valor predeterminado para la primera pestaña.
+  HomeScreen(
+      {this.initialPageIndex =
+      0}); // Valor predeterminado para la primera pestaña.
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -36,8 +38,34 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    _currentIndex = widget.initialPageIndex; // Inicializar con la página seleccionada.
-    _pageController = PageController(initialPage: widget.initialPageIndex); // Controlador de PageView.
+    _currentIndex =
+        widget.initialPageIndex; // Inicializar con la página seleccionada.
+    _pageController = PageController(
+        initialPage: widget.initialPageIndex); // Controlador de PageView.
+  }
+
+  void _openWhatsApp() async {
+    final String supportPhoneNumber = "59173666393"; // Número sin '+'
+    final String supportMessage =
+        "Hola, necesito soporte técnico en ManitosXpress.";
+    final String encodedMessage = Uri.encodeComponent(supportMessage);
+
+    final String whatsappUrl =
+        "https://wa.me/$supportPhoneNumber?text=$encodedMessage";
+
+    final Uri uri = Uri.parse(whatsappUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint("No se pudo abrir WhatsApp.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              "No se pudo abrir WhatsApp. Asegúrate de tenerlo instalado."),
+        ),
+      );
+    }
   }
 
   @override
@@ -45,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribuir elementos
+          mainAxisAlignment:
+          MainAxisAlignment.spaceBetween, // Distribuir elementos
           children: [
             // Texto en la parte izquierda
             Text(
@@ -66,7 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        iconTheme: IconThemeData(color: Colors.white), // Cambia el color del ícono del menú a blanco
+        iconTheme: IconThemeData(
+            color: Colors.white), // Cambia el color del ícono del menú a blanco
       ),
       drawer: Drawer(
         child: Container(
@@ -80,7 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    constraints: const BoxConstraints(maxWidth: 200, maxHeight: 200),
+                    constraints:
+                    const BoxConstraints(maxWidth: 200, maxHeight: 200),
                     child: Image.network("https://i.imgur.com/AWrWerE.png"),
                     margin: const EdgeInsets.only(top: 70, bottom: 40),
                   ),
@@ -99,14 +130,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     final email = user.email ?? '';
 
                     // Ejemplo: Crear un objeto UserData con valores predeterminados si userData es nulo
-                    final userData = UserData.fromJson(user.metadata.creationTime != null
+                    final userData =
+                    UserData.fromJson(user.metadata.creationTime != null
                         ? {
-                            'userId': 'defaultId',
-                            'displayName': 'defaultName',
-                            'email': 'defaultEmail',
-                            'phoneNumber': 'defaultPhoneNumber',
-                            'imagePath': 'defaultImagePath'
-                          }
+                      'userId': 'defaultId',
+                      'displayName': 'defaultName',
+                      'email': 'defaultEmail',
+                      'phoneNumber': 'defaultPhoneNumber',
+                      'imagePath': 'defaultImagePath'
+                    }
                         : {});
 
                     // Navegar a la página del perfil pasando los datos del usuario
@@ -126,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             location: {},
                             paymentType: '',
                             devicesId: '',
-                            fcmToken: '',
+                            fcmToken: '', points: 0,
                           ),
                           phoneNumber: '',
                           imagePath: '',
@@ -152,8 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (context) => ReferralScreen(
-                              referralCode: '12345',
-                            )),
+                          referralCode: '12345',
+                        )),
                   );
                 },
                 icon: const Icon(
@@ -211,30 +243,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.facebook, color: Colors.white),
                     iconSize: 40,
                     onPressed: () async {
-                      const facebookUrl = 'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress';
+                      const facebookUrl =
+                          'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress';
                       if (await canLaunchUrl(Uri.parse(facebookUrl))) {
                         await launchUrl(Uri.parse(facebookUrl));
                       } else {
                         // Si la app de Facebook no está instalada, abre en navegador
-                        await _abrirEnlace('https://www.facebook.com/ManitosXpress');
+                        await _abrirEnlace(
+                            'https://www.facebook.com/ManitosXpress');
                       }
                     },
                   ),
                   SizedBox(width: 20),
                   IconButton(
-                    icon: const Icon(Icons.camera_alt, color: Color.fromARGB(255, 255, 255, 255)),
+                    icon: const Icon(Icons.camera_alt,
+                        color: Color.fromARGB(255, 255, 255, 255)),
                     iconSize: 40,
                     onPressed: () async {
-                      const instagramUrl = 'https://www.instagram.com/manitosxpress?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==';
+                      const instagramUrl =
+                          'https://www.instagram.com/manitosxpress?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==';
                       await _abrirEnlace(instagramUrl);
                     },
                   ),
                   SizedBox(width: 20), // Separación entre íconos
                   IconButton(
-                    icon: const Icon(Icons.tiktok, color: Color.fromARGB(255, 255, 255, 255)),
+                    icon: const Icon(Icons.tiktok,
+                        color: Color.fromARGB(255, 255, 255, 255)),
                     iconSize: 40,
                     onPressed: () async {
-                      const tiktokUrl = 'https://www.tiktok.com/@manitosxpress?_t=ZM-8tG9ZrTUYjO&_r=1';
+                      const tiktokUrl =
+                          'https://www.tiktok.com/@manitosxpress?_t=ZM-8tG9ZrTUYjO&_r=1';
                       await _abrirEnlace(tiktokUrl);
                     },
                   ),
@@ -278,42 +316,15 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: const Color(0xFF1A819A),
           ),
         ],
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: const Color.fromARGB(255, 59, 154, 191),
-        selectedLabelStyle: MyTextStyles.navBarTextStyle.copyWith(
-          color: Colors.blue, // Cambia el color al estar seleccionado
-          fontWeight: FontWeight.bold, // Resalta el ítem seleccionado
-        ),
-        unselectedLabelStyle: MyTextStyles.navBarTextStyle.copyWith(
-          color: const Color.fromARGB(255, 5, 87, 119), // Color más tenue para ítems no seleccionados
-          fontWeight: FontWeight.w400, // Peso más ligero
-        ),
-        selectedIconTheme: const IconThemeData(color: Colors.blue),
-        unselectedIconTheme: const IconThemeData(color: Color.fromARGB(255, 5, 87, 119)),
-        backgroundColor: Colors.white,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Color(0xFF6AB8D6),
+        selectedLabelStyle: MyTextStyles.navBarTextStyle,
+        unselectedLabelStyle: MyTextStyles.navBarTextStyle,
+        selectedIconTheme: IconThemeData(color: Colors.white),
+        unselectedIconTheme: IconThemeData(color: Color(0xFF6AB8D6)),
+        backgroundColor: const Color(0xFF1A819A),
       ),
     );
-  }
-
-  void _openWhatsApp() async {
-    final String supportPhoneNumber = "59173666393"; // Número sin '+'
-    final String supportMessage = "Hola, necesito soporte técnico en ManitosXpress.";
-    final String encodedMessage = Uri.encodeComponent(supportMessage);
-
-    final String whatsappUrl = "https://wa.me/$supportPhoneNumber?text=$encodedMessage";
-
-    final Uri uri = Uri.parse(whatsappUrl);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint("No se pudo abrir WhatsApp.");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("No se pudo abrir WhatsApp. Asegúrate de tenerlo instalado."),
-        ),
-      );
-    }
   }
 
   Future<void> _abrirEnlace(String url) async {

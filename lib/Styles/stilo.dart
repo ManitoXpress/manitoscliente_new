@@ -13,12 +13,29 @@ class MyTextStyles {
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.bold, // Negrita para el título
   );
+
+  static const TextStyle titleStyle1 = TextStyle(
+    color: Color(0xFFFFFFFF),
+    fontSize: 22, // Tamaño más grande para el título
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal, // Negrita para el título
+  );
+
   static const TextStyle tabTextStyle = TextStyle(
     fontSize: 12,
     color: Color(0xFFFFFFFF),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
+  );
+
+  static const TextStyle tabTextStyle1 = TextStyle(
+    fontSize: 12,
+    color: Color(0xFFFFFFFF),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.normal,
   );
 
   static const TextStyle buttonTextStyle = TextStyle(
@@ -43,14 +60,15 @@ class MyTextStyles {
     fontWeight: FontWeight.bold,
   );
   static const TextStyle welcomeTotheJungle = TextStyle(
-    color: Color(0xFF000405),
-    fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.bold,
+    color: Color(0xFF1A819A),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
     fontSize: 25.0,
   );
 
   static const TextStyle linkTextStyle = TextStyle(
-    color: Color(0xFF1A8099),
+    color: Color(0xFF1A819A),
     fontSize: 18,
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
@@ -77,6 +95,14 @@ class MyTextStyles {
     fontWeight: FontWeight.bold,
     fontSize: 18.0,
   );
+
+  static const TextStyle drawerButtonTextStyle7 = TextStyle(
+    color: Color(0xC5282A2A),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 14.0,
+  );
   static const TextStyle servicesButtonTextStyle = TextStyle(
     color: Color(0xFF000405),
     fontFamily: 'Xpress Heavy',
@@ -84,11 +110,20 @@ class MyTextStyles {
     fontSize: 14.0,
   );
   static const TextStyle drawerButtonTextStyle2 = TextStyle(
-    color: Color(0xFF000405),
-    fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.bold,
+    color: Color.fromARGB(255, 0, 0, 0),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
     fontSize: 20.0,
   );
+  static const TextStyle drawerButtonTextStyle8 = TextStyle(
+    color: Color(0xFF1A819A),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 20.0,
+  );
+
   static const TextStyle CategoriaButtonTextStyle = TextStyle(
     color: Color(0xFFFFFFFF),
     fontFamily: 'Xpress Heavy',
@@ -102,19 +137,30 @@ class MyTextStyles {
     fontSize: 20.0,
   );
   static const TextStyle drawerButtonTextStyle3 = TextStyle(
-    color: Color(0xFF000405),
-    fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.bold,
-    fontSize: 12.0,
+    color: Color.fromARGB(255, 0, 0, 0),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 18.0,
   );
+
+  static const TextStyle drawerButtonTextStyle1 = TextStyle(
+    color: Color.fromARGB(255, 0, 0, 0),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 17.0,
+  );
+
   static const TextStyle ButtonTextStyle = TextStyle(
-    color: Color.fromARGB(255, 249, 249, 249),
-    fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.bold,
+    color: Color(0xFF000405),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
     fontSize: 15.0,
   );
   static const TextStyle drawerButtonTextStyle4 = TextStyle(
-    color: Color(0xFF1A8099),
+    color: Color(0xFF1A819A),
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.bold,
   );
@@ -124,12 +170,18 @@ class MyTextStyles {
     fontWeight: FontWeight.w800,
     fontSize: 15.0,
   );
+  static const TextStyle serviceTextStyle = TextStyle(
+    color: Color(0xFF000405),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 14.0,
+  );
 
   static const TextStyle navBarTextStyle = TextStyle(
-    fontSize: 14, // Tamaño estándar para la barra de navegación
-    fontFamily: 'Xpress Heavy', // Fuente personalizada
-    fontWeight: FontWeight.w600, // Peso medio para diferenciación
-    color: Color(0xFF1A819A), // Color principal
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
   );
 
   static const TextStyle linkTextStyle2 = TextStyle(
@@ -140,16 +192,18 @@ class MyTextStyles {
 
   static const TextStyle drawerButtonLabelTextStyle = TextStyle(
     color: Colors.white,
-    fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.bold,
-    fontSize: 14.0,
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
   );
   static const TextStyle serviceTitleTextStyle = TextStyle(
     fontSize: 16,
     color: Colors.white,
-    fontFamily: 'Xpress Heavy', // Nombre de la fuente
-    fontWeight: FontWeight.bold,
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
   );
+
   static const TextStyle serviceTitleTextStyle2 = TextStyle(
     fontSize: 16,
     color: Color(0xFF000405),
@@ -160,6 +214,13 @@ class MyTextStyles {
     color: Color(0xFF000405),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
+    fontSize: 17.0,
+  );
+  static const TextStyle formServiceTextStyle2 = TextStyle(
+    color: Color(0xFF000405),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
     fontStyle: FontStyle.normal,
     fontSize: 17.0,
   );
@@ -187,6 +248,14 @@ class MyTextStyles {
     fontWeight: FontWeight.bold,
     fontSize: 12.0,
   );
+
+  static const TextStyle formsdetails1 = TextStyle(
+    color: Color.fromARGB(255, 20, 20, 20),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
+    fontSize: 14.0,
+  );
   static const TextStyle drawerButtonTextStyle6 = TextStyle(
     color: Color(0xFF1A819A),
     fontFamily: 'Xpress',
@@ -212,9 +281,41 @@ class MyTextStyles {
     fontSize: 25.0,
   );
 
+  static const TextStyle welcomeTotheJungle2 = TextStyle(
+    color: Color(0xFF1A819A),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 30.0,
+  );
+
   static const TextStyle inputTextStyle3 = TextStyle(
     color: Color(0xFF000405),
     fontSize: 16,
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+  );
+
+  static const TextStyle tittleButton = TextStyle(
+    color: Color(0xFF1A819A),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
+    fontSize: 18,
+  );
+
+  static const TextStyle inputTextStyle1 = TextStyle(
+    color: Color(0xFF000405),
+    fontSize: 19,
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
+  );
+
+  static const TextStyle inputTextStyle6 = TextStyle(
+    color: Color(0xFF000405),
+    fontSize: 19,
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,

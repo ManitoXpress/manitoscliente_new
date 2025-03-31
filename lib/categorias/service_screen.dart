@@ -21,8 +21,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-
 class ServiceScreen extends StatefulWidget {
   static int notificationCount = 0;
 
@@ -65,18 +63,6 @@ void _handleFCMMessage(RemoteMessage message) {
     super.dispose();
 
   }
-  Future<void> _checkAndShowWelcomeDialog() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool hasShownWelcomeDialog = prefs.getBool('hasShownWelcomeDialog') ?? false;
-
-    if (!hasShownWelcomeDialog) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showWelcomeDialog();
-        prefs.setBool('hasShownWelcomeDialog', true);
-      });
-    }
-  }
-
   void _showWelcomeDialog() {
     showDialog(
       context: context,
@@ -145,6 +131,7 @@ void _handleFCMMessage(RemoteMessage message) {
                 ),
               ),
             ),
+
           ],
         );
       },

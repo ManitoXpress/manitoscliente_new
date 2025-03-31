@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
@@ -15,7 +16,6 @@ import '../metodos/RegisController.dart';
 import '../utils/colors.dart';
 import '../utils/editController.dart';
 import 'Login.dart';
-
 class ProfileData {
   late final String displayName;
   final String email;
@@ -24,6 +24,7 @@ class ProfileData {
   final RegistrationData registrationData;
   final UserData userData;
   final String imagePath;
+  int points;
 
   ProfileData({
     required this.displayName,
@@ -33,7 +34,7 @@ class ProfileData {
     required this.paymentType,
 
     required this.registrationData,
-    required this.userData, required this.imagePath,
+    required this.userData, required this.imagePath, required this.points,
   });
 }
 
@@ -83,6 +84,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (userId != null && token != null) {
         final userData = await ApiService2().fetchUserData(userId, token);
         String? profileImageUrl = await ApiService2().fetchProfileImage(userId);
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        final points = userDoc.data()?['points'] ?? 0;
 
         return ProfileData(
           displayName: userData.displayName,
@@ -95,15 +98,18 @@ class _ProfilePageState extends State<ProfilePage> {
             userId: userData.userId,
             displayName: userData.displayName,
             email: userData.email,
-
             phoneNumber: userData.phoneNumber,
-
             selectedCountryCode: userData.selectedCountryCode,
             location: userData.location,
             paymentType: userData.paymentType,
-            registrationData: registrationData, getToken: '',
+            registrationData: registrationData,
+            getToken: '',
+            referrerUserId: userData.referrerUserId,
+            referralCode: userData.referralCode,
+            points: userData.points,
+           
           ),
-          registrationData: registrationData,
+          registrationData: registrationData, points: points,
         );
       } else {
         throw 'No se pudo obtener el ID del usuario autenticado.';
@@ -128,9 +134,9 @@ class _ProfilePageState extends State<ProfilePage> {
           paymentType: '',
           registrationData: registrationData,
 
-          selectedCountryCode: '', getToken: '',
+          selectedCountryCode: '', getToken: '', referrerUserId: '', referralCode: '', points: 0,
         ),
-        registrationData: registrationData,
+        registrationData: registrationData, points: 0,
 
       );
     }
@@ -242,6 +248,14 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 10),
           Text(
+            'Puntos: ${profileData.points}', // Muestra los puntos del usuario
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
             '(${Random().nextInt(1000) + 1})',
             style: const TextStyle(
               color: Colors.white,
@@ -283,6 +297,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
 
                 const SizedBox(height: 10),
+                
                 _buildProfileInfoRow(
                     'Correo electronico:', profileData.email),
                 const SizedBox(height: 10),

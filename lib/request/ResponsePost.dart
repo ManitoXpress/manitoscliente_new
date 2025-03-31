@@ -313,14 +313,21 @@ class ApiService {
       String? devicesId,
       String? fcmToken,
       ) async {
+        
     try {
+      String codeReferral = '${registrationData.displayName.split(' ').first}_${registrationData.phoneNumber.length >= 4
+          ? registrationData.phoneNumber.substring(registrationData.phoneNumber.length - 4)
+          : registrationData.phoneNumber}';
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,
-        'phoneNumber': FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
+        'phoneNumber': registrationData.phoneNumber,
         'location': registrationData.location ?? {},
         'paymentType': registrationData.paymentType,
         'deviceId' : registrationData.devicesId,
         'fcmToken' : registrationData.fcmToken,
+        'points': registrationData.points,
+        'successfulReferrals': 0,
+        'codeReferral': codeReferral,
       };
 
       print('Request Body: $requestBody');

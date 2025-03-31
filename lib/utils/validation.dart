@@ -1,4 +1,5 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -62,19 +63,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
         location: {},
         email: '',
-        selectedCountryCode: '', paymentType: '', devicesId: '', fcmToken: '',
+        selectedCountryCode: '', paymentType: '', devicesId: '', fcmToken: '', points: 0,
       );
 
       userData = UserData(
         userId: '',
         displayName: '',
-
         email: '',
         phoneNumber: '',
-
-        location: {}, paymentType: '', selectedCountryCode: '', registrationData: registrationData, getToken: '',
-
-
+        location: {},
+        paymentType: '',
+        selectedCountryCode: '',
+        registrationData: registrationData,
+        getToken: '',
+        referrerUserId: '', // Add appropriate value
+        referralCode: '',   // Add appropriate value
+        points: 0,          // Add appropriate value
       );
       registrationController = widget.registrationController;
       step1Data = userDataWizard(
@@ -167,6 +171,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     return null;
   }
 }
+Future<void> _registerReferralInFirestore(String userId, String referralCode) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    try {
+      if (referralCode.isEmpty) {
+        print('No hay código de referido para registrar.');
+        return;
+      }
+
+      final workersCollection = FirebaseFirestore.instance.collection('users');
+      final querySnapshot = await workersCollection.where('codeReferral', isEqualTo: referralCode).limit(1).get();
+
+      if (querySnapshot.docs.isEmpty) {
+        print('No se encontró un trabajador con este código de referido.');
+        return;
+      }
+      String? token = await user?.getIdToken();
+
+      final referrerDoc = querySnapshot.docs.first;
+      final referrerId = referrerDoc.id;
+
+      // Guardar la relación de referido en Firestore
+      final referralsCollection = FirebaseFirestore.instance.collection('referrals');
+      await referralsCollection.add({
+        'referrerId': referrerId,
+        'referrerCodeReferral': referralCode,
+        'referredUserId': userId,
+        'timestamp': FieldValue.serverTimestamp(),
+        'processed': false
+      });
+
+      // Llamar al backend para actualizar los puntos
+      final apiService = ApiService2();
+      await apiService.updateWorkerPoints(referrerId,token!);
+
+    } catch (e) {
+      print('Error al registrar el referido: $e');
+    }
+  }
 
 
   Future<void> _completeRegistration() async {
@@ -231,7 +273,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       paymentType: userData.paymentType,
       selectedCountryCode: '',
       devicesId: devicesId,
-      fcmToken: fcmToken,
+      fcmToken: fcmToken, points: 0,
     );
 
     print('Device ID: $devicesId');
@@ -243,6 +285,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       print('Error: No se pudo obtener el token de autenticación');
       return;
     }
+    // Registrar el referido si hay un código válido
+        if (userData.referralCode.isNotEmpty && userData.referrerUserId.isNotEmpty) {
+          await _registerReferralInFirestore(user.uid, userData.referralCode);
+        }
+
+        // Obtener los puntos actualizados del trabajador
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final points = userDoc.data()?['points'] ?? 0;
+        registrationData.points = points; // Asignar los puntos al registrationData
 
     final response = await apiService.updateUser(
       user.uid,

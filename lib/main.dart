@@ -8,8 +8,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart'; // Importa la librería de ATT
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Importa flutter_screenutil
+import 'package:manitoscliente_new/home.dart';
 import 'package:manitoscliente_new/utils/notification.dart';
 import 'package:manitoscliente_new/utils/notificationFcm.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Loading.dart';
 import 'firebase_options.dart';
@@ -22,21 +24,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  }
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
 }
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-  );
-
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await FirebaseAppCheck.instance.activate(
@@ -44,11 +39,19 @@ Future<void> main() async {
     appleProvider: AppleProvider.appAttest,
   );
 
-  final deviceId = await obtenerDeviceId();
-  print("Device ID: $deviceId");
   await FCMService().init();
 
-  runApp(MyApp(deviceId: deviceId));
+  final deviceId = await obtenerDeviceId();
+  print("Device ID: $deviceId");
+
+  runApp(
+    ScreenUtilInit(
+      designSize: Size(375, 812),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) => MyApp(deviceId: deviceId),
+    ),
+  );
 }
 
 Future<String> obtenerDeviceId() async {
@@ -60,19 +63,16 @@ Future<String> obtenerDeviceId() async {
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
-    } else {
-      return 'Unsupported Platform';
     }
-  } catch (e, stackTrace) {
+    return 'Unsupported Platform';
+  } catch (e) {
     print('Error obteniendo Device ID: $e');
-    FirebaseCrashlytics.instance.recordError(e, stackTrace);
     return 'Error Device ID';
   }
 }
 
 class MyApp extends StatefulWidget {
   final String deviceId;
-
   const MyApp({required this.deviceId});
 
   @override
@@ -81,16 +81,13 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool isLoading = true;
+  bool isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future.delayed(const Duration(seconds: 10), () {
-      setState(() {
-        isLoading = false;
-      });
-    });
+    _checkLoginStatus();
   }
 
   @override
@@ -99,60 +96,63 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    // Espera 2 segundos MÍNIMO (pero no bloquea otras operaciones)
+    await Future.delayed(const Duration(seconds: 2));
+
+    setState(() {
+      isLoggedIn = loggedIn;
+      isLoading = false;
+    });
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      // La aplicación ha vuelto a primer plano
       print('App is in foreground');
-      // Aquí puedes reanudar tareas o verificar la autenticación
     } else if (state == AppLifecycleState.paused) {
-      // La aplicación está en segundo plano
       print('App is in background');
-      // Aquí puedes pausar tareas o manejar la desconexión
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-    );
-
-    return ScreenUtilInit(
-      designSize: Size(375, 800),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Manitos Xpress',
-        theme: ThemeData(
-          primarySwatch: MaterialColor(
-            0xFF1A819A,
-            <int, Color>{
-              50: Color(0xFF1A819A),
-              100: Color(0xFF1A819A),
-              200: Color(0xFF1A819A),
-              300: Color(0xFF1A819A),
-              400: Color(0xFF1A819A),
-              500: Color(0xFF1A819A),
-              600: Color(0xFF1A819A),
-              700: Color(0xFF1A819A),
-              800: Color(0xFF1A819A),
-              900: Color.fromRGBO(26, 129, 154, 1),
-            },
-          ),
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            secondary: Colors.grey,
-            background: Colors.white,
-            onBackground: Colors.grey,
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1A819A),
-          ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Manitos Xpress',
+      theme: ThemeData(
+        primarySwatch: MaterialColor(
+          0xFF1A819A,
+          const <int, Color>{
+            50: Color(0xFF1A819A),
+            100: Color(0xFF1A819A),
+            200: Color(0xFF1A819A),
+            300: Color(0xFF1A819A),
+            400: Color(0xFF1A819A),
+            500: Color(0xFF1A819A),
+            600: Color(0xFF1A819A),
+            700: Color(0xFF1A819A),
+            800: Color(0xFF1A819A),
+            900: Color(0xFF1A819A),
+          },
         ),
-        home: isLoading ? LoadingScreen() : LoginScreen(deviceId: widget.deviceId),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          secondary: Colors.grey,
+          background: Colors.white,
+          onBackground: Colors.grey,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1A819A),
+        ),
       ),
+      home: isLoading
+          ? LoadingScreen()
+          : isLoggedIn
+          ? HomeScreen()
+          : LoginScreen(deviceId: widget.deviceId),
     );
   }
 }

@@ -355,7 +355,7 @@ Widget build(BuildContext context) {
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: MyTextStyles.drawerButtonTextStyle3,
+                              style: MyTextStyles.drawerButtonTextStyle1,
                             ),
                           ],
                         ),

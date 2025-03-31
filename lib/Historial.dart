@@ -155,7 +155,7 @@ class _HistorialState extends State<Historial>
       location: {},
       email: '',
       devicesId: '',
-      fcmToken: '',
+      fcmToken: '', points: 0,
     );
 
     userData = UserData(
@@ -168,6 +168,9 @@ class _HistorialState extends State<Historial>
       selectedCountryCode: '',
       registrationData: registrationData,
       getToken: '',
+      referrerUserId: '', // Add appropriate value here
+      referralCode: '',   // Add appropriate value here
+      points: 0,          // Add appropriate value here
     );
 
     // Configurar el controlador de pestañas

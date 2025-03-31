@@ -6,7 +6,6 @@ import '../request/ResponseGet.dart';
 import '../Styles/stilo.dart';
 import '../metodos/RegisController.dart';
 import '../utils/validation.dart';
-
 class FirstTimeLoginScreen extends StatelessWidget {
   final RegistrationController registrationController;
 

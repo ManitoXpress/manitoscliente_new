@@ -23,6 +23,35 @@ class ApiService2 {
    ApiService() {
     _initializeToken();
   }
+  Future<void> updateWorkerPoints(String userId,String token) async {
+    final url = Uri.parse('$baseUrl/users/$userId');
+
+
+
+    print('Token usado para la autenticación: $token');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'successfulReferrals': 1,
+          'points': 10,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Puntos actualizados correctamente en el backend.');
+      } else {
+        print('Error al actualizar puntos en el backend: ${response.body}');
+      }
+    } catch (e) {
+      print('Error en la solicitud PATCH: $e');
+    }
+  }
 
   Future<void> _initializeToken() async {
     final user = auth.currentUser;

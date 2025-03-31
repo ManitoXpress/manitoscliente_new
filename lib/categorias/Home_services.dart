@@ -340,7 +340,7 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: MyTextStyles.drawerButtonTextStyle3,
+                                style: MyTextStyles.drawerButtonTextStyle1,
                               ),
                             ],
                           ),

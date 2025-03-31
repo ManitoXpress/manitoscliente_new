@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../widgets/welcome.dart';
@@ -101,14 +102,13 @@ class LoginScreenController {
 
   // Navegación según el estado del usuario
   static void _navigateToRegisterScreen(BuildContext context, {bool alreadyRegistered = false}) {
-    final registrationController = RegistrationController();
-
-    Navigator.push(
-      context,
+    Navigator.of(context).pushReplacement( // Cambiado a pushReplacement
       MaterialPageRoute(
         builder: (context) => alreadyRegistered
             ? HomeScreen()
-            : FirstTimeLoginScreen(registrationController: registrationController),
+            : FirstTimeLoginScreen(
+            registrationController: RegistrationController()
+        ),
       ),
     );
   }
@@ -161,6 +161,8 @@ class LoginScreenController {
         if (user != null) {
           final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
           await storeUserData(user);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('isLoggedIn', true); // <- Esto faltaba
           print('Inicio de sesión con Google exitoso para ${user.displayName}');
           _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
         }

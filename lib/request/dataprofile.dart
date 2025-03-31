@@ -9,6 +9,9 @@ class UserData {
   Map<String, double?>? location;
   String paymentType;
   String email;
+  String referrerUserId; // ID del trabajador que refirió
+  String referralCode; // Código de referido ingresado por el usuario
+  int points; // Cambiado a int
 
   RegistrationData registrationData; // Nueva propiedad
 
@@ -21,6 +24,10 @@ class UserData {
     required this.paymentType,
     required this.getToken,
     required this.email,
+    required this.referrerUserId,
+    required this.referralCode, // Agregamos el campo referralCode
+
+    required this.points, // Agregamos el campo points
 
     required this.registrationData, // Nueva propiedad
   });
@@ -35,6 +42,9 @@ class UserData {
     required Map<String, double?>? location,
     required String paymentType,
     required String email,
+    required String referrerUserId,
+    required String referralCode,
+    required int points,
   }) : this(
     userId: userId,
     displayName: displayName,
@@ -44,19 +54,17 @@ class UserData {
     location: location,
     paymentType: paymentType,
     email: email,
+    referrerUserId: referrerUserId,
+    referralCode: referralCode,
+    points: points,
     registrationData: RegistrationData(
       userId: userId,
       displayName: displayName,
-
       phoneNumber: phoneNumber,
       paymentType: paymentType,
-
-      selectedCountryCode:selectedCountryCode,
-
+      selectedCountryCode: selectedCountryCode,
       location: location,
-
-      email: email, devicesId: '', fcmToken: '',
-
+      email: email, devicesId: '', fcmToken: '', points: 0,
     ),
   );
 
@@ -87,9 +95,11 @@ class UserData {
               : null,
 
 
-          email: json['email'] ?? '', devicesId: '', fcmToken: '',
+          email: json['email'] ?? '', devicesId: '', fcmToken: '', points: json['points'] ?? 0,
 
-        ),
+        ), referrerUserId: json['referrerUserId'] ?? '', // ID del trabajador que refirió
+        referralCode: json['referralCode'] ?? '', // Código de referido ingresado por el usuario
+        points: json['points'] ?? 0, // Cambiado a int
       );
     } else {
       return UserData(
@@ -110,8 +120,8 @@ class UserData {
 
           location: {},
 
-          email: '', devicesId: '', fcmToken: '',
-        ), getToken: '',
+          email: '', devicesId: '', fcmToken: '', points: 0,
+        ), getToken: '', referrerUserId: '', referralCode: '', points: 0,
       );
     }
   }
