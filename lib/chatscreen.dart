@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+import 'Styles/stilo.dart';
+
 class ChatMessage {
   final String text;
   final bool isSentByMe;
@@ -38,7 +40,8 @@ class _ChatScreenState extends State<ChatScreen> {
       final userImage = _userImages[random.nextInt(_userImages.length)];
 
       setState(() {
-        _messages.add(ChatMessage(text: _controller.text,
+        _messages.add(ChatMessage(
+            text: _controller.text,
             isSentByMe: true,
             username: username,
             userImage: userImage));
@@ -46,7 +49,8 @@ class _ChatScreenState extends State<ChatScreen> {
           final autoUsername = _usernames[random.nextInt(_usernames.length)];
           final autoUserImage = _userImages[random.nextInt(_userImages.length)];
           setState(() {
-            _messages.add(ChatMessage(text: 'Hola, soy el otro usuario.',
+            _messages.add(ChatMessage(
+                text: 'Hola, soy el otro usuario.',
                 isSentByMe: false,
                 username: autoUsername,
                 userImage: autoUserImage));
@@ -62,7 +66,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat'),
+        title: Text(
+          'Chat',
+          style: MyTextStyles.buttonTextStyle,
+        ),
       ),
       body: Column(
         children: [
@@ -77,7 +84,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         ? Alignment.topRight
                         : Alignment.topLeft,
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,  // Asegúrate de que la fila tome el espacio mínimo necesario
+                      mainAxisSize: MainAxisSize
+                          .min, // Asegúrate de que la fila tome el espacio mínimo necesario
                       children: [
                         if (!message.isSentByMe)
                           Image.network(
@@ -87,7 +95,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         Container(
                           padding: EdgeInsets.all(16.0),
-                          margin: EdgeInsets.symmetric(horizontal: 8.0),  // Añade un margen para separar la imagen y el mensaje
+                          margin: EdgeInsets.symmetric(
+                              horizontal:
+                                  8.0), // Añade un margen para separar la imagen y el mensaje
                           decoration: BoxDecoration(
                             color: message.isSentByMe
                                 ? Colors.blue[200]
@@ -100,7 +110,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               Text(
                                 message.username,
                                 style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                               ),
                               Text(message.text),
                             ],
@@ -116,7 +128,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                 );
-
               },
             ),
           ),
@@ -152,5 +163,5 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 void main() => runApp(MaterialApp(
-  home: ChatScreen(),
-));
+      home: ChatScreen(),
+    ));

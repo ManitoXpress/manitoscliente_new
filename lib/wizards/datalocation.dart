@@ -7,27 +7,22 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:location/location.dart' as location;
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/widgets/favoriteUbi.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../Styles/stilo.dart';
+import '../utils/favoriteubi.dart';
+
 class LocationAndFavoritesWizard extends StatefulWidget {
-  final Function(LatLng) onLocationSelected;
-  final Function(bool) onFavoritesSelected;
-  final VoidCallback onNextStep;
   final Map<String, double> location;
-
-  _LocationAndFavoritesWizardState? _locationAndFavoritesWizardState;
-
-  bool? isLocationAndFavoritesValid() {
-    return _locationAndFavoritesWizardState?.isLocationAndFavoritesValid();
-  }
+  final Function(LatLng selectedLocation) onLocationSelected;
+  final Function(bool isFavorite) onFavoritesSelected;
+  final Function onNextStep;
 
   LocationAndFavoritesWizard({
+    required this.location,
     required this.onLocationSelected,
     required this.onFavoritesSelected,
     required this.onNextStep,
-    required this.location,
   });
 
   @override
@@ -42,36 +37,30 @@ class _LocationAndFavoritesWizardState
   late GoogleMapController mapController; // Controlador del mapa de Google
   Set<Marker> markers = {}; // Conjunto de marcadores para el mapa
   TextEditingController locationController =
-  TextEditingController(); // Controlador de texto para la ubicación
+      TextEditingController(); // Controlador de texto para la ubicación
   TextEditingController writtenLocationController =
-  TextEditingController(); // Controlador de texto para la dirección escrita
+      TextEditingController(); // Controlador de texto para la dirección escrita
   Uint8List? mapSnapshot; // Instantánea del mapa
   TextEditingController additionalInfoController =
-  TextEditingController(); // Controlador para la información adicional
+      TextEditingController(); // Controlador para la información adicional
   Completer<GoogleMapController> _controller =
-  Completer<GoogleMapController>(); // Controlador asíncrono del mapa
+      Completer<GoogleMapController>(); // Controlador asíncrono del mapa
   final LatLng santaCruzLocation = LatLng(-17.7833, -63.1833);
   final LatLng santaCruzDefaultLocation = LatLng(-17.7833,
       -63.1821); // Coordenadas predeterminadas de Santa Cruz de la Sierra
   TextEditingController searchController = TextEditingController();
+  late TextEditingController _searchController;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
+    // Llamamos a _showMapScreen al iniciar el widget
+  
+
     _getCurrentLocation();
     // Obtención de la ubicación actual cuando se inicializa el estado
-    if (widget.location.isNotEmpty &&
-        widget.location.containsKey('latitude') &&
-        widget.location.containsKey('longitude')) {
-      double latitude = widget.location['latitude'] ?? 0.0;
-      double longitude = widget.location['longitude'] ?? 0.0;
 
-      // Aquí formateamos la latitud y longitud a un string para mostrar en el controlador de texto
-      searchController.text = 'Lat: $latitude, Long: $longitude';
-    } else {
-      searchController.text =
-      'Ubicación no disponible'; // Si no hay datos en widget.location
-    }
   }
 
   // Verifica si la ubicación y los favoritos son válidos
@@ -111,7 +100,7 @@ class _LocationAndFavoritesWizardState
       // Obtener la ubicación actual
       location.LocationData locationData = await loc.getLocation();
       LatLng currentLocation =
-      LatLng(locationData.latitude!, locationData.longitude!);
+          LatLng(locationData.latitude!, locationData.longitude!);
 
       setState(() {
         selectedLocation = currentLocation;
@@ -121,7 +110,7 @@ class _LocationAndFavoritesWizardState
             markerId: MarkerId(currentLocation.toString()),
             position: currentLocation,
             icon:
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           ),
         );
       });
@@ -148,7 +137,7 @@ class _LocationAndFavoritesWizardState
             markerId: MarkerId(santaCruzDefaultLocation.toString()),
             position: santaCruzDefaultLocation,
             icon:
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           ),
         );
       });
@@ -199,7 +188,7 @@ class _LocationAndFavoritesWizardState
     try {
       // Obtener la dirección basada en las coordenadas
       List<Placemark> placemarks =
-      await placemarkFromCoordinates(loc.latitude, loc.longitude);
+          await placemarkFromCoordinates(loc.latitude, loc.longitude);
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
         String address =
@@ -269,10 +258,13 @@ class _LocationAndFavoritesWizardState
                               if (query.isNotEmpty) {
                                 try {
                                   final locations =
-                                  await locationFromAddress(query);
+                                      await locationFromAddress(query);
                                   if (locations.isNotEmpty) {
                                     final location = locations.first;
-                                    setState(() {
+                                    // Aquí es donde puedes manejar el latLng, si es necesario
+                                    print("Ubicación encontrada: $location");
+                                    // Actualizar la posición en el mapa
+                                    setStateDialog(() {
                                       _handleTap(LatLng(location.latitude,
                                           location.longitude));
                                     });
@@ -305,7 +297,7 @@ class _LocationAndFavoritesWizardState
                           },
                           initialCameraPosition: CameraPosition(
                             target:
-                            LatLng(position.latitude, position.longitude),
+                                LatLng(position.latitude, position.longitude),
                             zoom: 14.0,
                           ),
                           markers: markers,
@@ -314,45 +306,49 @@ class _LocationAndFavoritesWizardState
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          SizedBox(
-                            width: 120, // 🔹 Ajusta el ancho de ambos botones
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                    vertical: 12), // 🔹 Alto uniforme
-                                textStyle: TextStyle(
-                                    fontSize:
-                                    16), // 🔹 Tamaño de texto uniforme
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                'Volver',
+                                style: MyTextStyles.drawerButtonLabelTextStyle,
                               ),
-                              child: Text('Volver'),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A819A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                             ),
                           ),
-                          SizedBox(
-                            width: 120, // 🔹 Ajusta el ancho de ambos botones
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                if (selectedLocation != null) {
-                                  widget.onLocationSelected(selectedLocation!);
-                                  Navigator.pop(context);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(
-                                            'Por favor, selecciona una ubicación.')),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                    vertical: 12), // 🔹 Alto uniforme
-                                textStyle: TextStyle(
-                                    fontSize:
-                                    16), // 🔹 Tamaño de texto uniforme
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (selectedLocation != null) {
+                                widget.onLocationSelected(selectedLocation!);
+                                Navigator.pop(context);
+                              } else {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content: Text(
+                                      'Por favor, selecciona una ubicación.'),
+                                ));
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                'Aceptar',
+                                style: MyTextStyles.drawerButtonLabelTextStyle,
                               ),
-                              child: Text('Aceptar'),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A819A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                             ),
                           ),
                         ],
@@ -366,7 +362,7 @@ class _LocationAndFavoritesWizardState
                       onPressed: () async {
                         try {
                           final currentPosition =
-                          await Geolocator.getCurrentPosition(
+                              await Geolocator.getCurrentPosition(
                             desiredAccuracy: LocationAccuracy.high,
                           );
                           setStateDialog(() {
@@ -379,6 +375,7 @@ class _LocationAndFavoritesWizardState
                       },
                       child: Icon(Icons.gps_fixed),
                       tooltip: "Ir a mi ubicación",
+                      backgroundColor: Color(0xFF1A819A),
                     ),
                   ),
                 ],
@@ -388,7 +385,9 @@ class _LocationAndFavoritesWizardState
         ),
       ),
     );
-    await _captureAndSaveMapSnapshot(); // Captura una instantánea después de seleccionar la ubicación
+
+    // Captura una instantánea después de seleccionar la ubicación
+    await _captureAndSaveMapSnapshot();
   }
 
   @override
@@ -426,13 +425,13 @@ class _LocationAndFavoritesWizardState
                     ),
                     child: mapSnapshot != null
                         ? Image.memory(
-                      mapSnapshot!,
-                      fit: BoxFit.cover,
-                    )
+                            mapSnapshot!,
+                            fit: BoxFit.cover,
+                          )
                         : Image.asset(
-                      'assets/map.png',
-                      fit: BoxFit.cover,
-                    ),
+                            'assets/map.png',
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 ),
                 SizedBox(height: 10),
@@ -503,29 +502,41 @@ class _LocationAndFavoritesWizardState
               0, 0, 0, 1), // Color del pulgar cuando está desactivado
         ), // Cambiado a screenutil
         ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            side: BorderSide(color: Colors.grey, width: 1.0), // Borde gris
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0), // Bordes redondeados
-            ),
-          ),
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            // Navegar a FavoriteLocationsScreen y esperar el resultado
+            final selectedLocation = await Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (context) => FavoriteLocationsScreen()),
+              MaterialPageRoute(builder: (context) => FavoriteLocationsScreen()),
             );
+            
+            // Si se recibió una ubicación válida
+            if (selectedLocation != null && selectedLocation is LatLng) {
+              // Actualizar el estado del wizard
+              setState(() {
+                this.selectedLocation = selectedLocation;
+                markers.clear();
+                markers.add(Marker(
+                  markerId: MarkerId(selectedLocation.toString()),
+                  position: selectedLocation,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+                ));
+              });
+              
+              // Mover la cámara del mapa a la nueva ubicación
+              if (mapController != null) {
+                mapController.animateCamera(
+                  CameraUpdate.newLatLng(selectedLocation),
+                );
+              }
+              
+              // Actualizar la dirección escrita en el TextField
+              _handleTap(selectedLocation);
+            }
           },
-          icon: const Icon(
-            Icons.star,
-            color: Color(0xFF1A819A),
-          ),
+          icon: Icon(Icons.star, color: Color(0xFF1A819A)),
           label: Align(
             alignment: Alignment.centerLeft,
-            child: const Text(
-              "Ubicaciones Favoritas",
-              style: MyTextStyles.linkTextStyle,
-            ),
+            child: Text("Ubicaciones Favoritas", style: MyTextStyles.linkTextStyle),
           ),
         ),
         SizedBox(height: 3.h),
@@ -560,7 +571,7 @@ class _LocationAndFavoritesWizardState
                 color: Colors.grey), // Color del label cuando no está enfocado
             floatingLabelStyle: TextStyle(
                 color:
-                Color(0xFF9E9E9E)), // Color del label cuando está enfocado
+                    Color(0xFF9E9E9E)), // Color del label cuando está enfocado
           ),
           onChanged: (value) {},
         )

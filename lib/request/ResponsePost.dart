@@ -4,10 +4,12 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/metodos/RegisController.dart';
-import 'package:manitoscliente_new/metodos/baseurl.dart';
+
+import '../metodos/RegisController.dart';
+import '../metodos/baseurl.dart';
+import 'requestStatus.dart';
+import 'resquest.dart';
+
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl; // URL base de la API
   String? getToken;
@@ -16,66 +18,61 @@ class ApiService {
 
   // Método para obtener el token de autenticación desde Firebase
   Future<String?> _getAuthToken() async {
-  try {
-    final User? user = auth.currentUser;
-    if (user == null) {
-      print('Usuario no autenticado. Por favor, inicia sesión.');
+    try {
+      final User? user = auth.currentUser;
+      if (user == null) {
+        print('Usuario no autenticado. Por favor, inicia sesión.');
+        return null;
+      }
+      final token =
+          await user.getIdToken(true); // Fuerza la renovación del token
+      print('Token obtenido: $token');
+      return token;
+    } catch (e) {
+      print('Error al obtener el token: $e');
       return null;
     }
-    final token = await user.getIdToken(true); // Fuerza la renovación del token
-    print('Token obtenido: $token');
-    return token;
-  } catch (e) {
-    print('Error al obtener el token: $e');
-    return null;
   }
-}
-
 
   // Método para realizar la solicitud GET a la API del backend
   Future<List<Map<String, dynamic>>> getServices(
-    String? userId, 
-    String status,  
-    String? token, 
-    String deviceId) async {
-  // Obtener userId y token si no se pasan como parámetros
-  userId ??= auth.currentUser?.uid;
-  token ??= await _getAuthToken();
+      String? userId, String status, String? token, String deviceId) async {
+    // Obtener userId y token si no se pasan como parámetros
+    userId ??= auth.currentUser?.uid;
+    token ??= await _getAuthToken();
 
-  if (userId == null || userId.isEmpty) {
-    print('Error: userId no está disponible.');
-    return [];
-  }
-
-
-  final url = Uri.parse('$baseUrl/services?');
-  final headers = {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token',
-    'Device-Id': deviceId,
-  };
-
-  try {
-    print('Realizando solicitud a $url');
-    print('Encabezados: $headers');
-
-    final response = await http.get(url, headers: headers);
-
-    if (response.statusCode == 200) {
-      print('Respuesta recibida: ${response.body}');
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => e as Map<String, dynamic>).toList();
-    } else {
-      print('Error al obtener servicios: Código ${response.statusCode}, Respuesta: ${response.body}');
+    if (userId == null || userId.isEmpty) {
+      print('Error: userId no está disponible.');
       return [];
     }
-  } catch (e) {
-    print('Excepción al obtener servicios: $e');
-    return [];
+
+    final url = Uri.parse('$baseUrl/services?');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+      'Device-Id': deviceId,
+    };
+
+    try {
+      print('Realizando solicitud a $url');
+      print('Encabezados: $headers');
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        print('Respuesta recibida: ${response.body}');
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((e) => e as Map<String, dynamic>).toList();
+      } else {
+        print(
+            'Error al obtener servicios: Código ${response.statusCode}, Respuesta: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('Excepción al obtener servicios: $e');
+      return [];
+    }
   }
-}
-
-
 
   Future<http.Response> sendTokenAndUserDataToServer({
     required String? token,
@@ -109,7 +106,7 @@ class ApiService {
       ServiceRequest serviceRequest, String newStatusId, String token) async {
     try {
       final String? refreshedToken =
-      await FirebaseAuth.instance.currentUser?.getIdToken(true);
+          await FirebaseAuth.instance.currentUser?.getIdToken(true);
 
       if (refreshedToken == null) {
         print('Token de autenticación nulo o vacío');
@@ -151,7 +148,6 @@ class ApiService {
     }
   }
 
-
   Future<void> sendTokenFCM(String? token) async {
     try {
       // Si el token es nulo, no tiene sentido continuar
@@ -161,7 +157,8 @@ class ApiService {
 
       // Construir el cuerpo de la solicitud con el token
       final body = jsonEncode({
-        'fcmToken': token, // Ajusta el nombre del campo según lo que espere tu backend
+        'fcmToken':
+            token, // Ajusta el nombre del campo según lo que espere tu backend
       });
 
       // Enviar el token al servidor
@@ -177,15 +174,14 @@ class ApiService {
       if (response.statusCode == 200) {
         print('Token FCM enviado exitosamente al backend.');
       } else {
-        print('Error al enviar el token al backend. Código de estado: ${response.statusCode}');
+        print(
+            'Error al enviar el token al backend. Código de estado: ${response.statusCode}');
       }
     } catch (e) {
       print('Error al enviar token FCM al servidor: $e');
       throw Exception('Error al enviar token al servidor');
     }
   }
-
-
 
   Future<http.Response> sendTokenToServer(String? token) async {
     try {
@@ -231,19 +227,18 @@ class ApiService {
   }
 
   Future<http.Response> sendDataToBackend(
-      ServiceRequest serviceRequest,
-      String token,
-      String id,
-      String expertises,
-      String categoryId,
-      String subcategoryId,
-      Status status,
-      String subcategoryName,
-      List<String> imageUrls,
-      String? devicesId, // Asegúrate de que este parámetro esté aquí
-      String? fcmToken,
-   
-      ) async {
+    ServiceRequest serviceRequest,
+    String token,
+    String id,
+    String expertises,
+    String categoryId,
+    String subcategoryId,
+    Status status,
+    String subcategoryName,
+    List<String> imageUrls,
+    String? devicesId, // Asegúrate de que este parámetro esté aquí
+    String? fcmToken,
+  ) async {
     print('sendDataToBackend() called');
     print('Enviando datos al backend:');
 
@@ -271,13 +266,13 @@ class ApiService {
       },
       'userId': serviceRequest.userId,
       'status': status.id,
-      'expertises': expertisesList, // Aquí es donde se agrega la lista de expertises
-      'categoryId':  categoryId,
-      'subcategory':{'id': subcategoryId, 'name': subcategoryName},
+      'expertises':
+          expertisesList, // Aquí es donde se agrega la lista de expertises
+      'categoryId': categoryId,
+      'subcategory': {'id': subcategoryId, 'name': subcategoryName},
       'devicesId': devicesId, // Agrega devicesId aquí
       'fcmToken': fcmToken,
-      'token':token,
-  
+      'token': token,
     };
 
     print('FormData: $formData');
@@ -305,26 +300,23 @@ class ApiService {
     }
   }
 
-
   Future<http.Response> updateUser(
-      String userId,
-      RegistrationData registrationData,
-      String token,
-      String? devicesId,
-      String? fcmToken,
-      ) async {
-        
+    String userId,
+    RegistrationData registrationData,
+    String token,
+    String? devicesId,
+    String? fcmToken,
+  ) async {
     try {
-      String codeReferral = '${registrationData.displayName.split(' ').first}_${registrationData.phoneNumber.length >= 4
-          ? registrationData.phoneNumber.substring(registrationData.phoneNumber.length - 4)
-          : registrationData.phoneNumber}';
+      String codeReferral =
+          '${registrationData.displayName.split(' ').first}_${registrationData.phoneNumber.length >= 4 ? registrationData.phoneNumber.substring(registrationData.phoneNumber.length - 4) : registrationData.phoneNumber}';
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,
         'phoneNumber': registrationData.phoneNumber,
         'location': registrationData.location ?? {},
         'paymentType': registrationData.paymentType,
-        'deviceId' : registrationData.devicesId,
-        'fcmToken' : registrationData.fcmToken,
+        'deviceId': registrationData.devicesId,
+        'fcmToken': registrationData.fcmToken,
         'points': registrationData.points,
         'successfulReferrals': 0,
         'codeReferral': codeReferral,
@@ -373,16 +365,16 @@ class FormData {
 
   Map<String, dynamic> toMap() {
     return {
-    'dateTime': dateTime,
-    'description': description,
-    'images': images,
-    'location': {
-    'lat': location['lat'],
-    'lng': location['lng'],
-    },
-    'offeredPrice': offeredPrice,
-    'serviceType': serviceType,
-    'userId': userId,
+      'dateTime': dateTime,
+      'description': description,
+      'images': images,
+      'location': {
+        'lat': location['lat'],
+        'lng': location['lng'],
+      },
+      'offeredPrice': offeredPrice,
+      'serviceType': serviceType,
+      'userId': userId,
     };
   }
 }

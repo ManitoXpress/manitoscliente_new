@@ -1,5 +1,8 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
+
+import '../Styles/stilo.dart';
+
 class FullMapScreen extends StatelessWidget {
   final LatLng initialPosition;
 
@@ -9,7 +12,11 @@ class FullMapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Mapa Completo'),
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text(
+          'Mapa Completo',
+          style: MyTextStyles.buttonTextStyle,
+        ),
       ),
       body: GoogleMap(
         initialCameraPosition: CameraPosition(

@@ -5,10 +5,13 @@ import 'package:http/http.dart' as http; // Importa la biblioteca http
 import 'dart:convert';
 
 import 'package:rive/rive.dart';
-import 'package:manitoscliente_new/home.dart';
+
 
 import 'package:flutter/widgets.dart';
-import 'package:manitoscliente_new/menu/Register.dart';
+
+import '../home.dart';
+import 'Register.dart';
+
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({Key? key}) : super(key: key);

@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/metodos/auth_utils.dart';
 
-
+import '../metodos/auth_utils.dart';
 import '../request/ResponseGet.dart';
 import '../request/ResponsePost.dart';
 import '../Styles/stilo.dart';
@@ -10,16 +9,14 @@ import '../Styles/stilo.dart';
 import '../metodos/RegisController.dart';
 
 import 'colors.dart';
+
 class EditProfileDialog extends StatefulWidget {
   final String displayName;
   final String phoneNumber;
 
-
-
   final Function()? onUpdateProfile;
   EditProfileDialog({
     required this.displayName,
-
     required this.phoneNumber,
     this.onUpdateProfile,
   });
@@ -62,13 +59,24 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
         // Construir un nuevo RegistrationData con los cambios y mantener los valores antiguos si los campos están vacíos
         RegistrationData registrationData = RegistrationData(
-          userId: user.uid, displayName: '', phoneNumber: '', selectedCountryCode: '', email: '', location: {}, paymentType: '', devicesId: '', fcmToken: '', points: 0,
+          userId: user.uid,
+          displayName: '',
+          phoneNumber: '',
+          selectedCountryCode: '',
+          email: '',
+          location: {},
+          paymentType: '',
+          devicesId: '',
+          fcmToken: '',
+          points: 0,
         );
         String? devicesId = await AuthUtils.getDeviceId();
         final response = await apiService.updateUser(
           user.uid,
           registrationData,
-          token!, devicesId, fcmToken,
+          token!,
+          devicesId,
+          fcmToken,
         );
 
         if (response.statusCode == 200) {
@@ -80,8 +88,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         }
       } else {
         print(
-            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.'
-        );
+            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
       }
     } catch (error) {
       print('Error durante el proceso de registro: $error');

@@ -2,17 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
+
+import '../Styles/stilo.dart';
+import '../request/ResponsePost.dart';
+import '../request/requestServiceType.dart';
+import '../request/resquest.dart';
 
 class ServiceDataWizard extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final Function(File?) onImageSelected;
   final Function(String?) onPriceSelected;
   final Function()? onNextStep; // Cambio en el tipo de la función
-  final int maxImageCount; // Nuevo atributo para definir la cantidad máxima de imágenes
+  final int
+      maxImageCount; // Nuevo atributo para definir la cantidad máxima de imágenes
   final String selectedServiceTitle;
   final List<ServiceRequest> services; // Agregado el parámetro services
 
@@ -32,7 +34,9 @@ class ServiceDataWizard extends StatefulWidget {
 }
 
 class _ServiceDataWizardState extends State<ServiceDataWizard> {
-  final List<File?> _images = List.generate(3, (index) => null); // Lista para almacenar las imágenes
+  final List<File?> _images =
+      List.generate(3, (index) => null); // Lista para almacenar las imágenes
+  final List<File?> _image = []; // Lista para almacenar las imágenes
   late ServiceType selectedServiceType;
   TextEditingController detailController = TextEditingController();
   TextEditingController priceController = TextEditingController();
@@ -48,7 +52,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
         return AlertDialog(
           title: Text(
             'Selecciona la fuente de la imagen',
-            style: MyTextStyles.drawerButtonTextStyle4,
+            style: MyTextStyles.linkTextStyle,
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -56,18 +60,26 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.gallery);
                   _processImage(image);
                 },
-                child: Text('Seleccionar desde Galería'),
+                child: Text(
+                  'Seleccionar desde Galería',
+                  style: MyTextStyles.ButtonTextStyle,
+                ),
               ),
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
-                child: Text('Tomar Foto'),
+                child: Text(
+                  'Tomar Foto',
+                  style: MyTextStyles.ButtonTextStyle,
+                ),
               ),
             ],
           ),
@@ -87,7 +99,8 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           });
 
           // Actualiza las imágenes en widget.serviceRequest
-          widget.serviceRequest.images = _images.map((image) => image?.path ?? "").toList();
+          widget.serviceRequest.images =
+              _images.map((image) => image?.path ?? "").toList();
 
           // Llama a la función para subir la imagen al backend
 
@@ -106,7 +119,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Mostrar la imagen
-              Image.file(_images[index]!),
+              Image.file(_image[index]!),
               SizedBox(height: 10),
 
               // Mostrar el precio ofrecido
@@ -118,7 +131,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    _images[index] = null;
+                    _image.removeAt(index);
                   });
                   Navigator.pop(context);
                 },
@@ -150,18 +163,23 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           widget.selectedServiceTitle, // Utiliza el título proporcionado
           style: MyTextStyles.formServiceTextStyle,
         ),
-     Center(
-            child: Image.asset(
-              'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
-              width: 140, // Ancho reducido a la mitad
-              height: 140, // Alto reducido a la mitad (ajusta según la proporción original)
-            ),
+        const SizedBox(height: 0.5),
+
+        // Mostrar la imagen deseada
+        Center(
+          child: Image.asset(
+            'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
+            width: 160, // Ancho reducido a la mitad
+            height:
+                160, // Alto reducido a la mitad (ajusta según la proporción original)
           ),
+        ),
+        const SizedBox(height: 2.0),
 
         // Título para detalles del servicio
         Text(
           "Escribe tu problema",
-          style: MyTextStyles.formServiceTextStyle,
+          style: MyTextStyles.formServiceTextStyle2,
         ),
         const SizedBox(height: 2.0),
 
@@ -175,14 +193,16 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               borderRadius: BorderRadius.circular(20.0),
             ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xA3C9D2D2)),
+              borderSide: BorderSide(color: const Color(0xFF9E9E9E)),
               borderRadius: BorderRadius.circular(20.0),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF1A819A)),
+              borderSide: BorderSide(color: Color(0xFF9E9E9E)),
               borderRadius: BorderRadius.circular(20.0),
             ),
-            labelStyle: MyTextStyles.formsdetails,
+            labelStyle: TextStyle(
+                color: Colors.grey), // Color del label cuando no está enfocado
+            floatingLabelStyle: TextStyle(color: Color(0xFF9E9E9E)),
           ),
           onChanged: (value) {
             widget.serviceRequest.description = value;
@@ -193,7 +213,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
         // Título para cargar imagen
         Text(
           "Carga una foto de tu problema",
-          style: MyTextStyles.formServiceTextStyle,
+          style: MyTextStyles.formServiceTextStyle2,
         ),
         const SizedBox(height: 4.0),
 
@@ -219,13 +239,15 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
                 ..._images.asMap().entries.map((entry) {
                   int idx = entry.key;
                   File? imageFile = entry.value;
-                  double imageWidth = 200 / widget.maxImageCount; // Distribuye en base al máximo de imágenes
+                  double imageWidth = 200 /
+                      widget
+                          .maxImageCount; // Distribuye en base al máximo de imágenes
                   return Positioned(
                     left: imageWidth * idx,
                     child: GestureDetector(
                       onTap: () {
                         if (imageFile != null) {
-                          _showImagePreview(idx);
+                          _showImagePreview(imageFile as int);
                         }
                       },
                       child: imageFile != null

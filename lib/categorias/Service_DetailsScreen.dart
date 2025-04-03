@@ -3,21 +3,18 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/Historial.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/home.dart';
-import 'package:manitoscliente_new/metodos/auth_utils.dart';
-import 'package:manitoscliente_new/utils/compres.dart';
-import 'package:manitoscliente_new/utils/status.dart';
-import 'package:manitoscliente_new/wizards/dataservice.dart';
-import 'package:manitoscliente_new/wizards/datetime.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/categorias/terms.dart';
-import 'package:manitoscliente_new/wizards/datalocation.dart';
-import 'package:manitoscliente_new/metodos/Routes.dart';
+import '../categorias/terms.dart';
 
-import 'package:manitoscliente_new/metodos/dataProvider.dart';
+import '../Styles/stilo.dart';
+import '../home.dart';
+import '../metodos/auth_utils.dart';
+import '../request/ResponsePost.dart';
+import '../request/resquest.dart';
+import '../utils/compres.dart';
+import '../utils/status.dart';
+import '../wizards/datalocation.dart';
+import '../wizards/dataservice.dart';
+import '../wizards/datetime.dart';
 
 class ServiceFormPage extends StatefulWidget {
   final ServiceRequest serviceRequest;
@@ -40,7 +37,8 @@ class ServiceFormPage extends StatefulWidget {
     required this.token,
     required this.categoryId,
     required this.expertiseId,
-    required this.expertiseName, required String selectedTime,
+    required this.expertiseName,
+    required String selectedTime,
   }) : super(key: key);
 
   @override
@@ -56,7 +54,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? token; // Variable para almacenar el token de autenticación
   String? fcmToken; // Variable para almacenar el fcmToken
- 
+
   bool isSubmitting = false;
 
   @override
@@ -218,8 +216,9 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           List<String> imageUrls = [];
 
           // Filtrar las imágenes con rutas válidas
-          List<String> validImagePaths = widget.serviceRequest.images.where((
-              path) => path.isNotEmpty).toList();
+          List<String> validImagePaths = widget.serviceRequest.images
+              .where((path) => path.isNotEmpty)
+              .toList();
 
           // Subir imágenes a Firebase Storage y obtener las URLs
           for (var imagePath in validImagePaths) {
@@ -304,7 +303,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
                     builder: (context) =>
                         HomeScreen(initialPageIndex: 1), // Redirige a Historial
                   ),
-                      (route) => false,
+                  (route) => false,
                 );
               },
               child: const Text('Ir a Historial'),
@@ -335,7 +334,9 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   }
 
   Widget _customStepperButton(
-      {required String label, required VoidCallback onPressed}) {
+      {required String label,
+      required VoidCallback onPressed,
+      required TextStyle textStyle}) {
     return TextButton(
       onPressed: onPressed,
       child: Text(label),
@@ -354,100 +355,109 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
         title: const Text(
           'Formulario de Servicio',
-          style: MyTextStyles.drawerButtonTextStyle3,
+          style: MyTextStyles
+              .buttonTextStyle, // El mismo estilo aplicado al título
         ),
-        actions: <Widget>[
-          if (currentStep == 2)
-            _customStepperButton(
-              label: 'Enviar',
-              onPressed: onSubmit,
-            ),
-        ],
       ),
-      body: Stepper(
-        type: StepperType.vertical,
-        currentStep: currentStep,
-        onStepContinue: () {
-          if (currentStep < 2) {
-            setState(() {
-              currentStep++;
-            });
-          } else {
-            onSubmit();
-          }
-        },
-        onStepCancel: () {
-          if (currentStep > 0) {
-            setState(() {
-              currentStep--;
-            });
-          }
-        },
-        controlsBuilder: (BuildContext context, ControlsDetails details) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              if (currentStep > 0)
+      body: Theme(
+        data: ThemeData(
+          colorScheme: ColorScheme.light(primary: Color(0xFF1A819A)),
+        ),
+        child: Stepper(
+          type: StepperType.vertical,
+          currentStep: currentStep,
+          onStepContinue: () {
+            if (currentStep < 2) {
+              setState(() {
+                currentStep++;
+              });
+            } else {
+              onSubmit();
+            }
+          },
+          onStepCancel: () {
+            if (currentStep > 0) {
+              setState(() {
+                currentStep--;
+              });
+            }
+          },
+          controlsBuilder: (BuildContext context, ControlsDetails details) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                if (currentStep > 0)
+                  ElevatedButton(
+                    onPressed: details.onStepCancel,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF830A09),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancelar',
+                      style: MyTextStyles.drawerButtonLabelTextStyle,
+                    ),
+                  ),
                 ElevatedButton(
-                  onPressed: details.onStepCancel,
+                  onPressed: details.onStepContinue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: const Color(0xFF1A819A),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   child: const Text(
-                    'Cancelar',
+                    'Continuar',
                     style: MyTextStyles.drawerButtonLabelTextStyle,
                   ),
                 ),
-              ElevatedButton(
-                onPressed: details.onStepContinue,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text(
-                  'Continuar',
-                  style: MyTextStyles.drawerButtonLabelTextStyle,
-                ),
+              ],
+            );
+          },
+          steps: <Step>[
+            Step(
+              title: Text(
+                'Datos del servicio',
+                style: MyTextStyles.drawerButtonTextStyle3,
               ),
-            ],
-          );
-        },
-        steps: <Step>[
-          Step(
-            title: Text(
-              'Datos del servicio',
-              style: MyTextStyles.drawerButtonTextStyle3,
+              content: dataWizard,
+              isActive: currentStep >= 0,
+              state: currentStep > 0 ? StepState.complete : StepState.indexed,
             ),
-            content: dataWizard,
-            isActive: currentStep >= 0,
-            state: currentStep > 0 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Fecha y hora',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Fecha y hora',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: dateTimeWizard,
+              isActive: currentStep >= 1,
+              state: currentStep > 1 ? StepState.complete : StepState.indexed,
             ),
-            content: dateTimeWizard,
-            isActive: currentStep >= 1,
-            state: currentStep > 1 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Ubicación',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Ubicación',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: locationAndFavoritesWizard,
+              isActive: currentStep >= 2,
+              state: currentStep > 2 ? StepState.complete : StepState.indexed,
             ),
-            content: locationAndFavoritesWizard,
-            isActive: currentStep >= 2,
-            state: currentStep > 2 ? StepState.complete : StepState.indexed,
-          ),
-        ],
+          ],
+          stepIconBuilder: (int stepIndex, StepState state) {
+            return CircleAvatar(
+              backgroundColor: Color(0xFF1A819A),
+              child: Text(
+                '${stepIndex + 1}',
+                style: MyTextStyles.tabTextStyle1,
+              ),
+            );
+          },
+        ),
       ),
     );
   }

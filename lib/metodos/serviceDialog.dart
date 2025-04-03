@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
+
+import '../Styles/stilo.dart';
+
 
 
 class ServiceDialogs {

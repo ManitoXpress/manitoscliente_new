@@ -1,14 +1,15 @@
 import 'dart:convert';
-import 'package:manitoscliente_new/widgets/status.dart';
+
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
 
-import 'package:manitoscliente_new/request/ResponseGet.dart';
 
 import '../categorias/modifyServices.dart';
+import '../request/ResponseGet.dart';
+import '../widgets/status.dart';
 
 class ServiceForm extends StatefulWidget {
   final Map<String, dynamic> initialData;

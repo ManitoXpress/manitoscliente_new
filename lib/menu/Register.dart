@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/menu/validators.dart';
+
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../menu/validators.dart';
+
+import '../request/ResponsePost.dart';
 
 class RegisterScreen extends StatelessWidget {
   final ApiService apiService = ApiService();

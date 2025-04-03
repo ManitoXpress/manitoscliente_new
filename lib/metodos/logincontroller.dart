@@ -2,29 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../home.dart';
+import '../request/ResponsePost.dart';
 import '../widgets/welcome.dart';
 import 'RegisController.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/home.dart';
 
-import '../widgets/welcome.dart';
-import 'RegisController.dart';
-
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 class LoginScreenController {
   static final ApiService apiService = ApiService();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -145,33 +132,45 @@ class LoginScreenController {
   }
 
   // Inicio de sesión con Google
-  static Future<void> signInWithGoogle(BuildContext context) async {
-    try {
-      final googleSignInAccount = await GoogleSignIn().signIn();
-      if (googleSignInAccount != null) {
-        final googleAuth = await googleSignInAccount.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
+  // Inicio de sesión con Google
+static Future<void> signInWithGoogle(BuildContext context) async {
+  try {
+    final googleSignInAccount = await GoogleSignIn().signIn();
+    if (googleSignInAccount != null) {
+      final googleAuth = await googleSignInAccount.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-        final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
-        final user = authResult.user;
+      final authResult =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = authResult.user;
 
-        if (user != null) {
-          final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
-          await storeUserData(user);
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('isLoggedIn', true); // <- Esto faltaba
-          print('Inicio de sesión con Google exitoso para ${user.displayName}');
-          _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
+      if (user != null) {
+        // Si el displayName del usuario de Firebase viene nulo o vacío,
+        // se actualiza usando el valor obtenido en el proceso de Google.
+        if ((user.displayName == null || user.displayName!.isEmpty) &&
+            googleSignInAccount.displayName != null) {
+          await user.updateDisplayName(googleSignInAccount.displayName);
+          // Es recomendable forzar la recarga del usuario para actualizar la información
+          await user.reload();
         }
+        
+        final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
+        await storeUserData(user);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        print('Inicio de sesión con Google exitoso para ${user.displayName}');
+        _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
       }
-    } catch (e) {
-      print('Error durante el inicio de sesión con Google: $e');
-      _showErrorDialog(context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
     }
+  } catch (e) {
+    print('Error durante el inicio de sesión con Google: $e');
+    _showErrorDialog(context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
   }
+}
+
 
   // Inicio de sesión con email y contraseña
   Future<User?> login(BuildContext context, String email, String password) async {

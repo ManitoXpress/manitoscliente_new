@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String userId;

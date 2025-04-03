@@ -8,36 +8,25 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import '../request/ResponseGet.dart';
+import '../request/ResponsePost.dart';
+import '../request/dataprofile.dart';
+import '../request/requestLocation.dart';
+import '../request/requestServiceType.dart';
+import '../request/requestStatus.dart';
+import '../request/requestWoker.dart';
+import '../request/resquest.dart';
+import '../utils/offerRepository.dart';
+import '../utils/serviceCancelled.dart';
+import '../utils/serviceComplete.dart';
+import '../utils/serviceFetcher.dart';
+import '../utils/serviceInProgress.dart';
+import '../widgets/serviceList.dart';
 
-import 'package:manitoscliente_new/request/ResponseGet.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/request/dataprofile.dart';
-import 'package:manitoscliente_new/request/requestLocation.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
-import 'package:manitoscliente_new/request/requestWoker.dart';
-
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/chatscreen.dart';
-import 'package:manitoscliente_new/main.dart';
-import 'package:manitoscliente_new/metodos/RegisController.dart';
-import 'package:manitoscliente_new/metodos/baseurl.dart';
-import 'package:manitoscliente_new/metodos/serviceFetcher.dart';
-
-import 'package:manitoscliente_new/metodos/ticketController.dart';
-import 'package:manitoscliente_new/utils/cacheLocal.dart';
-import 'package:manitoscliente_new/utils/notification.dart';
-import 'package:manitoscliente_new/utils/serviceCancelled.dart';
-import 'package:manitoscliente_new/utils/serviceComplete.dart';
-import 'package:manitoscliente_new/utils/serviceFetcher.dart';
-import 'package:manitoscliente_new/utils/serviceInProgress.dart';
-import 'package:manitoscliente_new/utils/status.dart';
-
-import 'package:manitoscliente_new/utils/timeLines.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:manitoscliente_new/utils/offerRepository.dart';
-import 'package:manitoscliente_new/widgets/serviceList.dart';
+import 'Styles/stilo.dart';
+import 'metodos/RegisController.dart';
+import 'metodos/notificationService.dart';
+import 'metodos/serviceFetcher.dart';
 
 class Historial extends StatefulWidget {
   final VoidCallback? onTabTapped;
@@ -93,7 +82,6 @@ class _HistorialState extends State<Historial>
     firestore: FirebaseFirestore.instance,
   );
 
-  NotificationService _notificationService = NotificationService();
   int inProgressServiceCount = 0;
 
   int globalServiceCount = 0;
@@ -155,7 +143,8 @@ class _HistorialState extends State<Historial>
       location: {},
       email: '',
       devicesId: '',
-      fcmToken: '', points: 0,
+      fcmToken: '',
+      points: 0,
     );
 
     userData = UserData(
@@ -168,9 +157,9 @@ class _HistorialState extends State<Historial>
       selectedCountryCode: '',
       registrationData: registrationData,
       getToken: '',
-      referrerUserId: '', // Add appropriate value here
-      referralCode: '',   // Add appropriate value here
-      points: 0,          // Add appropriate value here
+      referrerUserId: '',
+      referralCode: '',
+      points: 0,
     );
 
     // Configurar el controlador de pestañas
@@ -352,7 +341,7 @@ class _HistorialState extends State<Historial>
       appBar: AppBar(
         automaticallyImplyLeading: false,
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(50.0),
+          preferredSize: Size.fromHeight(18.0),
           child: Container(
             color: Colors.white,
             child: TabBar(
@@ -361,7 +350,7 @@ class _HistorialState extends State<Historial>
               labelStyle: MyTextStyles.tabTextStyle,
               unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
               indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(width: 3.0, color: Color(0xFF84090D)),
+                borderSide: BorderSide(width: 3.0, color: Color(0xFF1A819A)),
                 insets: EdgeInsets.symmetric(horizontal: 20.0),
               ),
               tabs: [
@@ -677,7 +666,7 @@ class _HistorialState extends State<Historial>
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text("Error al cargar servicios."));
+          return Center(child: Text("No hay servicios."));
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -688,11 +677,10 @@ class _HistorialState extends State<Historial>
         final services = snapshot.data!;
         if (statusIds == 'available') {
           final services = snapshot.data!;
-         
+
           return ServiceListBuilder.buildServiceListAvailable(
             services, // Servicio asociado
-     
-          
+
             screenWidth,
             screenHeight,
             userId,
@@ -728,11 +716,10 @@ class _HistorialState extends State<Historial>
         }
         if (statusIds == 'completed') {
           final services = snapshot.data!;
-         
+
           return ServiceListBuilder.buildServiceListComplete(
             services, // Servicio asociado
-           
-   
+
             screenWidth,
             screenHeight,
             userId,
@@ -741,11 +728,10 @@ class _HistorialState extends State<Historial>
         }
         if (statusIds == 'cancelled') {
           final services = snapshot.data!;
-         
+
           return ServiceListBuilder.buildServiceListCancelled(
             services, // Servicio asociado
-      
-    
+
             screenWidth,
             screenHeight,
             userId,
@@ -755,7 +741,7 @@ class _HistorialState extends State<Historial>
         final offers = services.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceList(
           services, // Servicio asociado
-        
+
           offers,
           screenWidth,
           screenHeight,

@@ -4,12 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/menu/Register.dart';
-import 'package:manitoscliente_new/metodos/animationcontroller.dart';
-import 'package:manitoscliente_new/metodos/logincontroller.dart';
-import 'package:manitoscliente_new/utils/animation.dart';
+
 import 'package:rive/rive.dart' as rive;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,11 +13,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../metodos/logincontroller.dart';
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../home.dart';
 import '../metodos/RegisController.dart';
-import '../widgets/welcome.dart';
+import '../request/resquest.dart';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:rive/rive.dart' as rive;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 class LoginScreen extends StatefulWidget {
   LoginScreen({Key? key, required String deviceId}) : super(key: key);
 
@@ -139,6 +145,28 @@ class _LoginFormState extends State<LoginScreen> {
       );
     });
   }
+    Future<void> _signInAsGuest() async {
+    try {
+      // Aquí puedes manejar la lógica de inicio de sesión como invitado
+      print("Usuario ingresó como invitado");
+      // Navegar a la pantalla de inicio
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      print('Error al iniciar como invitado: $e');
+    }
+  }
+
+
+  Future<void> signInWithApple() async {
+    setState(() => isLoadingApple = true);
+    try {
+      await LoginScreenController.signInWithApple(context);
+    } catch (e) {
+      print('Error al iniciar sesión con Apple: $e');
+    } finally {
+      setState(() => isLoadingApple = false);
+    }
+  }
 
   Future<void> signInWithGoogle() async {
     setState(() => isLoadingGoogle = true);
@@ -150,14 +178,13 @@ class _LoginFormState extends State<LoginScreen> {
       setState(() => isLoadingGoogle = false);
     }
   }
-  Future<void> signInWithApple() async {
-    setState(() => isLoadingGoogle = true);
-    try {
-      await LoginScreenController.signInWithApple(context);
-    } catch (e) {
-      print('Error al iniciar sesión con Google: $e');
-    } finally {
-      setState(() => isLoadingGoogle = false);
+
+  void _launchDeleteAccountURL() async {
+    const url = 'https://manitosxpress.com/#/DeleteAccount';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
     }
   }
 
@@ -228,48 +255,83 @@ class _LoginFormState extends State<LoginScreen> {
                       ),
                       onPressed: isLoadingGoogle ? null : signInWithGoogle,
                       child: isLoadingGoogle
-                              ? CircularProgressIndicator()
-                              : CircleAvatar(
+                          ? CircularProgressIndicator()
+                          : CircleAvatar(
+                              backgroundColor: Colors.white,
+                              radius: 40.r,
+                              child: CircleAvatar(
+                                backgroundColor: Colors.white,
+                                radius: 37.r,
+                                child: CircleAvatar(
+                                  radius: 35.r,
                                   backgroundColor: Colors.white,
-                                  radius: 40.r,
-                                  child: CircleAvatar(
-                                    backgroundColor: Colors.white,
-                                    radius: 37.r,
-                                    child: CircleAvatar(
-                                      radius: 35.r,
-                                      backgroundColor: Colors.white,
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            FontAwesomeIcons.google,
-                                            color: Color(0xFF1A819A),
-                                          ),
-                                          Text(
-                                            'Inicio',
-                                            style: GoogleFonts.lato(
-                                              color: Color(0xFF1A819A),
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        FontAwesomeIcons.google,
+                                        color: Color(0xFF1A819A),
                                       ),
-                                    ),
+                                      Text(
+                                        'Inicio',
+                                        style: GoogleFonts.lato(
+                                          color: Color(0xFF1A819A),
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                              ),
+                            ),
+                    ),
+                    SizedBox(width: 10.w), // Espacio entre los botones
+                   // Botón de Invitado
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey, // Color neutral para el botón de invitado
+                        shape: CircleBorder(),
+                        padding: EdgeInsets.all(3.w),
+                      ),
+                      onPressed: _signInAsGuest, // Llama a la función de inicio como invitado
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 40.r,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              color: Colors.black,
+                              size: 30.r, // Tamaño ajustado del icono
+                            ),
+                            SizedBox(height: 4.h), // Espacio entre icono y texto
+                            Text(
+                              'Invitado',
+                              style: GoogleFonts.lato(
+                                color: Colors.black,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 10.w),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF1A819A),
-                            shape: CircleBorder(),
-                            padding: EdgeInsets.all(3.w),
-                          ),
-                          onPressed: isLoadingApple ? null : signInWithApple,
-                          child: isLoadingApple
-                              ? CircularProgressIndicator()
+                      ),
+                    ),
+
+      
+                  SizedBox(width: 10.w),
+                    // Botón de Apple
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF1A819A),
+                        shape: CircleBorder(),
+                        padding: EdgeInsets.all(3.w),
+                      ),
+                      onPressed: isLoadingApple ? null : signInWithApple,
+                      child: isLoadingApple
+                          ? CircularProgressIndicator()
                           : CircleAvatar(
                               backgroundColor: Colors.white,
                               radius: 40.r,
@@ -287,12 +349,12 @@ class _LoginFormState extends State<LoginScreen> {
                                         color: Color(0xFF1A819A),
                                       ),
                                       Text(
-                                            'Apple',
-                                            style: GoogleFonts.lato(
-                                              color: Color(0xFF1A819A),
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        'Apple',
+                                        style: GoogleFonts.lato(
+                                          color: Color(0xFF1A819A),
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -300,9 +362,46 @@ class _LoginFormState extends State<LoginScreen> {
                               ),
                             ),
                     ),
-                    SizedBox(width: 10.w), // Espacio entre los botones
-                    // Botón de Apple
                   ],
+                ),
+                SizedBox(height: 20.h), // Espacio entre los botones y el nuevo botón
+                // Botón de Eliminar Cuenta
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A), // Color rojo para el botón de eliminar
+                    shape: CircleBorder(),
+                    padding: EdgeInsets.all(3.w),
+                  ),
+                  onPressed: _launchDeleteAccountURL,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 40.r,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      radius: 37.r,
+                      child: CircleAvatar(
+                        radius: 35.r,
+                        backgroundColor: Colors.white,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                            ),
+                            Text(
+                              'Eliminar',
+                              style: GoogleFonts.lato(
+                                color: Colors.red,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

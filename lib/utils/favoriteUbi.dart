@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/wizards/datalocation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:flutter/services.dart';
+
+import '../Styles/stilo.dart';
+import '../wizards/datalocation.dart';
 
 class FavoriteLocationsScreen extends StatefulWidget {
   @override
@@ -19,29 +21,6 @@ class _FavoriteLocationsScreenState extends State<FavoriteLocationsScreen> {
   void initState() {
     super.initState();
     _loadFavoriteLocations();
-  }
-
-  void _navigateToLocationAndFavoritesWizard(Map<String, double> location) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LocationAndFavoritesWizard(
-          location: location,
-          onLocationSelected: (LatLng selectedLocation) {
-            // Acción que se realiza cuando se selecciona una ubicación
-            print('Ubicación seleccionada: $selectedLocation');
-          },
-          onFavoritesSelected: (bool isFavorite) {
-            // Acción que se realiza cuando se selecciona si es favorito
-            print('Es favorito: $isFavorite');
-          },
-          onNextStep: () {
-            // Acción que se realiza cuando se hace clic en el botón "Siguiente"
-            print('Avanzar al siguiente paso');
-          },
-        ),
-      ),
-    );
   }
 
   // Cargar ubicaciones favoritas desde SharedPreferences
@@ -82,7 +61,27 @@ class _FavoriteLocationsScreenState extends State<FavoriteLocationsScreen> {
     );
   }
 
-  @override
+  void _navigateToLocationAndFavoritesWizard(String location) async {
+  try {
+    // Convertir la dirección guardada en coordenadas (geocodificación)
+    List<Location> locations = await locationFromAddress(location);
+    if (locations.isNotEmpty) {
+      LatLng coords = LatLng(locations[0].latitude, locations[0].longitude);
+      // Retornar las coordenadas a la pantalla anterior (LocationAndFavoritesWizard)
+      Navigator.pop(context, coords);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo encontrar la ubicación')),
+      );
+    }
+  } catch (e) {
+    print("Error al convertir la dirección a coordenadas: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al procesar la ubicación')),
+    );
+  }
+}
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -161,10 +160,8 @@ class _FavoriteLocationsScreenState extends State<FavoriteLocationsScreen> {
                         IconButton(
                           icon: Icon(Icons.location_on),
                           onPressed: () {
-                            // Navegar a la pantalla LocationAndFavoritesWizard y pasar la dirección seleccionada
-                            _navigateToLocationAndFavoritesWizard(
-                                _favoriteLocations[index]
-                                as Map<String, double>);
+                            final location = _favoriteLocations[index];
+                            _navigateToLocationAndFavoritesWizard(location);
                           },
                         ),
                       ],

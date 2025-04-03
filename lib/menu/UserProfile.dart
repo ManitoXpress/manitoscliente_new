@@ -15,7 +15,9 @@ import '../Styles/stilo.dart';
 import '../metodos/RegisController.dart';
 import '../utils/colors.dart';
 import '../utils/editController.dart';
+import '../utils/favoriteUbi.dart';
 import 'Login.dart';
+
 class ProfileData {
   late final String displayName;
   final String email;
@@ -30,11 +32,11 @@ class ProfileData {
     required this.displayName,
     required this.email,
     required this.phoneNumber,
-
     required this.paymentType,
-
     required this.registrationData,
-    required this.userData, required this.imagePath, required this.points,
+    required this.userData,
+    required this.imagePath,
+    required this.points,
   });
 }
 
@@ -84,7 +86,10 @@ class _ProfilePageState extends State<ProfilePage> {
       if (userId != null && token != null) {
         final userData = await ApiService2().fetchUserData(userId, token);
         String? profileImageUrl = await ApiService2().fetchProfileImage(userId);
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
         final points = userDoc.data()?['points'] ?? 0;
 
         return ProfileData(
@@ -92,7 +97,6 @@ class _ProfilePageState extends State<ProfilePage> {
           email: userData.email,
           phoneNumber: FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
           paymentType: userData.paymentType,
-
           imagePath: profileImageUrl ?? '',
           userData: UserData(
             userId: userData.userId,
@@ -107,9 +111,9 @@ class _ProfilePageState extends State<ProfilePage> {
             referrerUserId: userData.referrerUserId,
             referralCode: userData.referralCode,
             points: userData.points,
-           
           ),
-          registrationData: registrationData, points: points,
+          registrationData: registrationData,
+          points: points,
         );
       } else {
         throw 'No se pudo obtener el ID del usuario autenticado.';
@@ -121,28 +125,26 @@ class _ProfilePageState extends State<ProfilePage> {
         email: '',
         phoneNumber: FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
         paymentType: '',
-
         imagePath: '',
         userData: UserData(
           userId: '',
           displayName: 'Error',
           email: '',
-
           phoneNumber: '',
-
           location: {},
           paymentType: '',
           registrationData: registrationData,
-
-          selectedCountryCode: '', getToken: '', referrerUserId: '', referralCode: '', points: 0,
+          selectedCountryCode: '',
+          getToken: '',
+          referrerUserId: '',
+          referralCode: '',
+          points: 0,
         ),
-        registrationData: registrationData, points: 0,
-
+        registrationData: registrationData,
+        points: 0,
       );
     }
   }
-
-
 
   Future<void> _loadAndRefreshUserData() async {
     try {
@@ -158,34 +160,12 @@ class _ProfilePageState extends State<ProfilePage> {
   void _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',)));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => LoginScreen(
+                deviceId: '',
+              )));
     } catch (e) {
       print('Error al cerrar sesión: $e');
-    }
-  }
-
-  Future<void> _editProfile() async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-
-      if (userId != null && token != null) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return EditProfileDialog(
-
-              phoneNumber: FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
-
-              onUpdateProfile: _loadAndRefreshUserData,
-              displayName: '', // Pasa la función de actualización
-            );
-          },
-        );
-      }
-    } catch (e) {
-      print('Error al obtener datos del usuario: $e');
     }
   }
 
@@ -193,6 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
         title: const Text(
           'Perfil',
           style: MyTextStyles.buttonTextStyle,
@@ -233,34 +214,12 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Image.asset(
             'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
-            width: 200, // Ajusta el ancho de la imagen según sea necesario
-          ),
-          const SizedBox(height: 10),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star_half, color: Colors.yellow, size: 24),
-            ],
+            width: 250, // Ajusta el ancho de la imagen según sea necesario
           ),
           const SizedBox(height: 10),
           Text(
             'Puntos: ${profileData.points}', // Muestra los puntos del usuario
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '(${Random().nextInt(1000) + 1})',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-            ),
+            style: MyTextStyles.inputTextStyle1,
           ),
           const SizedBox(height: 10),
           Row(
@@ -268,23 +227,36 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               ElevatedButton(
                 onPressed: _signOut,
-                child: const Text('Cerrar Sesión'),
+                child: const Text(
+                  'Cerrar Sesión',
+                  style: MyTextStyles.buttonTextStyle,
+                ),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white, backgroundColor: customColor,
+                  backgroundColor: customColor,
                 ),
               ),
               ElevatedButton(
-                onPressed: _editProfile,
-                child: const Text('Editar perfil'),
+                onPressed: () {
+                  // Navegar a la pantalla de ubicaciones favoritas
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            FavoriteLocationsScreen()), // Asegúrate de usar el nombre correcto de la pantalla
+                  );
+                },
+                child: Text(
+                  'Ubicaciones',
+                  style: MyTextStyles.buttonTextStyle,
+                ),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white, backgroundColor: customColor,
+                  backgroundColor: customColor,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
           Container(
-
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20.0),
@@ -292,14 +264,10 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.all(10.0),
             child: Column(
               children: [
-
-                _buildProfileInfoRow('Nombre:',profileData.displayName),
-
+                _buildProfileInfoRow('Nombre:', profileData.displayName),
 
                 const SizedBox(height: 10),
-                
-                _buildProfileInfoRow(
-                    'Correo electronico:', profileData.email),
+                _buildProfileInfoRow('Correo electronico:', profileData.email),
                 const SizedBox(height: 10),
                 // Boton de documentos debajo del cuadro
               ],
@@ -309,7 +277,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
 
   Widget _buildProfileInfoRow(String label, String value) {
     return Column(
@@ -322,11 +289,19 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Text(
                 label,
-                style: MyTextStyles.drawerButtonTextStyle5,
+                style: MyTextStyles.inputTextStyle3,
               ),
-              Text(
-                value,
-                style: MyTextStyles.drawerButtonTextStyle5,
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight, // Align to the right
+                  child: Text(
+                    value,
+                    overflow:
+                        TextOverflow.ellipsis, // Adds "..." when text overflows
+                    maxLines: 1, // Restricts to one line
+                    style: MyTextStyles.formsdetails1,
+                  ),
+                ),
               ),
             ],
           ),

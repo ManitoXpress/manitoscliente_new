@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
+
 import '../Styles/stilo.dart';
 
 import 'package:flutter/material.dart';
+
+import '../request/ResponseGet.dart';
 
 class ServiceCategoryWidget extends StatelessWidget {
   final ServiceResponse service;

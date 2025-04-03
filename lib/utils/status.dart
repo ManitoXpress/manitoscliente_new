@@ -1,5 +1,6 @@
-import 'package:manitoscliente_new/request/requestStatus.dart';
 
+
+import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 
 class StatusUtils {

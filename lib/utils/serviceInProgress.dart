@@ -1,15 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/request/requestExpertise.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/main.dart';
-import 'package:manitoscliente_new/metodos/baseurl.dart';
-import 'package:manitoscliente_new/utils/cacheLocal.dart';
+
 
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,6 +12,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../main.dart';
+import '../metodos/baseurl.dart';
+import '../request/ResponseGet.dart';
+import '../request/requestExpertise.dart';
+import '../request/requestServiceType.dart';
+import '../request/requestStatus.dart';
+import '../request/resquest.dart';
+import 'cacheLocal.dart';
 class ServiceRepository2 {
   final ApiService2 apiService;
   final FirebaseFirestore firestore;

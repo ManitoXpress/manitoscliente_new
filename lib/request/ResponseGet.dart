@@ -3,14 +3,13 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:manitoscliente_new/main.dart';
-import 'package:manitoscliente_new/metodos/auth_utils.dart';
-import 'package:manitoscliente_new/request/requestExpertise.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestWoker.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/metodos/baseurl.dart';
+import '../request/requestExpertise.dart';
+import '../request/requestServiceType.dart';
+import '../request/requestWoker.dart';
+import '../request/resquest.dart';
 
+import '../metodos/auth_utils.dart';
+import '../metodos/baseurl.dart';
 import 'dataprofile.dart';
 
 class ApiService2 {
@@ -20,37 +19,8 @@ class ApiService2 {
   final FirebaseStorage storage = FirebaseStorage.instance;
 
   final String baseUrl = ApiConfiguration.baseUrl;
-   ApiService() {
+  ApiService() {
     _initializeToken();
-  }
-  Future<void> updateWorkerPoints(String userId,String token) async {
-    final url = Uri.parse('$baseUrl/users/$userId');
-
-
-
-    print('Token usado para la autenticación: $token');
-
-    try {
-      final response = await http.patch(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'successfulReferrals': 1,
-          'points': 10,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('Puntos actualizados correctamente en el backend.');
-      } else {
-        print('Error al actualizar puntos en el backend: ${response.body}');
-      }
-    } catch (e) {
-      print('Error en la solicitud PATCH: $e');
-    }
   }
 
   Future<void> _initializeToken() async {
@@ -73,18 +43,22 @@ class ApiService2 {
       },
     );
 
-    print('Respuesta de getOffers: ${response.statusCode} ${response.body}'); // Log de la respuesta
+    print(
+        'Respuesta de getOffers: ${response.statusCode} ${response.body}'); // Log de la respuesta
 
     if (response.statusCode == 200) {
-      final offers = List<Map<String, dynamic>>.from(json.decode(response.body));
+      final offers =
+          List<Map<String, dynamic>>.from(json.decode(response.body));
       print('Ofertas obtenidas: $offers'); // Log de las ofertas obtenidas
       return offers;
     } else {
-      throw Exception('Failed to load offers: ${response.statusCode} ${response.body}');
+      throw Exception(
+          'Failed to load offers: ${response.statusCode} ${response.body}');
     }
   }
 
-  Future<void> updateService(String serviceId, Map<String, dynamic> data) async {
+  Future<void> updateService(
+      String serviceId, Map<String, dynamic> data) async {
     await _initializeToken(); // Asegúrate de que el token esté actualizado
     final response = await http.patch(
       Uri.parse('$baseUrl/services/$serviceId'),
@@ -95,10 +69,12 @@ class ApiService2 {
       body: json.encode(data),
     );
 
-    print('Respuesta de updateService: ${response.statusCode} ${response.body}'); // Log de la respuesta
+    print(
+        'Respuesta de updateService: ${response.statusCode} ${response.body}'); // Log de la respuesta
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to update service: ${response.statusCode} ${response.body}');
+      throw Exception(
+          'Failed to update service: ${response.statusCode} ${response.body}');
     }
   }
 
@@ -113,15 +89,18 @@ class ApiService2 {
       body: json.encode(data),
     );
 
-    print('Respuesta de updateOffer: ${response.statusCode} ${response.body}'); // Log de la respuesta
+    print(
+        'Respuesta de updateOffer: ${response.statusCode} ${response.body}'); // Log de la respuesta
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to update offer: ${response.statusCode} ${response.body}');
+      throw Exception(
+          'Failed to update offer: ${response.statusCode} ${response.body}');
     }
   }
+
   Future<http.Response> getWorkerDetails(String workerId) async {
     final url = Uri.parse('$baseUrl/workers/$workerId');
-    
+
     try {
       final response = await http.get(
         url,
@@ -134,15 +113,17 @@ class ApiService2 {
       if (response.statusCode == 200) {
         print('Worker encontrado: ${response.body}');
       } else {
-        print('Error al obtener workerId: ${response.statusCode} - ${response.reasonPhrase}');
+        print(
+            'Error al obtener workerId: ${response.statusCode} - ${response.reasonPhrase}');
       }
-      
+
       return response;
     } catch (e) {
       print('Error en la solicitud de workerId: $e');
       throw Exception('Error al obtener los detalles del trabajador');
     }
   }
+
   Future<List<ServiceRequest>> fetchServicesByUserId(String userId) async {
     try {
       // Construir la URL para la solicitud
@@ -218,9 +199,7 @@ class ApiService2 {
 
       // Construir la URL con los parámetros
       final url = Uri.parse(
-        '$baseUrl/services?workerId=$column&columns=status&values=$value&type=$type&deviceId=$deviceId'
-      );
-
+          '$baseUrl/services?workerId=$column&columns=status&values=$value&type=$type&deviceId=$deviceId');
 
       // Imprimir la URL solicitada para depuración
       print('URL solicitada: $url');
@@ -264,67 +243,64 @@ class ApiService2 {
     }
   }
 
-Future<List<ServiceRequest>> getOffers(
-  String column,
-  String value,
-  String type,
-  String deviceId,
-  List<ServiceRequest> services,
-  String status, // Nuevo parámetro para filtrar por estado
-) async {
-  try {
-    final String? authTokenValue = await AuthUtils.getToken();
+  Future<List<ServiceRequest>> getOffers(
+    String column,
+    String value,
+    String type,
+    String deviceId,
+    List<ServiceRequest> services,
+    String status, // Nuevo parámetro para filtrar por estado
+  ) async {
+    try {
+      final String? authTokenValue = await AuthUtils.getToken();
 
-    if (authTokenValue == null) {
-      throw Exception('Token de autorización no encontrado');
-    }
-
-    if (services.isEmpty || services.any((service) => service.id.isEmpty)) {
-      throw Exception('ID del servicio no encontrado');
-    }
-
-    List<ServiceRequest> allOffers = [];
-
-    List<Future> requests = services.map((service) async {
-      final url = Uri.parse(
-        '$baseUrl/offers/${service.id}?'
-        'columns=$column&'
-        'values=$value&'
-        'type=$type&'
-        'deviceId=$deviceId&'
-        'status=$status', // Añadir parámetro de estado
-      );
-
-      final response = await http.get(
-        url,
-        headers: <String, String>{
-          'Authorization': 'Bearer $authTokenValue',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        List<dynamic> offersJson = json.decode(response.body);
-        allOffers.addAll(offersJson
-            .map((offer) => ServiceRequest.fromSnapshot(offer))
-            .where((offer) => offer.status.id == status) // Filtro adicional en cliente
-            .toList());
-      } else {
-        print('Error al obtener ofertas para el servicio ${service.id}: ${response.statusCode}');
+      if (authTokenValue == null) {
+        throw Exception('Token de autorización no encontrado');
       }
-    }).toList();
 
-    await Future.wait(requests);
-    return allOffers;
-  } catch (e) {
-    print('Error al obtener ofertas del backend: $e');
-    throw Exception('Error al obtener ofertas');
+      if (services.isEmpty || services.any((service) => service.id.isEmpty)) {
+        throw Exception('ID del servicio no encontrado');
+      }
+
+      List<ServiceRequest> allOffers = [];
+
+      List<Future> requests = services.map((service) async {
+        final url = Uri.parse(
+          '$baseUrl/offers/${service.id}?'
+          'columns=$column&'
+          'values=$value&'
+          'type=$type&'
+          'deviceId=$deviceId&'
+          'status=$status', // Añadir parámetro de estado
+        );
+
+        final response = await http.get(
+          url,
+          headers: <String, String>{
+            'Authorization': 'Bearer $authTokenValue',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          List<dynamic> offersJson = json.decode(response.body);
+          allOffers.addAll(offersJson
+              .map((offer) => ServiceRequest.fromSnapshot(offer))
+              .where((offer) =>
+                  offer.status.id == status) // Filtro adicional en cliente
+              .toList());
+        } else {
+          print(
+              'Error al obtener ofertas para el servicio ${service.id}: ${response.statusCode}');
+        }
+      }).toList();
+
+      await Future.wait(requests);
+      return allOffers;
+    } catch (e) {
+      print('Error al obtener ofertas del backend: $e');
+      throw Exception('Error al obtener ofertas');
+    }
   }
-}
-
-
-
-
-
 
   Future<UserData> fetchUserData(String userId, String getIdToken) async {
     try {
@@ -599,6 +575,34 @@ Future<List<ServiceRequest>> getOffers(
     } catch (e) {
       print('Error en la solicitud HTTP: $e');
       throw Exception('Error al cargar los servicios desde el backend');
+    }
+  }
+
+  Future<void> updateWorkerPoints(String workerId, String token) async {
+    final url = Uri.parse('$baseUrl/workers/$workerId');
+
+    print('Token usado para la autenticación: $token');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'successfulReferrals': 1,
+          'points': 10,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Puntos actualizados correctamente en el backend.');
+      } else {
+        print('Error al actualizar puntos en el backend: ${response.body}');
+      }
+    } catch (e) {
+      print('Error en la solicitud PATCH: $e');
     }
   }
 }

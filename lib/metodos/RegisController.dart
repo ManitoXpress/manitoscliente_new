@@ -4,17 +4,18 @@ import 'package:flutter_wizard/flutter_wizard.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class RegistrationController {
-  RegistrationData registrationData = RegistrationData(userId: '',
-      displayName: '',
-
-      phoneNumber: '',
-
-      location: {},
-      paymentType: '',
-
-      devicesId: '',
-
-      email: '', selectedCountryCode: '', fcmToken: '', points: 0, );
+  RegistrationData registrationData = RegistrationData(
+    userId: '',
+    displayName: '',
+    phoneNumber: '',
+    location: {},
+    paymentType: '',
+    devicesId: '',
+    email: '',
+    selectedCountryCode: '',
+    fcmToken: '',
+    points: 0,
+  );
   TextEditingController displayNameController = TextEditingController();
   TextEditingController idDocumentController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
@@ -39,13 +40,13 @@ class RegistrationController {
     // Después de enviar los datos, puedes realizar otras acciones como navegar a la página de inicio.
   }
 
-
   void updateRegistrationData({
     String? displayName,
-
     String? phoneNumber,
     String? imagePath,
-    LatLng? location, required String paymentType,required String referralCode,
+    LatLng? location,
+    required String paymentType,
+    required String referralCode,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
 
@@ -69,8 +70,7 @@ class RegistrationData {
   String selectedCountryCode;
   String devicesId;
   String fcmToken;
-  int points; // Puntos
-
+  int points;
 
   Map<String, double?>? location;
   String email;
@@ -79,34 +79,24 @@ class RegistrationData {
   RegistrationData.fromForm({
     required String userId,
     required String displayName,
-
     required String phoneNumber,
     required String paymentType,
     required String selectedCountryCode,
     required String devicesId,
     required String fcmToken,
-    required int points,
-
     required Map<String, double?>? location,
     required String email,
+    required int points,
   })  : userId = userId,
         displayName = displayName,
-
         phoneNumber = phoneNumber,
-
         paymentType = paymentType,
-
         selectedCountryCode = selectedCountryCode,
-
-
         email = email,
-        points = points,
-
         devicesId = devicesId,
         fcmToken = fcmToken,
-        location = location;
-        
-
+        location = location,
+        points = points;
 
   // Constructor adicional para inicializar desde el formulario
   RegistrationData({
@@ -114,16 +104,11 @@ class RegistrationData {
     required this.displayName,
     required this.devicesId,
     required this.fcmToken,
-
     required this.phoneNumber,
-
     required this.paymentType,
     required this.selectedCountryCode,
-
     required this.email,
-    required this.points,
     required this.location,
+    required this.points,
   });
-
-
 }

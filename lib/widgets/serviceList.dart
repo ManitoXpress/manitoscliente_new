@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/request/dataprofile.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/metodos/serviceFetcher.dart';
-import 'package:manitoscliente_new/metodos/ticketController.dart';
-import 'package:manitoscliente_new/utils/timeLines.dart';
+
+import '../Styles/stilo.dart';
+import '../metodos/serviceFetcher.dart';
+import '../metodos/ticketController.dart';
+import '../request/dataprofile.dart';
+import '../request/requestServiceType.dart';
+import '../request/requestStatus.dart';
+import '../request/resquest.dart';
+import '../utils/timeLines.dart';
 
 class ServiceListBuilder {
-  static Widget buildOfferList(List<ServiceRequest> services,List<Offer> offers, double screenWidth,
-      double screenHeight, String userId, final UserData userData) {
+  static Widget buildOfferList(
+      List<ServiceRequest> services,
+      List<Offer> offers,
+      double screenWidth,
+      double screenHeight,
+      String userId,
+      final UserData userData) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -22,7 +28,8 @@ class ServiceListBuilder {
           // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
           );
           return GestureDetector(
             onTap: () async {
@@ -85,9 +92,15 @@ class ServiceListBuilder {
       ),
     );
   }
+
   // ignore: non_constant_identifier_names
-  static Widget in_progressList(List<ServiceRequest> services,List<Offer> offers, double screenWidth,
-      double screenHeight, String userId, final UserData userData) {
+  static Widget in_progressList(
+      List<ServiceRequest> services,
+      List<Offer> offers,
+      double screenWidth,
+      double screenHeight,
+      String userId,
+      final UserData userData) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -98,7 +111,8 @@ class ServiceListBuilder {
           // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
           );
           return GestureDetector(
             onTap: () async {
@@ -161,6 +175,7 @@ class ServiceListBuilder {
       ),
     );
   }
+
   static Widget buildServiceListAvailable(
       List<ServiceRequest> services,
       double screenWidth,
@@ -232,6 +247,7 @@ class ServiceListBuilder {
       ),
     );
   }
+
   static Widget buildServiceListComplete(
       List<ServiceRequest> services,
       double screenWidth,
@@ -303,6 +319,7 @@ class ServiceListBuilder {
       ),
     );
   }
+
   static Widget buildServiceListCancelled(
       List<ServiceRequest> services,
       double screenWidth,
@@ -374,10 +391,10 @@ class ServiceListBuilder {
       ),
     );
   }
-static Widget buildServiceList(
+
+  static Widget buildServiceList(
       List<ServiceRequest> services,
       List<Offer> offers,
-
       double screenWidth,
       double screenHeight,
       String userId,
@@ -392,9 +409,10 @@ static Widget buildServiceList(
           // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
           );
-          
+
           return GestureDetector(
             onTap: () async {
               try {
@@ -447,15 +465,15 @@ static Widget buildServiceList(
                 print('Error al cargar los detalles del trabajador: $e');
               }
             },
-            child: _buildOfferCard(service,offer, screenWidth, screenHeight),
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
           );
         },
       ),
     );
   }
 
-  static Widget _buildOfferCard(ServiceRequest service,
-      Offer offer, double screenWidth, double screenHeight) {
+  static Widget _buildOfferCard(ServiceRequest service, Offer offer,
+      double screenWidth, double screenHeight) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.02),
       width: screenWidth,
@@ -502,14 +520,14 @@ static Widget buildServiceList(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 30),
-                Text('Categoría:', style: MyTextStyles.drawerButtonTextStyle),
-                Text(category, style: MyTextStyles.drawerButtonTextStyle5),
+                Text('Categoría:', style: MyTextStyles.drawerButtonTextStyle7),
+                Text(category, style: MyTextStyles.serviceTextStyle),
                 SizedBox(height: screenHeight * 0.01),
-                Text('Servicio:', style: MyTextStyles.drawerButtonTextStyle),
-                Text(expertise, style: MyTextStyles.drawerButtonTextStyle5),
+                Text('Servicio:', style: MyTextStyles.drawerButtonTextStyle7),
+                Text(expertise, style: MyTextStyles.serviceTextStyle),
                 SizedBox(height: screenHeight * 0.01),
                 Text('Precio Ofertado: \$${price.toStringAsFixed(2)}',
-                    style: MyTextStyles.drawerButtonTextStyle),
+                    style: MyTextStyles.drawerButtonTextStyle7),
               ],
             ),
           ),

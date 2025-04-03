@@ -1,8 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-import 'package:manitoscliente_new/categorias/solicitudesPage.dart';
-import 'package:manitoscliente_new/chatscreen.dart';
+import '../chatscreen.dart';
 
 class ClientPage extends StatelessWidget {
   final int clientId;

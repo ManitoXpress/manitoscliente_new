@@ -8,7 +8,6 @@ import 'package:rive/rive.dart' hide Image;
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../metodos/RegisController.dart';
-
 class userDataWizard extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
@@ -39,10 +38,12 @@ class userDataWizard extends StatefulWidget {
 }
 
 class _Step1FormState extends State<userDataWizard> {
-  final TextEditingController fullNameController = TextEditingController();
+  late TextEditingController fullNameController;
   final TextEditingController idCardController = TextEditingController();
   final TextEditingController referralCodeController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  
+  // Variables para la animación (se mantienen igual)
   late String animationURL;
   Artboard? _teddyArtboard;
   SMITrigger? successTrigger, failTrigger;
@@ -56,11 +57,14 @@ class _Step1FormState extends State<userDataWizard> {
   @override
   void initState() {
     super.initState();
+    // Inicializamos el controlador con el valor que ya tenga userData.displayName
+    fullNameController = TextEditingController(text: widget.userData.displayName);
   }
 
   bool isStep1Valid() {
     return fullNameController.text.isNotEmpty;
   }
+
   Future<void> _verifyReferralCode(String referralCode) async {
     try {
       if (referralCode.isEmpty) {
@@ -73,10 +77,14 @@ class _Step1FormState extends State<userDataWizard> {
         return;
       }
 
-      final workersCollection = FirebaseFirestore.instance.collection('workers');
+      final workersCollection =
+          FirebaseFirestore.instance.collection('workers');
 
-      // Buscar si existe un trabajador con ese idCardNumber
-      final querySnapshot = await workersCollection.where('codeReferral', isEqualTo: referralCode).limit(1).get();
+      // Buscar si existe un trabajador con ese codeReferral
+      final querySnapshot = await workersCollection
+          .where('codeReferral', isEqualTo: referralCode)
+          .limit(1)
+          .get();
 
       if (querySnapshot.docs.isNotEmpty) {
         print('Código de referido válido.');
@@ -84,11 +92,10 @@ class _Step1FormState extends State<userDataWizard> {
         setState(() {
           widget.userData.referrerUserId = querySnapshot.docs.first.id;
           widget.userData.referralCode = referralCode;
-
           // También actualizamos los datos de registro
           widget.registrationController.updateRegistrationData(
-              referralCode: referralCode, paymentType: '',
-           
+            referralCode: referralCode,
+            paymentType: '',
           );
         });
 
@@ -100,10 +107,10 @@ class _Step1FormState extends State<userDataWizard> {
         );
       } else {
         print('Código de referido inválido.');
-        // Limpiamos el referrerWorkerId si el código es inválido
+        // Limpiamos el referrerUserId si el código es inválido
         setState(() {
           widget.userData.referrerUserId = '';
-          // Mantenemos el código ingresado por el usuario para que pueda corregirlo
+          // Se mantiene el código ingresado para que el usuario pueda corregirlo
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +144,7 @@ class _Step1FormState extends State<userDataWizard> {
             style: MyTextStyles.drawerButtonTextStyle8,
           ),
           Image.asset(
-            'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
+            'assets/animations/manito.png', // Ruta de tu imagen
             width: 125,
             height: 125,
           ),
@@ -146,25 +153,9 @@ class _Step1FormState extends State<userDataWizard> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Campo para el Nombre Completo, con valor inicial preestablecido
                 TextField(
                   controller: fullNameController,
-                  onTap: () {
-                    if (isStep1Valid()) {
-                      widget.onNextStep();
-                    } else {
-                      print(
-                          'Complete all required fields before moving to the next step.');
-                    }
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      widget.registrationController.updateRegistrationData(
-                        displayName: value,
-                        paymentType: '', referralCode: '',
-                      );
-                      widget.userData.displayName = value;
-                    });
-                  },
                   keyboardType: TextInputType.text,
                   style: MyTextStyles.inputTextStyle,
                   cursorColor: const Color(0xFF1A819A),
@@ -182,25 +173,55 @@ class _Step1FormState extends State<userDataWizard> {
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: phoneController,
-                  onTap: () {},
                   onChanged: (value) {
                     setState(() {
-                      // Verifica si el prefijo +591 está presente, si no, lo agrega automáticamente
+                      // Actualiza los datos de registro y userData con el nombre ingresado
+                      widget.registrationController.updateRegistrationData(
+                        displayName: value,
+                        paymentType: '',
+                        referralCode: '',
+                      );
+                      widget.userData.displayName = value;
+                    });
+                  },
+                  onTap: () {
+                    // Puedes agregar lógica al tocar si es necesario
+                    if (!isStep1Valid()) {
+                      print('Completa todos los campos obligatorios antes de pasar al siguiente paso.');
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+                // Campo para número de teléfono
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: MyTextStyles.inputTextStyle,
+                  cursorColor: const Color(0xFF1A819A),
+                  decoration: InputDecoration(
+                    hintText: "Número de Teléfono",
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                    focusColor: Color(0xFF1A819A),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Color(0xFF1A819A),
+                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      // Asegura que el prefijo +591 esté presente
                       if (!value.startsWith('+591')) {
                         value = '+591$value';
-                        phoneController.text =
-                            value; // Actualiza el valor del controlador para reflejar el prefijo
+                        phoneController.text = value;
                         phoneController.selection = TextSelection.fromPosition(
-                          TextPosition(
-                              offset: value
-                                  .length), // Posiciona el cursor al final del texto
+                          TextPosition(offset: value.length),
                         );
                       }
-
                       // Actualiza los datos de registro con el número modificado
                       widget.registrationController.updateRegistrationData(
                           phoneNumber: value,
@@ -209,57 +230,40 @@ class _Step1FormState extends State<userDataWizard> {
                       widget.userData.phoneNumber = value;
                     });
                   },
-                  keyboardType: TextInputType.phone,
-                  style: MyTextStyles.inputTextStyle,
-                  cursorColor: const Color(0xFF830A09),
-                  decoration: InputDecoration(
-                    hintText: "Número de Teléfono",
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                    focusColor: Color(0xFF830A09),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Color(0xFF830A09),
-                      ),
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 20),
-                 Row(
+                // Campo para el código de referido
+                Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: referralCodeController,
-                        onChanged: (value) {
-                          setState(() {
-                            // Actualiza los datos de registro con el código de referido
-                            widget.registrationController
-                                .updateRegistrationData(
-                                referralCode: value,
-                                paymentType: '',);
-                            widget.userData.referralCode = value; 
-                          });
-                        },
                         keyboardType: TextInputType.text,
                         style: MyTextStyles.inputTextStyle,
-                        cursorColor: const Color(0xFF830A09),
+                        cursorColor: const Color(0xFF1A819A),
                         decoration: InputDecoration(
                           hintText: "Código de Referido (opcional)",
                           filled: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
-                          focusColor: Color(0xFF830A09),
+                          focusColor: Color(0xFF1A819A),
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Color(0xFF830A09),
+                              color: Color(0xFF1A819A),
                             ),
                             borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
                         ),
+                        onChanged: (value) {
+                          setState(() {
+                            widget.registrationController.updateRegistrationData(
+                              referralCode: value,
+                              paymentType: '',
+                            );
+                            widget.userData.referralCode = value;
+                          });
+                        },
                       ),
                     ),
                     const SizedBox(width: 7),
@@ -272,7 +276,7 @@ class _Step1FormState extends State<userDataWizard> {
                         style: MyTextStyles.drawerButtonLabelTextStyle,
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF830A09),
+                        backgroundColor: const Color(0xFF1A819A),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -281,6 +285,7 @@ class _Step1FormState extends State<userDataWizard> {
                   ],
                 ),
                 const SizedBox(height: 20),
+                // Selección para pagos con QR
                 Container(
                   width: double.infinity,
                   child: Column(
@@ -292,6 +297,7 @@ class _Step1FormState extends State<userDataWizard> {
                           color: const Color(0xFF1A819A),
                         ),
                       ),
+                      const SizedBox(height: 5),
                       SizedBox(
                         height: 60,
                         child: Container(
@@ -302,16 +308,15 @@ class _Step1FormState extends State<userDataWizard> {
                             ),
                           ),
                           child: Padding(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 10.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 10.0),
                             child: DropdownButton<String>(
                               value: widget.selectedWorkerType,
                               onChanged: (value) {
                                 setState(() {
                                   widget.selectedWorkerType = value!;
-                                  widget.registrationController
-                                      .updateRegistrationData(
-                                    paymentType: value, referralCode: '',
+                                  widget.registrationController.updateRegistrationData(
+                                    paymentType: value,
+                                    referralCode: '',
                                   );
                                   widget.userData.paymentType = value;
                                 });
@@ -331,6 +336,7 @@ class _Step1FormState extends State<userDataWizard> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 10),
                 if (!isStep1Valid())
                   Padding(
                     padding: const EdgeInsets.all(8.0),

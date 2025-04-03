@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/Historial.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
 
-import 'package:manitoscliente_new/Styles/stilo.dart';
+import '../Historial.dart';
+import '../Styles/stilo.dart';
+
 
 class ServiceFunctions {
   static int notificationCount = 0;

@@ -1,17 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/Historial.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/metodos/auth_utils.dart';
-import 'package:manitoscliente_new/metodos/home_screen_functions.dart';
-import 'package:manitoscliente_new/metodos/service_screen_functions.dart';
-import 'package:manitoscliente_new/utils/status.dart';
-import 'package:searchbar_animation/searchbar_animation.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
 
 import 'package:flutter/material.dart';
 
@@ -19,7 +8,17 @@ import 'dart:async'; // Importa para usar Timer
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../Historial.dart';
+import '../Styles/stilo.dart';
+import '../metodos/auth_utils.dart';
+import '../metodos/home_screen_functions.dart';
+import '../metodos/service_screen_functions.dart';
+import '../request/ResponseGet.dart';
+import '../request/requestServiceType.dart';
+import '../request/requestStatus.dart';
+import '../request/resquest.dart';
+import '../utils/status.dart';
 
 class ServiceScreen extends StatefulWidget {
   static int notificationCount = 0;
@@ -40,29 +39,29 @@ class _ServiceScreenState extends State<ServiceScreen> {
   Timer? _notificationTimer;
 
   @override
-void initState() {
-  super.initState();
-  _loadServices();
-  _pageController = PageController(initialPage: 0);
-  _startNotificationTimer();
-   WidgetsBinding.instance.addPostFrameCallback((_) {
+  void initState() {
+    super.initState();
+    _loadServices();
+    _pageController = PageController(initialPage: 0);
+    _startNotificationTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _showWelcomeDialog();
     });
-
-}
-
-void _handleFCMMessage(RemoteMessage message) {
-  if (message.data['status'] == 'offer') {
-    _checkForNewNotifications();
   }
-}
+
+  void _handleFCMMessage(RemoteMessage message) {
+    if (message.data['status'] == 'offer') {
+      _checkForNewNotifications();
+    }
+  }
 
   @override
   void dispose() {
-    _notificationTimer?.cancel(); // Cancelar el Timer cuando se destruya el widget
+    _notificationTimer
+        ?.cancel(); // Cancelar el Timer cuando se destruya el widget
     super.dispose();
-
   }
+
   void _showWelcomeDialog() {
     showDialog(
       context: context,
@@ -73,21 +72,14 @@ void _handleFCMMessage(RemoteMessage message) {
           ),
           title: Text(
             '¡Bienvenido a ManitosXpress!',
-            style: TextStyle(
-              fontSize: 20.0,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A819A),
-            ),
+            style: MyTextStyles.welcomeTotheJungle1,
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'En ManitosXpress, estamos para ayudarte a encontrar soluciones a tus problemas. ¿Necesitas ayuda con algún servicio en específico? ¡Tenemos una amplia gama de servicios disponibles!',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.black54,
-                ),
+                style: MyTextStyles.formServiceTextStyle,
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 20),
@@ -99,11 +91,7 @@ void _handleFCMMessage(RemoteMessage message) {
               SizedBox(height: 20),
               Text(
                 'Encuentra el servicio que necesitas, desde reparaciones hasta asesorías. ¡Estamos para ayudarte!',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+                style: MyTextStyles.formServiceTextStyle,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -114,36 +102,35 @@ void _handleFCMMessage(RemoteMessage message) {
                 Navigator.of(context).pop();
               },
               style: TextButton.styleFrom(
-                foregroundColor: Color.fromARGB(255, 43, 109, 127), backgroundColor: const Color(0xFFE8E8E8), // Color del texto
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18), // Padding
+                foregroundColor: Color(0xFF1A819A),
+                backgroundColor: const Color(0xFFE8E8E8),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8), // Bordes redondeados
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 side: BorderSide(
-                  color: const Color(0xFFE8E8E8), // Color del borde
-                  width: 1, // Ancho del borde
+                  color: const Color(0xFFE8E8E8),
+                  width: 1,
                 ),
               ),
               child: Text(
                 "Empezar",
-                style: TextStyle(
-                  fontSize: 18, // Tamaño de fuente
-                ),
+                style: MyTextStyles.linkTextStyle,
               ),
             ),
-
           ],
         );
       },
     );
   }
+
   Future<void> _loadServices() async {
     try {
       String? token = await AuthUtils.getToken();
 
       if (token != null) {
         final List<ServiceResponse> serviceResponses =
-        await _apiService2.fetchServicesFromBackend(token);
+            await _apiService2.fetchServicesFromBackend(token);
 
         // Ordenar los servicios para que HomeServices aparezca primero
         serviceResponses.sort((a, b) {
@@ -169,28 +156,29 @@ void _handleFCMMessage(RemoteMessage message) {
   }
 
   Future<void> _checkForNewNotifications() async {
-  try {
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId != null) {
-      final serviceQuery = await FirebaseFirestore.instance
-          .collection('serviceRequests')  // Asegúrate de que esta sea la colección correcta
-          .where('userId', isEqualTo: userId)
-          .where('status', isEqualTo: 'offer')
-          .get();
+    try {
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        final serviceQuery = await FirebaseFirestore.instance
+            .collection(
+                'serviceRequests') // Asegúrate de que esta sea la colección correcta
+            .where('userId', isEqualTo: userId)
+            .where('status', isEqualTo: 'offer')
+            .get();
 
-      final newOfferCount = serviceQuery.docs.length;
+        final newOfferCount = serviceQuery.docs.length;
 
-      if (newOfferCount > 0) {
-        setState(() {
-          notificationCount = newOfferCount;
-        });
-        _showNotifications(context, newOfferCount);
+        if (newOfferCount > 0) {
+          setState(() {
+            notificationCount = newOfferCount;
+          });
+          _showNotifications(context, newOfferCount);
+        }
       }
+    } catch (e) {
+      print('Error al comprobar las notificaciones: $e');
     }
-  } catch (e) {
-    print('Error al comprobar las notificaciones: $e');
   }
-}
 
   void _startNotificationTimer() {
     _notificationTimer = Timer.periodic(Duration(minutes: 5), (timer) {
@@ -199,18 +187,19 @@ void _handleFCMMessage(RemoteMessage message) {
   }
 
   void _showNotifications(BuildContext context, int offerCount) {
-  ServiceFunctions.showNotifications(
-    context,
-    title: 'Nuevas Ofertas Disponibles',
-    body: 'Tienes $offerCount nueva(s) oferta(s) para tus servicios.',
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Historial()),
-      );
-    },
-  );
-}
+    ServiceFunctions.showNotifications(
+      context,
+      title: 'Nuevas Ofertas Disponibles',
+      body: 'Tienes $offerCount nueva(s) oferta(s) para tus servicios.',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Historial()),
+        );
+      },
+    );
+  }
+
   void _limpiarTextoBusqueda() {
     setState(() {
       searchText = '';
@@ -231,47 +220,10 @@ void _handleFCMMessage(RemoteMessage message) {
         appBar: AppBar(
           backgroundColor: Color(0xFF6AB8D6),
           automaticallyImplyLeading: false,
-          
           title: Text(
-            
             'Categorías',
             style: MyTextStyles.CategoriaButtonTextStyle,
           ),
-          actions: [
-            Stack(
-              children: <Widget>[
-                IconButton(
-                  icon: Icon(Icons.notifications),
-                  onPressed: () {
-                    _checkForNewNotifications();
-                  },
-                ),
-                Positioned(
-                  right: 11,
-                  top: 11,
-                  child: Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(6.5),
-                    ),
-                    constraints: BoxConstraints(
-                      minWidth: 13,
-                      minHeight: 13,
-                    ),
-                    child: Text(
-                      notificationCount.toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
         body: Container(
           color: Color(0xFF6AB8D6),
@@ -298,7 +250,8 @@ void _handleFCMMessage(RemoteMessage message) {
                             break;
                           case 1:
                             final String statusName = '';
-                            final Status status = StatusUtils.getStatusById(statusName);
+                            final Status status =
+                                StatusUtils.getStatusById(statusName);
                             ServiceRequest serviceRequest = ServiceRequest(
                               serviceDateTime: '',
                               id: '',
@@ -319,7 +272,11 @@ void _handleFCMMessage(RemoteMessage message) {
                               selectedTime: '',
                               acceptedTerms: true,
                               expertises: [],
-                              status: status,  devicesId: '', hasOffer: false, offers: [], subcategoryName: '',
+                              status: status,
+                              devicesId: '',
+                              hasOffer: false,
+                              offers: [],
+                              subcategoryName: '',
                             );
                             navigateToHomeServices(context, serviceRequest);
                             break;
@@ -330,7 +287,8 @@ void _handleFCMMessage(RemoteMessage message) {
                         children: [
                           Container(
                             width: MediaQuery.of(context).size.width * 0.8,
-                            height: MediaQuery.of(context).size.height * 0.5, // Aumenta la altura del contenedor
+                            height: MediaQuery.of(context).size.height *
+                                0.5, // Aumenta la altura del contenedor
                             decoration: BoxDecoration(
                               color: Color(0xFF145073),
                               borderRadius: BorderRadius.circular(20),
@@ -363,17 +321,22 @@ void _handleFCMMessage(RemoteMessage message) {
                   },
                 ),
               ),
+              SizedBox(height: 10),
               Align(
                 alignment: Alignment.center,
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.grey.withOpacity(0.5), // Color de fondo del círculo (puedes ajustar la opacidad)
+                    color: Colors.grey.withOpacity(
+                        0.5), // Color de fondo del círculo (puedes ajustar la opacidad)
                   ),
                   child: IconButton(
                     icon: _currentPage == services.length - 1
-                        ? Icon(Icons.arrow_back, color: Colors.white) // Flecha hacia atrás blanca
-                        : Icon(Icons.arrow_forward, color: Colors.white), // Flecha hacia adelante blanca
+                        ? Icon(Icons.arrow_back,
+                            color: Colors.white) // Flecha hacia atrás blanca
+                        : Icon(Icons.arrow_forward,
+                            color:
+                                Colors.white), // Flecha hacia adelante blanca
                     onPressed: () {
                       if (_currentPage < services.length - 1) {
                         _pageController.nextPage(
@@ -390,6 +353,7 @@ void _handleFCMMessage(RemoteMessage message) {
                   ),
                 ),
               ),
+              SizedBox(height: 20),
             ],
           ),
         ),

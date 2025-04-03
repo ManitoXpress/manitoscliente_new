@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
+
 import 'dart:math' as math;
 
-import 'package:manitoscliente_new/request/resquest.dart';
+import '../request/requestStatus.dart';
+
 class CustomTicketShapePainter extends CustomPainter { 
   final Status status; // Suponemos que status es un objeto de tipo `Status` que tiene un campo `id`
 

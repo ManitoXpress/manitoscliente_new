@@ -8,15 +8,9 @@ import 'package:http/http.dart';
 
 import 'package:flutter/material.dart';
 
-import 'package:manitoscliente_new/home.dart';
+import '../home.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+
 
 class NotificationService {
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;

@@ -1,5 +1,6 @@
-import 'package:manitoscliente_new/request/requestExpertise.dart';
-import 'package:manitoscliente_new/request/requestLocation.dart';
+
+import '../request/requestExpertise.dart';
+import '../request/requestLocation.dart';
 
 class WorkerDetails {
   final String id;

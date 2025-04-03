@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class MyTextStyles {
   static const TextStyle inputTextStyle = TextStyle(
     color: Color(0xFF000405),
@@ -141,7 +142,7 @@ class MyTextStyles {
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
-    fontSize: 18.0,
+    fontSize: 20.0,
   );
 
   static const TextStyle drawerButtonTextStyle1 = TextStyle(

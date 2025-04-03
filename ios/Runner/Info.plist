@@ -52,21 +52,22 @@
 	<key>NSAppleIDUsageDescription</key>
 	<string>Este descriptor se utiliza para iniciar sesión con Apple.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Esta aplicación necesita acceso a la cámara.</string>
+	<string>Necesitamos acceso a la cámara para que los trabajadores puedan tomar fotos al completar un trabajo y para que los clientes puedan compartir imágenes relevantes con los trabajadores.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Esta aplicación necesita acceso a su ubicación para proporcionar servicios de ubicación precisos incluso cuando la aplicación está en segundo plano.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Esta aplicación necesita acceso a su ubicación en todo momento.</string>
+	<string>Necesitamos acceso a su ubicación para enviar trabajadores a su domicilio y proporcionar servicios precisos y eficientes, incluso cuando la aplicación está en segundo plano.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Necesitamos acceso a su ubicación en todo momento para asegurarnos de que los trabajadores puedan llegar a su domicilio sin importar cuándo solicite el servicio.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Esta aplicación necesita acceder a su ubicación mientras está en uso.</string>
+	<string>Necesitamos acceder a su ubicación mientras la aplicación está en uso para guiar a los trabajadores a su domicilio y proporcionarle servicios precisos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Esta aplicación necesita acceso a la biblioteca de fotos para guardar imágenes.</string>
+	<string>Necesitamos acceso a la biblioteca de fotos para guardar imágenes tomadas por los trabajadores y clientes, permitiendo compartir fotos relevantes entre ellos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Esta aplicación necesita acceso a la biblioteca de fotos para que los usuarios puedan seleccionar y cargar imágenes desde su galería.</string>
+	<string>Necesitamos acceso a la biblioteca de fotos para que los clientes puedan seleccionar y cargar imágenes desde su galería, permitiendo compartir fotos relevantes con los trabajadores.</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Esta aplicación utiliza notificaciones para mantenerlo informado sobre eventos importantes.</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Esta aplicación utiliza su ID de dispositivo para ofrecerle una mejor experiencia y contenido personalizado.</string>
+	<string>Esta aplicación utiliza su ID de dispositivo para ofrecerle una mejor experiencia y contenido personalizado. Su ubicación se utiliza para conectarlo con trabajadores cercanos y proporcionar servicios precisos y eficientes. No compartimos su información personal sin su consentimiento.</string>
+
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

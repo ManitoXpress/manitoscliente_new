@@ -21,7 +21,8 @@ class DateTimeSelectionWizard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _DateTimeSelectionWizardState createState() => _DateTimeSelectionWizardState();
+  _DateTimeSelectionWizardState createState() =>
+      _DateTimeSelectionWizardState();
 }
 
 class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
@@ -40,7 +41,8 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
       context,
       pickerTheme: DateTimePickerTheme(
         showTitle: true,
-        confirm: Text('Confirmar', style: TextStyle(color: Colors.blue)),
+        confirm:
+            Text('Confirmar', style: TextStyle(color: const Color(0xFF1A819A))),
         cancel: Text('Cancelar', style: TextStyle(color: Colors.red)),
       ),
       minDateTime: DateTime.now().subtract(const Duration(days: 365)),
@@ -59,10 +61,12 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
   void _pickTime() {
     DatePicker.showDatePicker(
       context,
-      pickerMode: DateTimePickerMode.time, // Cambiamos el modo para el selector de tiempo
+      pickerMode: DateTimePickerMode
+          .time, // Cambiamos el modo para el selector de tiempo
       pickerTheme: DateTimePickerTheme(
         showTitle: true,
-        confirm: Text('Confirmar', style: TextStyle(color: Colors.blue)),
+        confirm:
+            Text('Confirmar', style: TextStyle(color: const Color(0xFF1A819A))),
         cancel: Text('Cancelar', style: TextStyle(color: Colors.red)),
       ),
       initialDateTime: DateTime(
@@ -102,7 +106,8 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
         ListTile(
           title: Text(
             _selectedTime != null
-                ? timeFormat.format(DateTime(1, 1, 1, _selectedTime!.hour, _selectedTime!.minute))
+                ? timeFormat.format(DateTime(
+                    1, 1, 1, _selectedTime!.hour, _selectedTime!.minute))
                 : 'Seleccione una hora',
             style: TextStyle(fontSize: 16.0),
           ),

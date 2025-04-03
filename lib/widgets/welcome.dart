@@ -1,11 +1,12 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../request/ResponseGet.dart';
 import '../Styles/stilo.dart';
 import '../metodos/RegisController.dart';
 import '../utils/validation.dart';
+
 class FirstTimeLoginScreen extends StatelessWidget {
   final RegistrationController registrationController;
 
@@ -14,10 +15,30 @@ class FirstTimeLoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Bienvenido',
-          style: MyTextStyles.buttonTextStyle,
+        title: Row(
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween, // Distribuir elementos
+          children: [
+            // Texto en la parte izquierda
+            Text(
+              'ManitoXpress',
+              style: MyTextStyles.buttonTextStyle,
+            ),
+            // Logo en la parte derecha
+            Flexible(
+              child: Container(
+                padding: EdgeInsets.all(10.w),
+                constraints: BoxConstraints(maxWidth: 0.22.sw),
+                child: Image.asset(
+                  'assets/images/LOGO1_Blanco.png',
+                  width: 0.22.sw,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ],
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Center(
         child: Column(
@@ -31,7 +52,7 @@ class FirstTimeLoginScreen extends StatelessWidget {
             SizedBox(height: 20), // Espacio entre la imagen y el texto
             Text(
               '¡Bienvenido!',
-              style: MyTextStyles.welcomeTotheJungle,
+              style: MyTextStyles.welcomeTotheJungle2,
             ),
             SizedBox(height: 20), // Espacio entre los textos
             Text(
@@ -43,7 +64,8 @@ class FirstTimeLoginScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 // Iniciar el proceso de registro
-                print("Comenzar registro presionado"); // Agrega esta línea para depurar
+                print(
+                    "Comenzar registro presionado"); // Agrega esta línea para depurar
                 registrationController.nextStep();
 
                 Navigator.push(
@@ -51,17 +73,20 @@ class FirstTimeLoginScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => RegistrationScreen(
                       registrationController: registrationController,
-                      completeRegistrationCallback: () {}, apiService2: ApiService2(),
+                      completeRegistrationCallback: () {},
+                      apiService2: ApiService2(),
                     ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16), // Ajusta el tamaño del botón
+                padding: EdgeInsets.symmetric(
+                    horizontal: 40, vertical: 16), // Ajusta el tamaño del botón
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
+                  borderRadius:
+                      BorderRadius.circular(30.0), // Bordes redondeados
                 ),
-                backgroundColor: Color(0xFF1A819A),// Color personalizado
+                backgroundColor: Color(0xFF1A819A), // Color personalizado
               ),
               child: Text(
                 'Comenzar registro',

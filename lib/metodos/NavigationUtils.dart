@@ -1,13 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
-import 'package:manitoscliente_new/metodos/auth_utils.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-// Importa la ubicación correcta de ServiceRequest
+
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/metodos/auth_utils.dart';
+
+import '../categorias/Service_DetailsScreen.dart';
+import '../request/requestServiceType.dart';
+import '../request/resquest.dart';
+import 'auth_utils.dart';
+
 
 class NavigationUtils {
   static void openServiceFormPage(

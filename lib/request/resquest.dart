@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/request/requestExpertise.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestStatus.dart';
-import 'package:manitoscliente_new/request/requestWoker.dart';
+import '../request/requestExpertise.dart';
+import '../request/requestServiceType.dart';
+import '../request/requestStatus.dart';
+import '../request/requestWoker.dart';
+
 class Offer {
   final String id;
   final String serviceId;

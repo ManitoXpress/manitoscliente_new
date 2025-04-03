@@ -13,6 +13,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   native_context_menu
   permission_handler_windows
   rive_common
+  share_plus
   url_launcher_windows
 )
 

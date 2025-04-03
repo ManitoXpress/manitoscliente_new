@@ -1,13 +1,18 @@
-import 'package:flutter/gestures.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+
+import '../Styles/stilo.dart';
 
 class MapScreen extends StatefulWidget {
   @override
   _MapScreenState createState() => _MapScreenState();
+
+  void onLocationSelected(LatLng latLng) {}
 }
 
 class _MapScreenState extends State<MapScreen> {
@@ -15,8 +20,9 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? selectedLocation;
   final Set<Marker> _markers = {};
   BitmapDescriptor? _customIcon;
-  final LatLng _initialPosition = LatLng(-17.783327, -63.182139);
+  final LatLng _initialPosition = LatLng(-17.7833, -63.1821);
   TextEditingController writtenLocationController = TextEditingController();
+  Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
 
   @override
   void initState() {
@@ -38,7 +44,8 @@ class _MapScreenState extends State<MapScreen> {
           Marker(
             markerId: MarkerId(currentLocation.toString()),
             position: currentLocation,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+            icon:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           ),
         );
       });
@@ -60,7 +67,8 @@ class _MapScreenState extends State<MapScreen> {
           Marker(
             markerId: MarkerId(_initialPosition.toString()),
             position: _initialPosition,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+            icon:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           ),
         );
       });
@@ -76,6 +84,11 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+    print("Mapa creado correctamente");
+  }
+
   Future<void> _loadCustomMarker() async {
     final customIcon = await BitmapDescriptor.fromAssetImage(
       const ImageConfiguration(size: Size(8, 8)),
@@ -84,44 +97,6 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _customIcon = customIcon;
     });
-    _setMarkers();
-  }
-
-  void _setMarkers() {
-    if (_customIcon == null) return;
-
-    setState(() {
-      _markers.add(Marker(
-        markerId: MarkerId('ubicacion_inicial'),
-        position: _initialPosition,
-        infoWindow: InfoWindow(
-          title: 'MULTIPARTES',
-          snippet: 'WhatsApp: +591 65884846',
-          onTap: () => _launchWhatsApp('59165884846'),
-        ),
-        icon: _customIcon!,
-      ));
-
-      _markers.add(Marker(
-        markerId: MarkerId('ubicacion_especifica'),
-        position: LatLng(-17.760530046301625, -63.15194373143163),
-        infoWindow: InfoWindow(
-          title: 'Repuesto Totti',
-          snippet: 'WhatsApp: +591 60978792',
-          onTap: () => _launchWhatsApp('59160978792'),
-        ),
-        icon: _customIcon!,
-      ));
-    });
-  }
-
-  void _launchWhatsApp(String phone) async {
-    String whatsappUrl = "https://wa.me/$phone";
-    if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
-      await launchUrl(Uri.parse(whatsappUrl));
-    } else {
-      throw 'No se pudo abrir WhatsApp.';
-    }
   }
 
   void _handleTap(LatLng loc) async {
@@ -136,10 +111,12 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(loc.latitude, loc.longitude);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(loc.latitude, loc.longitude);
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
-        String address = "${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}";
+        String address =
+            "${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}";
         writtenLocationController.text = address;
       } else {
         writtenLocationController.text = "Dirección no encontrada";
@@ -150,181 +127,169 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> _showMapScreen() async {
-    TextEditingController searchController = TextEditingController();
-
-    Position position;
-    try {
-      position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-    } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
-      position = Position(
-        latitude: _initialPosition.latitude,
-        longitude: _initialPosition.longitude,
-        timestamp: DateTime.now(),
-        accuracy: 1.0,
-        altitude: 0.0,
-        heading: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-        altitudeAccuracy: 1.0,
-        headingAccuracy: 1.0,
-      );
-    }
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setStateDialog) {
-            return Stack(
-              children: [
-                Column(
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        labelText: 'Buscar dirección',
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.search),
-                          onPressed: () async {
-                            final query = searchController.text;
-                            if (query.isNotEmpty) {
-                              try {
-                                final locations = await locationFromAddress(query);
-                                if (locations.isNotEmpty) {
-                                  final location = locations.first;
-                                  setStateDialog(() {
-                                    _handleTap(LatLng(location.latitude, location.longitude));
-                                  });
-                                } else {
-                                  print("No se encontró la dirección");
-                                }
-                              } catch (e) {
-                                print("Error buscando dirección: $e");
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GoogleMap(
-                        onMapCreated: (controller) {
-                          mapController = controller;
-                          setStateDialog(() {
-                            _handleTap(LatLng(position.latitude, position.longitude));
-                          });
-                        },
-                        onTap: (LatLng loc) {
-                          setStateDialog(() {
-                            _handleTap(loc);
-                          });
-                        },
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(position.latitude, position.longitude),
-                          zoom: 14.0,
-                        ),
-                        markers: _markers,
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text('Volver'),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (selectedLocation != null) {
-                              Navigator.pop(context);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text('Por favor, selecciona una ubicación.'),
-                              ));
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text('Aceptar'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Positioned(
-                  bottom: 160,
-                  right: 10,
-                  child: FloatingActionButton(
-                    onPressed: () async {
-                      try {
-                        final currentPosition = await Geolocator.getCurrentPosition(
-                          desiredAccuracy: LocationAccuracy.high,
-                        );
-                        setStateDialog(() {
-                          _handleTap(LatLng(currentPosition.latitude, currentPosition.longitude));
-                        });
-                      } catch (e) {
-                        print("Error obteniendo la ubicación actual: $e");
-                      }
-                    },
-                    child: Icon(Icons.gps_fixed),
-                    tooltip: "Ir a mi ubicación",
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Mapa Interactivo con Icono Personalizado'),
-        backgroundColor: Color(0xFF1A819A),
-      ),
-      body: GestureDetector(
-        onHorizontalDragStart: (details) {
-          // Evitar que el deslizamiento horizontal se propague al TabBarView
-        },
-        child: GoogleMap(
-          onMapCreated: (controller) {
-            mapController = controller;
-            _setMarkers(); // Asegúrate de que los marcadores personalizados se establezcan al crear el mapa
-          },
-          initialCameraPosition: CameraPosition(
-            target: _initialPosition,
-            zoom: 12,
+    TextEditingController searchController = TextEditingController();
+
+    // Definir una variable para el marcador seleccionado
+    Marker? selectedMarker;
+
+    // Obtener la ubicación actual del usuario
+    Future<Position> getPosition() async {
+      Position position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+      } catch (e) {
+        print("Error obteniendo la ubicación actual: $e");
+        position = Position(
+          latitude: _initialPosition.latitude,
+          longitude: _initialPosition.longitude,
+          timestamp: DateTime.now(),
+          accuracy: 1.0,
+          altitude: 0.0,
+          heading: 0.0,
+          speed: 0.0,
+          speedAccuracy: 0.0,
+          altitudeAccuracy: 1.0,
+          headingAccuracy: 1.0,
+        );
+      }
+      return position;
+    }
+
+    return FutureBuilder<Position>(
+      future: getPosition(), // Llamar a la función que obtiene la posición
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+              child:
+                  CircularProgressIndicator()); // Mostrar un cargando mientras se obtiene la ubicación
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}"));
+        }
+
+        // Una vez obtenida la ubicación
+        Position position = snapshot.data!;
+
+        return Scaffold(
+          body: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setStateDialog) {
+              return Stack(
+                children: [
+                  Column(
+                    children: [
+                      // Barra de búsqueda de dirección
+                      TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          labelText: 'Buscar dirección',
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.search),
+                            onPressed: () async {
+                              final query = searchController.text;
+                              if (query.isNotEmpty) {
+                                try {
+                                  final locations =
+                                      await locationFromAddress(query);
+                                  if (locations.isNotEmpty) {
+                                    final location = locations.first;
+                                    setStateDialog(() {
+                                      selectedMarker = Marker(
+                                        markerId: MarkerId('selected_location'),
+                                        position: LatLng(location.latitude,
+                                            location.longitude),
+                                        infoWindow: InfoWindow(
+                                            title: 'Ubicación seleccionada'),
+                                      );
+                                    });
+                                  } else {
+                                    print("No se encontró la dirección");
+                                  }
+                                } catch (e) {
+                                  print("Error buscando dirección: $e");
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      // Mapa de Google
+                      Expanded(
+                        child: GoogleMap(
+                          onMapCreated: (controller) {
+                            _onMapCreated(controller);
+                            _controller.complete(controller);
+                            // Establecer la posición inicial del mapa con la ubicación del usuario
+                            setStateDialog(() {
+                              selectedMarker = Marker(
+                                markerId: MarkerId('user_location'),
+                                position: LatLng(
+                                    position.latitude, position.longitude),
+                                infoWindow: InfoWindow(title: 'Tu ubicación'),
+                              );
+                            });
+                          },
+                          onTap: (LatLng loc) {
+                            setStateDialog(() {
+                              selectedMarker = Marker(
+                                markerId: MarkerId('selected_location'),
+                                position: loc,
+                                infoWindow:
+                                    InfoWindow(title: 'Ubicación seleccionada'),
+                              );
+                            });
+                          },
+                          initialCameraPosition: CameraPosition(
+                            target:
+                                LatLng(position.latitude, position.longitude),
+                            zoom: 14.0,
+                          ),
+                          markers:
+                              selectedMarker != null ? {selectedMarker!} : {},
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Botón flotante para obtener la ubicación actual
+                  Positioned(
+                    bottom: 100,
+                    right: 10,
+                    child: FloatingActionButton(
+                      onPressed: () async {
+                        try {
+                          final currentPosition =
+                              await Geolocator.getCurrentPosition(
+                            desiredAccuracy: LocationAccuracy.high,
+                          );
+                          setStateDialog(() {
+                            selectedMarker = Marker(
+                              markerId: MarkerId('current_location'),
+                              position: LatLng(currentPosition.latitude,
+                                  currentPosition.longitude),
+                              infoWindow:
+                                  InfoWindow(title: 'Mi ubicación actual'),
+                            );
+                          });
+                        } catch (e) {
+                          print("Error obteniendo la ubicación actual: $e");
+                        }
+                      },
+                      child: Icon(Icons.gps_fixed),
+                      tooltip: "Ir a mi ubicación",
+                      backgroundColor:
+                          Color(0xFF1A819A), // Cambiar el color de fondo aquí
+                    ),
+                  )
+                ],
+              );
+            },
           ),
-          markers: _markers,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: true,
-          zoomControlsEnabled: true,
-          tiltGesturesEnabled: true,
-          scrollGesturesEnabled: true,
-          zoomGesturesEnabled: true,
-          rotateGesturesEnabled: true,
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showMapScreen,
-        child: Icon(Icons.map),
-        backgroundColor: Color(0xFF1A819A),
-      ),
+        );
+      },
     );
   }
 }

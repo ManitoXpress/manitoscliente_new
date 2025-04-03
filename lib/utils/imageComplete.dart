@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:manitoscliente_new/request/requestWoker.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/home.dart';
+
+import '../Styles/stilo.dart';
+import '../home.dart';
+import '../request/requestWoker.dart';
 
 class ServiceCompletionDialog extends StatefulWidget {
   final String serviceId;

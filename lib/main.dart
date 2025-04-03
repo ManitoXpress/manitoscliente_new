@@ -6,31 +6,36 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart'; // Importa la librería de ATT
+
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Importa flutter_screenutil
-import 'package:manitoscliente_new/home.dart';
-import 'package:manitoscliente_new/utils/notification.dart';
-import 'package:manitoscliente_new/utils/notificationFcm.dart';
+import '../utils/fcmToken.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 import 'Loading.dart';
 import 'firebase_options.dart';
+import 'home.dart';
 import 'menu/Login.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'dart:io';
 // Handler para mensajes en segundo plano
-
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("Handling a background message: ${message.messageId}");
+  print("Handling a background message: \${message.messageId}");
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -39,10 +44,12 @@ void main() async {
     appleProvider: AppleProvider.appAttest,
   );
 
+  if (Platform.isIOS) {
+    await requestTrackingPermission(); // Solo en iOS
+  }
   await FCMService().init();
-
   final deviceId = await obtenerDeviceId();
-  print("Device ID: $deviceId");
+  print("Device ID: \$deviceId");
 
   runApp(
     ScreenUtilInit(
@@ -54,19 +61,29 @@ void main() async {
   );
 }
 
+Future<void> requestTrackingPermission() async {
+  if (Platform.isIOS) {
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      final result = await AppTrackingTransparency.requestTrackingAuthorization();
+      print("Estado de ATT: \$result");
+    }
+  }
+}
+
 Future<String> obtenerDeviceId() async {
   try {
     final deviceInfo = DeviceInfoPlugin();
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id?.toString() ?? 'Unknown Device ID';
+      return androidInfo.id ?? 'Unknown Device ID';
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
+      return iosInfo.identifierForVendor ?? 'Unknown Device ID';
     }
     return 'Unsupported Platform';
   } catch (e) {
-    print('Error obteniendo Device ID: $e');
+    print('Error obteniendo Device ID: \$e');
     return 'Error Device ID';
   }
 }
@@ -99,10 +116,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-    // Espera 2 segundos MÍNIMO (pero no bloquea otras operaciones)
     await Future.delayed(const Duration(seconds: 2));
-
     setState(() {
       isLoggedIn = loggedIn;
       isLoading = false;
@@ -124,21 +138,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       title: 'Manitos Xpress',
       theme: ThemeData(
-        primarySwatch: MaterialColor(
-          0xFF1A819A,
-          const <int, Color>{
-            50: Color(0xFF1A819A),
-            100: Color(0xFF1A819A),
-            200: Color(0xFF1A819A),
-            300: Color(0xFF1A819A),
-            400: Color(0xFF1A819A),
-            500: Color(0xFF1A819A),
-            600: Color(0xFF1A819A),
-            700: Color(0xFF1A819A),
-            800: Color(0xFF1A819A),
-            900: Color(0xFF1A819A),
-          },
-        ),
+        primarySwatch: _customPrimarySwatch(),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           secondary: Colors.grey,
           background: Colors.white,
@@ -148,11 +148,29 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           backgroundColor: Color(0xFF1A819A),
         ),
       ),
-      home: isLoading
-          ? LoadingScreen()
-          : isLoggedIn
-          ? HomeScreen()
-          : LoginScreen(deviceId: widget.deviceId),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => isLoading ? LoadingScreen() : (isLoggedIn ? HomeScreen() : LoginScreen(deviceId: widget.deviceId)),
+        '/home': (context) => HomeScreen(),  // Ruta definida para 'HomeScreen'
+      },
+    );
+  }
+
+  MaterialColor _customPrimarySwatch() {
+    return const MaterialColor(
+      0xFF1A819A,
+      <int, Color>{
+        50: Color(0xFFE1F5F7),
+        100: Color(0xFFB3E0E5),
+        200: Color(0xFF80CCD3),
+        300: Color(0xFF4DB8C1),
+        400: Color(0xFF26A7B1),
+        500: Color(0xFF1A819A), // Color principal
+        600: Color(0xFF15788D),
+        700: Color(0xFF126F80),
+        800: Color(0xFF0E6573),
+        900: Color(0xFF084D59),
+      },
     );
   }
 }
