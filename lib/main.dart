@@ -17,14 +17,9 @@ import 'firebase_options.dart';
 import 'home.dart';
 import 'menu/Login.dart';
 
-import 'package:firebase_core/firebase_core.dart';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'dart:io';
 // Handler para mensajes en segundo plano
@@ -76,7 +71,7 @@ Future<String> obtenerDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id ?? 'Unknown Device ID';
+      return androidInfo.id;
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor ?? 'Unknown Device ID';
