@@ -28,6 +28,8 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   bool _isLoading = true;
   bool _isProcessingPayment = false;
   bool _paymentCompleted = false;
+  final TextEditingController _nitController = TextEditingController();
+
 
   @override
   void initState() {
@@ -66,13 +68,13 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
   });
 
   try {
-    // Actualizar el estado del servicio a 'pending_confirmation2'
+    // Actualizar el estado del servicio
     await FirebaseFirestore.instance
         .collection('services')
         .doc(widget.serviceId)
         .update({'status': 'pending_confirmation2'});
 
-    // Actualizar el estado de la oferta asociada al servicio
+    // Buscar la oferta asociada al servicio
     final querySnapshot = await FirebaseFirestore.instance
         .collection('offers')
         .where('serviceId', isEqualTo: widget.serviceId)
@@ -80,17 +82,26 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
         .get();
 
     if (querySnapshot.docs.isNotEmpty) {
-      String offerId = querySnapshot.docs.first.id;
+      final offerDoc = querySnapshot.docs.first;
+      final offerId = offerDoc.id;
+
+      // Actualizar el estado y el NIT (si está presente)
       await FirebaseFirestore.instance
           .collection('offers')
           .doc(offerId)
-          .update({'status': 'pending_confirmation2'});
+          .update({
+            'status': 'pending_confirmation2',
+            'clientNIT': _nitController.text.trim().isNotEmpty
+                ? _nitController.text.trim()
+                : null,
+          });
+
       print('Estado de la oferta actualizado a pending_confirmation2.');
     } else {
       print('No se encontró ninguna oferta asociada al servicio.');
     }
 
-    // Monitorear el cambio de estado del servicio
+    // Escuchar cambios al servicio
     FirebaseFirestore.instance
         .collection('services')
         .doc(widget.serviceId)
@@ -103,9 +114,8 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
             _paymentCompleted = true;
             _isProcessingPayment = false;
           });
-          // Cerrar el diálogo después de que el estado sea 'completed'
           Future.delayed(Duration(seconds: 1), () {
-            Navigator.of(context).pop(true); // Cerrar el cuadro de diálogo
+            Navigator.of(context).pop(true);
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (context) => HomeScreen(initialPageIndex: 1),
@@ -127,6 +137,7 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
     );
   }
 }
+
 
 
 
@@ -184,6 +195,32 @@ class _ServiceCompletionDialogState extends State<ServiceCompletionDialog> {
                   textAlign: TextAlign.start,
                 ),
               ),
+              SizedBox(height: 12.0),
+              TextFormField(
+                controller: _nitController,
+                decoration: InputDecoration(
+                  labelText: '¿Necesita factura con NIT?',
+                  hintText: 'Ingrese su número de NIT',
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF1A819A)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF1A819A)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF1A819A), width: 2),
+                  ),
+                ),
+                style: MyTextStyles.formServiceTextStyle,
+                keyboardType: TextInputType.number,
+              ),
+              SizedBox(height: 16.0),
             ],
 
           ),
