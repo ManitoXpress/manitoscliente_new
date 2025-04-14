@@ -813,8 +813,20 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             ),
           ),
           ElevatedButton.icon(
-            onPressed: () =>
-                _openChat(widget.workerId, widget.serviceRequest.userId),
+            onPressed: () {
+              final userId = FirebaseAuth.instance.currentUser?.uid;
+
+              print("Botón de Chat presionado");
+              print("workerId: ${widget.workerId}");
+              print("userId (actual): $userId");
+
+              if (userId == null) {
+                print("Error: userId es null, usuario no autenticado");
+                return;
+              }
+
+              _openChat(widget.workerId, userId);
+            },
             icon: Icon(Icons.chat, color: Colors.white),
             label: Text(
               "Chat",
@@ -830,7 +842,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 borderRadius: BorderRadius.circular(10.0),
               ),
             ),
-          ),
+          )
         ],
       );
     }
@@ -863,38 +875,45 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   }
 
   void _openChat(String workerId, String userId) async {
-    final chatId = _generateChatId(workerId, userId);
+  print("Abriendo chat...");
+  final chatId = _generateChatId(workerId, userId);
+  print("Chat ID generado: $chatId");
 
-    // Referencia al documento del chat
-    final chatDoc = FirebaseFirestore.instance.collection('chats').doc(chatId);
+  final chatDoc = FirebaseFirestore.instance.collection('chats').doc(chatId);
 
-    // Verifica si el chat ya existe
-    final chatSnapshot = await chatDoc.get();
+  final chatSnapshot = await chatDoc.get();
+  print("Existe chat? ${chatSnapshot.exists}");
 
-    if (!chatSnapshot.exists) {
-      // Si el chat no existe, lo crea con información inicial
-      await chatDoc.set({
-        'chatId': chatId,
-        'participants': [userId, workerId],
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    }
-
-    // Navegar a la pantalla de chat (debes implementar esta pantalla)
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          chatId: chatId,
-          userId: userId,
-          workerId: workerId,
-        ),
-      ),
-    );
+  if (!chatSnapshot.exists) {
+    print("Creando nuevo documento de chat...");
+    await chatDoc.set({
+      'chatId': chatId,
+      'participants': [userId, workerId],
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+    print("Chat creado exitosamente");
+  } else {
+    print("El chat ya existe");
   }
 
+  // Navegar a la pantalla de chat
+  print("Navegando a la pantalla de chat");
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ChatScreen(
+        chatId: chatId,
+        userId: userId,
+        workerId: workerId,
+        isUser: true, // Add the required 'isUser' parameter
+      ),
+    ),
+  );
+}
+
+
   String _generateChatId(String workerId, String userId) {
-    // Generar un ID único basado en los IDs de los participantes
+    // Generar un ID único basado en los IDs de los participantes
     return workerId.hashCode <= userId.hashCode
         ? '$workerId\_$userId'
         : '$userId\_$workerId';

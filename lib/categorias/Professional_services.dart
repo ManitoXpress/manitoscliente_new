@@ -15,7 +15,6 @@ import '../request/requestServiceType.dart';
 import '../request/resquest.dart';
 import '../utils/status.dart';
 import 'Service_DetailsScreen.dart';
-
 class ProfessionalServicesScreen extends StatefulWidget {
   static int notificationCount = 0;
   @override
@@ -37,8 +36,10 @@ class _ProfessionalServicesScreenState
   String subcategoryName = '';
 
   List<ServiceResponse> subcategoriesToShow = [];
+  List<ServiceResponse> filteredSubcategories = []; // Lista filtrada para búsqueda
   TextEditingController searchController = TextEditingController();
   String searchText = '';
+  bool _isSearching = false; // Para controlar cuando se está buscando
   late ApiService2 _apiService2 =
       ApiService2(); // Crea una instancia de ApiService2
   String getFormattedDateTime() {
@@ -157,6 +158,7 @@ class _ProfessionalServicesScreenState
           // Muestra los servicios en caché inmediatamente
           setState(() {
             subcategoriesToShow = cachedServiceResponses;
+            filteredSubcategories = cachedServiceResponses; // Inicializar la lista filtrada
           });
 
           print('Servicios cargados desde caché.');
@@ -178,10 +180,10 @@ class _ProfessionalServicesScreenState
           serviceResponses.sort((a, b) => a.name.compareTo(b.name));
           setState(() {
             subcategoriesToShow = serviceResponses;
+            filteredSubcategories = serviceResponses; // Inicializar la lista filtrada
           });
 
           // Guarda los datos en caché
-
           prefs.setInt('cache_timestamp', now);
 
           print('Servicios cargados del backend y almacenados en caché.');
@@ -200,6 +202,20 @@ class _ProfessionalServicesScreenState
     _scrollController = ScrollController();
     // Llama a la función para obtener los servicios desde el backend aquí
     _loadServices();
+    
+    // Añadir listener para controlar la visibilidad del botón de limpiar
+    _textEditingController.addListener(() {
+      setState(() {
+        _showClearButton = _textEditingController.text.isNotEmpty;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _textEditingController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // Nueva función para cargar servicios principales y subcategorías
@@ -217,6 +233,32 @@ class _ProfessionalServicesScreenState
 
     setState(() {
       subcategoriesToShow = subcategories;
+      filteredSubcategories = subcategories; // Actualizar la lista filtrada
+      searchText = ''; // Limpiar el texto de búsqueda
+      _textEditingController.clear(); // Limpiar el campo de búsqueda
+    });
+  }
+
+  // Método para filtrar servicios según el texto de búsqueda
+  void _filterServices(String query) {
+    setState(() {
+      searchText = query;
+      if (query.isEmpty) {
+        filteredSubcategories = subcategoriesToShow;
+      } else {
+        filteredSubcategories = subcategoriesToShow
+            .where((service) =>
+                service.name.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+      
+      // Si hay un servicio seleccionado y ya no está en la lista filtrada, deseleccionarlo
+      if (_selectedServiceIndex != -1) {
+        final selectedId = subcategoriesToShow[_selectedServiceIndex].id;
+        if (!filteredSubcategories.any((service) => service.id == selectedId)) {
+          _selectedServiceIndex = -1;
+        }
+      }
     });
   }
 
@@ -231,7 +273,18 @@ class _ProfessionalServicesScreenState
   void _limpiarTextoBusqueda() {
     setState(() {
       searchText = '';
+      _showClearButton = false;
       _textEditingController.clear();
+      filteredSubcategories = subcategoriesToShow; // Restaurar la lista original
+    });
+  }
+
+  void _toggleSearchMode() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _limpiarTextoBusqueda();
+      }
     });
   }
 
@@ -240,11 +293,41 @@ class _ProfessionalServicesScreenState
     return Scaffold(
       appBar: AppBar(
         iconTheme: IconThemeData(color: Colors.white),
-        automaticallyImplyLeading: true, // Elimina la flecha de retroceso
-        title: Text(
-          'Servicios de hogar',
-          style: MyTextStyles.buttonTextStyle,
-        ),
+        automaticallyImplyLeading: true,
+        title: _isSearching
+            ? Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: TextField(
+                  controller: _textEditingController,
+                  onChanged: _filterServices,
+                  decoration: InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+                    hintText: 'Buscar servicios...',
+                    border: InputBorder.none,
+                    suffixIcon: _showClearButton
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: Color(0xFF1A819A)),
+                            onPressed: _limpiarTextoBusqueda,
+                          )
+                        : null,
+                  ),
+                ),
+              )
+            : Text(
+                'Servicios de hogar',
+                style: MyTextStyles.buttonTextStyle,
+              ),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.white),
+            onPressed: _toggleSearchMode,
+          ),
+        ],
       ),
       body: GestureDetector(
         onTap: () {
@@ -260,81 +343,88 @@ class _ProfessionalServicesScreenState
           child: Column(
             children: [
               SizedBox(height: 20),
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 10),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
-                      mainAxisSpacing:
-                          20.0, // Reduce el espacio entre las celdas
-                    ),
-                    itemCount: subcategoriesToShow.length,
-                    itemBuilder: (context, index) {
-                      final subcategory = subcategoriesToShow[index];
-                      return GestureDetector(
-                        onTap: () {
-                          _onSubcategoryTap(subcategory);
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
+              filteredSubcategories.isEmpty
+                  ? Expanded(
+                      child: Center(
+                        child: Text(
+                          'No se encontraron servicios',
+                          style: TextStyle(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    const Color(0xFF1A819A).withOpacity(0.15),
-                                spreadRadius: 0.5,
-                                blurRadius: 2,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white70,
-                                  borderRadius: BorderRadius.circular(
-                                      50), // Reducción del tamaño del contorno de la imagen
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(50),
-                                  child: CachedNetworkImage(
-                                    imageUrl: subcategory.image,
-                                    height: 80,
-                                    width: 80,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        CircularProgressIndicator(), // Indicador de carga
-                                    errorWidget: (context, url, error) => Icon(
-                                        Icons.error), // Widget para errores
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                  height:
-                                      8), // Reducción del espacio entre la imagen y el texto
-                              Text(
-                                subcategory.name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: MyTextStyles.drawerButtonTextStyle1,
-                              ),
-                            ],
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ),
+                      ),
+                    )
+                  : Expanded(
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 10),
+                        child: GridView.builder(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 20.0,
+                            mainAxisSpacing: 20.0,
+                          ),
+                          itemCount: filteredSubcategories.length,
+                          itemBuilder: (context, index) {
+                            final subcategory = filteredSubcategories[index];
+                            return GestureDetector(
+                              onTap: () {
+                                _onSubcategoryTap(subcategory);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF1A819A).withOpacity(0.15),
+                                      spreadRadius: 0.5,
+                                      blurRadius: 2,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white70,
+                                        borderRadius: BorderRadius.circular(50),
+                                      ),
+                                      padding: const EdgeInsets.all(4),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(50),
+                                        child: CachedNetworkImage(
+                                          imageUrl: subcategory.image,
+                                          height: 80,
+                                          width: 80,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              CircularProgressIndicator(),
+                                          errorWidget: (context, url, error) =>
+                                              Icon(Icons.error),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      subcategory.name,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: MyTextStyles.drawerButtonTextStyle1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
               SizedBox(height: 10),
               // Cuadro deslizable desde abajo
               AnimatedContainer(
@@ -364,12 +454,17 @@ class _ProfessionalServicesScreenState
   }
 
   Widget _buildServiceDetails() {
+    // Necesitamos encontrar el servicio seleccionado en la lista filtrada
     if (_selectedServiceIndex < 0 ||
         _selectedServiceIndex >= subcategoriesToShow.length) {
       return Container(); // No mostrar si el índice es inválido.
     }
 
-    final subcategory = subcategoriesToShow[_selectedServiceIndex];
+    final selectedService = subcategoriesToShow[_selectedServiceIndex];
+    final subcategory = filteredSubcategories.firstWhere(
+      (service) => service.id == selectedService.id,
+      orElse: () => selectedService,
+    );
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -472,6 +567,7 @@ class _ProfessionalServicesScreenState
 
   void _onSubcategoryTap(ServiceResponse subcategory) {
     if (subcategory.id.isNotEmpty) {
+      // Encontrar el índice en la lista original, no en la filtrada
       final index = subcategoriesToShow
           .indexWhere((service) => service.id == subcategory.id);
 

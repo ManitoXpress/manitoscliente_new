@@ -41,7 +41,10 @@ void main() async {
 
   if (Platform.isIOS) {
     await requestTrackingPermission(); // Solo en iOS
+    FirebaseFirestore.instance.settings = 
+      Settings(persistenceEnabled: true);
   }
+  
   await FCMService().init();
   final deviceId = await obtenerDeviceId();
   print("Device ID: \$deviceId");

@@ -46,6 +46,24 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
     return formattedDateTime;
   }
 
+  // Lista para mantener todos los servicios originales
+List<ServiceResponse> _allServices = [];
+
+void _filterServices() {
+  if (searchText.isEmpty) {
+    setState(() {
+      subcategoriesToShow = _allServices;
+    });
+  } else {
+    setState(() {
+      subcategoriesToShow = _allServices
+          .where((service) =>
+              service.name.toLowerCase().contains(searchText.toLowerCase()))
+          .toList();
+    });
+  }
+}
+
   void openNewPage(
       ServiceType serviceType,
       List<Expertise> expertises,
@@ -122,65 +140,67 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
 
   // Define una función para cargar los servicios
   Future<void> _loadServices() async {
-    print('Cargando servicios...');
+  print('Cargando servicios...');
 
-    try {
-      // Obtén el token
-      String? token = await AuthUtils.getToken();
+  try {
+    // Obtén el token
+    String? token = await AuthUtils.getToken();
 
-      if (token != null) {
-        print('Token: $token');
+    if (token != null) {
+      print('Token: $token');
 
-        // Carga datos desde el almacenamiento local antes de llamar al backend
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        final cachedServices = prefs.getString('cached_services');
-        final cacheTimestamp = prefs.getInt('cache_timestamp');
+      // Carga datos desde el almacenamiento local antes de llamar al backend
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final cachedServices = prefs.getString('cached_services');
+      final cacheTimestamp = prefs.getInt('cache_timestamp');
 
-        if (cachedServices != null) {
-          // Deserializa los servicios en caché
-          final List<dynamic> decodedJson = jsonDecode(cachedServices);
-          final List<ServiceResponse> cachedServiceResponses = decodedJson
-              .map((json) => ServiceResponse.fromJson(json))
-              .toList();
+      if (cachedServices != null) {
+        // Deserializa los servicios en caché
+        final List<dynamic> decodedJson = jsonDecode(cachedServices);
+        final List<ServiceResponse> cachedServiceResponses = decodedJson
+            .map((json) => ServiceResponse.fromJson(json))
+            .toList();
 
-          // Muestra los servicios en caché inmediatamente
-          setState(() {
-            subcategoriesToShow = cachedServiceResponses;
-          });
+        // Muestra los servicios en caché inmediatamente
+        setState(() {
+          _allServices = cachedServiceResponses;
+          subcategoriesToShow = cachedServiceResponses;
+        });
 
-          print('Servicios cargados desde caché.');
-        }
-
-        // Verifica si el caché es reciente (por ejemplo, 1 hora)
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final isCacheStale =
-            cacheTimestamp == null || (now - cacheTimestamp > 3600000);
-
-        if (isCacheStale || cachedServices == null) {
-          // Llama al backend si el caché está vacío o desactualizado
-          String parentId = 'h3ZOnJLzLTKldW8Py7wC';
-
-          final List<ServiceResponse> serviceResponses =
-              await _apiService2.fetchServicesFromBackend2(token, parentId);
-
-          // Ordena y actualiza el estado con los servicios del servidor
-          serviceResponses.sort((a, b) => a.name.compareTo(b.name));
-          setState(() {
-            subcategoriesToShow = serviceResponses;
-          });
-
-          // Guarda los datos en caché
-          prefs.setInt('cache_timestamp', now);
-
-          print('Servicios cargados del backend y almacenados en caché.');
-        }
-      } else {
-        print('No se pudo obtener el token.');
+        print('Servicios cargados desde caché.');
       }
-    } catch (e) {
-      print('Error al cargar los servicios: $e');
+
+      // Verifica si el caché es reciente (por ejemplo, 1 hora)
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final isCacheStale =
+          cacheTimestamp == null || (now - cacheTimestamp > 3600000);
+
+      if (isCacheStale || cachedServices == null) {
+        // Llama al backend si el caché está vacío o desactualizado
+        String parentId = 'h3ZOnJLzLTKldW8Py7wC';
+
+        final List<ServiceResponse> serviceResponses =
+            await _apiService2.fetchServicesFromBackend2(token, parentId);
+
+        // Ordena y actualiza el estado con los servicios del servidor
+        serviceResponses.sort((a, b) => a.name.compareTo(b.name));
+        setState(() {
+          _allServices = serviceResponses;
+          subcategoriesToShow = serviceResponses;
+        });
+
+        // Guarda los datos en caché
+        prefs.setInt('cache_timestamp', now);
+
+        print('Servicios cargados del backend y almacenados en caché.');
+      }
+    } else {
+      print('No se pudo obtener el token.');
     }
+  } catch (e) {
+    print('Error al cargar los servicios: $e');
   }
+}
 
   @override
   void initState() {
@@ -200,13 +220,16 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
 
   // En tu función loadServicesForSubcategory, carga las subcategorías específicas
   void loadServicesForSubcategory(String categoryId) {
-    // Limpia la selección actual
-    final subcategories = loadSubcategories(subcategoriesToShow, categoryId);
+  // Limpia la selección actual
+  final subcategories = loadSubcategories(_allServices, categoryId);
 
-    setState(() {
-      subcategoriesToShow = subcategories;
-    });
-  }
+  setState(() {
+    _allServices = subcategories;
+    subcategoriesToShow = subcategories;
+    searchText = '';
+    searchController.clear();
+  });
+}
 
   void _showNotifications(BuildContext context) {
     ServiceFunctions.showNotifications(
@@ -224,15 +247,61 @@ class _HomeServicesScreenState extends State<HomeServicesScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
-        title: Text(
-          'Servicios Profesionales',
-          style: MyTextStyles.buttonTextStyle,
-        ),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      iconTheme: IconThemeData(color: Colors.white),
+      title: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Servicios Profesionales',
+              style: MyTextStyles.buttonTextStyle,
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: 'Buscar servicios...',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 15),
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      searchController.text.isEmpty ? Icons.search : Icons.clear,
+                      color: Color(0xFF1A819A),
+                    ),
+                    onPressed: () {
+                      if (searchController.text.isNotEmpty) {
+                        searchController.clear();
+                        setState(() {
+                          searchText = '';
+                          _filterServices();
+                        });
+                      }
+                    },
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    searchText = value;
+                    _filterServices();
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
       ),
+    ),
       body: GestureDetector(
         onTap: () {
           if (_selectedServiceIndex != -1) {
