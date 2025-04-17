@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'Styles/stilo.dart';
-import 'metodos/workers.dart';
+import 'controller/workers.dart';
 
 class FavoriteScreen extends StatelessWidget {
   @override

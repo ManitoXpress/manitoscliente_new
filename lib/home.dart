@@ -12,7 +12,7 @@ import 'categorias/service_screen.dart';
 import 'menu/Referido.dart';
 import 'menu/UserProfile.dart';
 import 'menu/help.dart';
-import 'metodos/RegisController.dart';
+import 'controller/RegisController.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialPageIndex;

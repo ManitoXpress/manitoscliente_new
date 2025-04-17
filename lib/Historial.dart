@@ -24,9 +24,9 @@ import '../utils/serviceInProgress.dart';
 import '../widgets/serviceList.dart';
 
 import 'Styles/stilo.dart';
-import 'metodos/RegisController.dart';
-import 'metodos/notificationService.dart';
-import 'metodos/serviceFetcher.dart';
+import 'controller/RegisController.dart';
+import 'controller/notificationService.dart';
+import 'controller/serviceFetcher.dart';
 
 class Historial extends StatefulWidget {
   final VoidCallback? onTabTapped;

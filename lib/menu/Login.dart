@@ -13,169 +13,154 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../metodos/logincontroller.dart';
+import '../controller/logincontroller.dart';
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
-import '../home.dart';
-import '../metodos/RegisController.dart';
-import '../request/resquest.dart';
-import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:rive/rive.dart' as rive;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({Key? key, required String deviceId}) : super(key: key);
+  final String deviceId;
+  final VoidCallback onLoginSuccess;
+
+  const LoginScreen({
+    Key? key,
+    required this.deviceId,
+    required this.onLoginSuccess,
+  }) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginScreen> {
+  // Rive animation
   late String animationURL;
   rive.Artboard? _teddyArtboard;
   rive.SMITrigger? successTrigger, failTrigger;
   rive.SMIBool? isHandsUp, isChecking;
   rive.SMINumber? numLook;
+  rive.StateMachineController? stateMachineController;
+
+  // Auth
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  List<ServiceRequest> serviceRequests = [];
-  bool isPasswordVisible = false;
-  bool isLoadingGoogle = false;
-  bool isLoadingApple = false;
-
-  rive.StateMachineController? stateMachineController;
+  // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final loginController = LoginScreenController();
 
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Loaders
+  bool isLoadingGoogle = false;
+  bool isLoadingApple = false;
 
   @override
   void initState() {
     super.initState();
+    // Load Rive
     animationURL = defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS
         ? 'assets/animations/manito_cliente.riv'
         : 'assets/animations/manito_cliente.riv';
-
     rootBundle.load(animationURL).then((data) {
       final file = rive.RiveFile.import(data);
       final artboard = file.mainArtboard;
-      stateMachineController =
-          rive.StateMachineController.fromArtboard(artboard, "State Machine 1");
+      stateMachineController = rive.StateMachineController.fromArtboard(
+          artboard, "State Machine 1");
       if (stateMachineController != null) {
         artboard.addController(stateMachineController!);
-
-        stateMachineController!.inputs.forEach((element) {
-          switch (element.name) {
+        for (final input in stateMachineController!.inputs) {
+          switch (input.name) {
             case "success":
-              successTrigger = element as rive.SMITrigger;
+              successTrigger = input as rive.SMITrigger;
               break;
             case "fail":
-              failTrigger = element as rive.SMITrigger;
+              failTrigger = input as rive.SMITrigger;
               break;
             case "hands_up":
-              isHandsUp = element as rive.SMIBool;
+              isHandsUp = input as rive.SMIBool;
               break;
             case "idle":
-              isChecking = element as rive.SMIBool;
+              isChecking = input as rive.SMIBool;
               break;
             case "Look_down_left":
-              numLook = element as rive.SMINumber;
-              break;
-            default:
+              numLook = input as rive.SMINumber;
               break;
           }
-        });
+        }
       }
-
       setState(() => _teddyArtboard = artboard);
     });
 
+    // Mostrar términos
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(
-              "Términos y Condiciones",
-              style: MyTextStyles.inputTextStyle4,
+        builder: (_) => AlertDialog(
+          title: Text(
+            "Términos y Condiciones",
+            style: MyTextStyles.inputTextStyle4,
+          ),
+          content: TextButton(
+            onPressed: () => launch(
+                'https://manitoxpress-cf855.web.app/#/PrivacyPage'),
+            child: Text(
+              'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
+              style: MyTextStyles.drawerButtonTextStyle6,
             ),
-            content: TextButton(
-              onPressed: () {
-                launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
-              },
-              child: Text(
-                'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
-                style: MyTextStyles.drawerButtonTextStyle6,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF1A819A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: const BorderSide(color: Color(0xFF1A819A)),
+                ),
               ),
+              child: Text("Aceptar", style: MyTextStyles.linkTextStyle),
             ),
-            actions: [
-              TextButton(
-                child: Text(
-                  "Aceptar",
-                  style: MyTextStyles.linkTextStyle,
-                ),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Color(
-                      0xFF1A819A), // Color del texto, el mismo que el borde
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(
-                      color: Color(0xFF1A819A), // Color del borde
-                    ),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
+          ],
+        ),
       );
     });
   }
-    Future<void> _signInAsGuest() async {
+
+  /// Inicio como invitado
+  Future<void> _signInAsGuest() async {
     try {
-      // Aquí puedes manejar la lógica de inicio de sesión como invitado
       print("Usuario ingresó como invitado");
-      // Navegar a la pantalla de inicio
-      Navigator.pushReplacementNamed(context, '/home');
+      widget.onLoginSuccess();
     } catch (e) {
       print('Error al iniciar como invitado: $e');
     }
   }
 
-
-  Future<void> signInWithApple() async {
-    setState(() => isLoadingApple = true);
-    try {
-      await LoginScreenController.signInWithApple(context);
-    } catch (e) {
-      print('Error al iniciar sesión con Apple: $e');
-    } finally {
-      setState(() => isLoadingApple = false);
-    }
-  }
-
+  /// Login con Google
   Future<void> signInWithGoogle() async {
     setState(() => isLoadingGoogle = true);
     try {
       await LoginScreenController.signInWithGoogle(context);
+      widget.onLoginSuccess();
     } catch (e) {
       print('Error al iniciar sesión con Google: $e');
     } finally {
       setState(() => isLoadingGoogle = false);
+    }
+  }
+
+  /// Login con Apple
+  Future<void> signInWithApple() async {
+    setState(() => isLoadingApple = true);
+    try {
+      await LoginScreenController.signInWithApple(context);
+      widget.onLoginSuccess();
+    } catch (e) {
+      print('Error al iniciar sesión con Apple: $e');
+    } finally {
+      setState(() => isLoadingApple = false);
     }
   }
 
@@ -190,29 +175,19 @@ class _LoginFormState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.spaceBetween, // Distribuir elementos
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Texto en la parte izquierda
-            Text(
-              'ManitoXpress',
-              style: MyTextStyles.buttonTextStyle,
-            ),
-            // Logo en la parte derecha
+            Text('ManitoXpress', style: MyTextStyles.buttonTextStyle),
             Flexible(
               child: Container(
                 padding: EdgeInsets.all(10.w),
                 constraints: BoxConstraints(maxWidth: 0.22.sw),
                 child: Image.asset(
                   'assets/images/LOGO1_Blanco.png',
-                  width: 0.22.sw,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -232,30 +207,24 @@ class _LoginFormState extends State<LoginScreen> {
                   SizedBox(
                     width: 0.8.sw,
                     height: 0.38.sh,
-                    child: rive.Rive(
-                      artboard: _teddyArtboard!,
-                      fit: BoxFit.fitWidth,
-                    ),
+                    child: rive.Rive(artboard: _teddyArtboard!, fit: BoxFit.fitWidth),
                   ),
                 SizedBox(height: 10.h),
-                Text(
-                  'Bienvenidos a Manitos Xpress',
-                  style: MyTextStyles.welcomeTotheJungle1,
-                ),
+                Text('Bienvenidos a Manitos Xpress', style: MyTextStyles.welcomeTotheJungle1),
                 SizedBox(height: 10.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Botón de Google
+                    // Google
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1A819A),
-                        shape: CircleBorder(),
+                        backgroundColor: const Color(0xFF1A819A),
+                        shape: const CircleBorder(),
                         padding: EdgeInsets.all(3.w),
                       ),
                       onPressed: isLoadingGoogle ? null : signInWithGoogle,
                       child: isLoadingGoogle
-                          ? CircularProgressIndicator()
+                          ? const CircularProgressIndicator()
                           : CircleAvatar(
                               backgroundColor: Colors.white,
                               radius: 40.r,
@@ -265,73 +234,50 @@ class _LoginFormState extends State<LoginScreen> {
                                 child: CircleAvatar(
                                   radius: 35.r,
                                   backgroundColor: Colors.white,
-                                  child: Column(
+                                  child: const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        FontAwesomeIcons.google,
-                                        color: Color(0xFF1A819A),
-                                      ),
-                                      Text(
-                                        'Inicio',
-                                        style: GoogleFonts.lato(
-                                          color: Color(0xFF1A819A),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                       Icon(FontAwesomeIcons.google, color: Color(0xFF1A819A)),
+                                      Text('Google', style: MyTextStyles.linkTextStyle),
                                     ],
                                   ),
                                 ),
                               ),
                             ),
                     ),
-                    SizedBox(width: 10.w), // Espacio entre los botones
-                   // Botón de Invitado
+                    SizedBox(width: 10.w),
+                    // Invitado
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey, // Color neutral para el botón de invitado
-                        shape: CircleBorder(),
+                        backgroundColor: Colors.grey,
+                        shape: const CircleBorder(),
                         padding: EdgeInsets.all(3.w),
                       ),
-                      onPressed: _signInAsGuest, // Llama a la función de inicio como invitado
+                      onPressed: _signInAsGuest,
                       child: CircleAvatar(
                         backgroundColor: Colors.white,
                         radius: 40.r,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.person_outline,
-                              color: Colors.black,
-                              size: 30.r, // Tamaño ajustado del icono
-                            ),
-                            SizedBox(height: 4.h), // Espacio entre icono y texto
-                            Text(
-                              'Invitado',
-                              style: GoogleFonts.lato(
-                                color: Colors.black,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          children: const [
+                            Icon(Icons.person_outline, color: Colors.black),
+                            SizedBox(height: 4),
+                            Text('Invitado', style: TextStyle(color: Colors.black)),
                           ],
                         ),
                       ),
                     ),
-
-      
-                  SizedBox(width: 10.w),
-                    // Botón de Apple
+                    SizedBox(width: 10.w),
+                    // Apple
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1A819A),
-                        shape: CircleBorder(),
+                        backgroundColor: const Color(0xFF1A819A),
+                        shape: const CircleBorder(),
                         padding: EdgeInsets.all(3.w),
                       ),
                       onPressed: isLoadingApple ? null : signInWithApple,
                       child: isLoadingApple
-                          ? CircularProgressIndicator()
+                          ? const CircularProgressIndicator()
                           : CircleAvatar(
                               backgroundColor: Colors.white,
                               radius: 40.r,
@@ -344,18 +290,8 @@ class _LoginFormState extends State<LoginScreen> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        FontAwesomeIcons.apple,
-                                        color: Color(0xFF1A819A),
-                                      ),
-                                      Text(
-                                        'Apple',
-                                        style: GoogleFonts.lato(
-                                          color: Color(0xFF1A819A),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      const Icon(Icons.apple, color: Color(0xFF1A819A)),
+                                      Text('Apple', style: MyTextStyles.linkTextStyle),
                                     ],
                                   ),
                                 ),
@@ -364,42 +300,24 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 20.h), // Espacio entre los botones y el nuevo botón
-                // Botón de Eliminar Cuenta
+                SizedBox(height: 20.h),
+                // Eliminar cuenta
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1A819A), // Color rojo para el botón de eliminar
-                    shape: CircleBorder(),
+                    backgroundColor: const Color(0xFF1A819A),
+                    shape: const CircleBorder(),
                     padding: EdgeInsets.all(3.w),
                   ),
                   onPressed: _launchDeleteAccountURL,
                   child: CircleAvatar(
                     backgroundColor: Colors.white,
                     radius: 40.r,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 37.r,
-                      child: CircleAvatar(
-                        radius: 35.r,
-                        backgroundColor: Colors.white,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.delete,
-                              color: Colors.red,
-                            ),
-                            Text(
-                              'Eliminar',
-                              style: GoogleFonts.lato(
-                                color: Colors.red,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.delete, color: Colors.red),
+                        Text('Eliminar', style: TextStyle(color: Colors.red)),
+                      ],
                     ),
                   ),
                 ),

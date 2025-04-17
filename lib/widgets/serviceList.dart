@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../Styles/stilo.dart';
-import '../metodos/serviceFetcher.dart';
-import '../metodos/ticketController.dart';
+import '../controller/serviceFetcher.dart';
+import '../controller/ticketController.dart';
 import '../request/dataprofile.dart';
 import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';

@@ -7,7 +7,7 @@ import '../categorias/terms.dart';
 
 import '../Styles/stilo.dart';
 import '../home.dart';
-import '../metodos/auth_utils.dart';
+import '../controller/auth_utils.dart';
 import '../request/ResponsePost.dart';
 import '../request/resquest.dart';
 import '../utils/compres.dart';

@@ -8,8 +8,8 @@ import '../request/requestServiceType.dart';
 import '../request/requestWoker.dart';
 import '../request/resquest.dart';
 
-import '../metodos/auth_utils.dart';
-import '../metodos/baseurl.dart';
+import '../controller/auth_utils.dart';
+import '../controller/baseurl.dart';
 import 'dataprofile.dart';
 
 class ApiService2 {

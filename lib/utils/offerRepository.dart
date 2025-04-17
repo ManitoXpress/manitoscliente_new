@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
-import '../metodos/serviceFetcher.dart';
+import '../controller/serviceFetcher.dart';
 import '../request/ResponseGet.dart';
 import '../request/requestExpertise.dart';
 import '../request/requestServiceType.dart';

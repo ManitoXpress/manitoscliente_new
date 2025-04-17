@@ -1,4 +1,4 @@
-import '../metodos/RegisController.dart';
+import '../controller/RegisController.dart';
 
 class UserData {
   String userId;

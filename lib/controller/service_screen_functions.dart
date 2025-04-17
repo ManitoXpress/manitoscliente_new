@@ -10,14 +10,19 @@ void navigateToServiceDetails(BuildContext context, int index) {
 }
 
 void navigateToHomeServices(
-    BuildContext context, ServiceRequest serviceRequest) {
+  BuildContext context,
+  String parentCategoryId,
+) {
   Navigator.push(
     context,
     MaterialPageRoute(
-        builder: (context) =>
-            HomeServicesScreen(serviceRequest: serviceRequest)),
+      builder: (context) => HomeServicesScreen(
+        parentCategoryId: parentCategoryId,
+      ),
+    ),
   );
 }
+
 
 void navigateToProfessionalServices(BuildContext context) {
   Navigator.push(

@@ -11,9 +11,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../Historial.dart';
 import '../Styles/stilo.dart';
-import '../metodos/auth_utils.dart';
-import '../metodos/home_screen_functions.dart';
-import '../metodos/service_screen_functions.dart';
+import '../controller/auth_utils.dart';
+import '../controller/home_screen_functions.dart';
+import '../controller/service_screen_functions.dart';
 import '../request/ResponseGet.dart';
 import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
@@ -278,7 +278,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                               offers: [],
                               subcategoryName: '',
                             );
-                            navigateToHomeServices(context, serviceRequest);
+                            navigateToHomeServices(context, service.id);
                             break;
                         }
                       },

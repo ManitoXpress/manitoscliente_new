@@ -5,8 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
 
-import '../metodos/RegisController.dart';
-import '../metodos/baseurl.dart';
+import '../controller/RegisController.dart';
+import '../controller/baseurl.dart';
 import 'requestStatus.dart';
 import 'resquest.dart';
 

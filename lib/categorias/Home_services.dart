@@ -1,431 +1,204 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/controller/home_Provider.dart';
 import '../request/resquest.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import '../Styles/stilo.dart';
-import '../metodos/auth_utils.dart';
-import '../metodos/home_screen_functions.dart';
+import '../controller/auth_utils.dart';
+import '../controller/home_screen_functions.dart';
 import '../request/ResponseGet.dart';
 import '../request/requestExpertise.dart';
 import '../request/requestServiceType.dart';
 import '../utils/status.dart';
 import 'Service_DetailsScreen.dart';
+// home_services_screen.dart
 
-class HomeServicesScreen extends StatefulWidget {
-  static int notificationCount = 0;
-  final ServiceRequest serviceRequest; // Agrega esta línea
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-  HomeServicesScreen({required this.serviceRequest});
-  @override
-  _HomeServicesScreenState createState() => _HomeServicesScreenState();
-}
+import 'package:cached_network_image/cached_network_image.dart';
 
-class _HomeServicesScreenState extends State<HomeServicesScreen> {
-  late List<ServiceResponse> services = [];
-  int _selectedServiceIndex = -1;
-
-  String selectedButtonType = '';
-  int notificationCount = 0;
-  bool _showClearButton = false;
-  TextEditingController _textEditingController = TextEditingController();
-  late ScrollController _scrollController;
-  String selectedCategoryId = "";
-
-  List<ServiceResponse> subcategoriesToShow = [];
-  TextEditingController searchController = TextEditingController();
-  String searchText = '';
-  late ApiService2 _apiService2 =
-      ApiService2(); // Crea una instancia de ApiService2
-  String getFormattedDateTime() {
-    DateTime now = DateTime.now().toUtc();
-    String formattedDateTime = now.toIso8601String();
-    return formattedDateTime;
-  }
-
-  // Lista para mantener todos los servicios originales
-List<ServiceResponse> _allServices = [];
-
-void _filterServices() {
-  if (searchText.isEmpty) {
-    setState(() {
-      subcategoriesToShow = _allServices;
-    });
-  } else {
-    setState(() {
-      subcategoriesToShow = _allServices
-          .where((service) =>
-              service.name.toLowerCase().contains(searchText.toLowerCase()))
-          .toList();
-    });
-  }
-}
-
-  void openNewPage(
-      ServiceType serviceType,
-      List<Expertise> expertises,
-      String categoryId,
-      String expertiseId,
-      String expertiseName,
-      BuildContext context) {
-    print(
-        'Abriendo formulario para ${expertises.map((e) => e.name).join(', ')}');
-
-    final status = StatusUtils.getStatusById(
-        expertises.isNotEmpty ? expertises.first.id : '');
-
-    final formattedDateTime = getFormattedDateTime();
-
-    String? formattedSelectedDate;
-    if (serviceType.selectedDate != null &&
-        serviceType.selectedDate.isNotEmpty) {
-      final selectedDateTime = DateTime.tryParse(serviceType.selectedDate);
-
-      if (selectedDateTime != null) {
-        formattedSelectedDate = selectedDateTime.toUtc().toIso8601String();
-      } else {
-        print('Fecha en formato incorrecto: ${serviceType.selectedDate}');
-        return;
-      }
-    } else {
-      final now = DateTime.now().toUtc();
-      formattedSelectedDate = now.toIso8601String();
-    }
-
-    final serviceRequest = ServiceRequest(
-      serviceDateTime: formattedDateTime,
-      description: '',
-      images: [],
-      location: {'lat': 0.0, 'lng': 0.0},
-      offeredPrice: 0.0,
-      serviceType: serviceType, // Pasa el objeto ServiceType directamente
-      userId: '', // Reemplaza con el usuario real
-      workerId: '',
-      isFavorite: false,
-      selectedDate: formattedSelectedDate,
-      selectedTime: serviceType.selectedTime ?? '',
-      acceptedTerms: true,
-      id: '',
-      status: status,
-      expertises: expertises,
-
-      devicesId: '',
-      hasOffer: false,
-      offers: [], subcategoryName: '',
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ServiceFormPage(
-          serviceRequest: serviceRequest,
-          acceptTerms: true,
-          selectedDate: DateTime.now(),
-          token: '',
-          selectedServiceTitle: expertises.map((e) => e.name).join(', '),
-          selectedTime: '',
-          serviceRequests: [],
-          categoryId: categoryId,
-          expertiseId: expertiseId,
-          expertiseName: expertiseName,
-        ),
-      ),
-    );
-
-    print('Formulario abierto');
-  }
-
-  // Define una función para cargar los servicios
-  Future<void> _loadServices() async {
-  print('Cargando servicios...');
-
-  try {
-    // Obtén el token
-    String? token = await AuthUtils.getToken();
-
-    if (token != null) {
-      print('Token: $token');
-
-      // Carga datos desde el almacenamiento local antes de llamar al backend
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final cachedServices = prefs.getString('cached_services');
-      final cacheTimestamp = prefs.getInt('cache_timestamp');
-
-      if (cachedServices != null) {
-        // Deserializa los servicios en caché
-        final List<dynamic> decodedJson = jsonDecode(cachedServices);
-        final List<ServiceResponse> cachedServiceResponses = decodedJson
-            .map((json) => ServiceResponse.fromJson(json))
-            .toList();
-
-        // Muestra los servicios en caché inmediatamente
-        setState(() {
-          _allServices = cachedServiceResponses;
-          subcategoriesToShow = cachedServiceResponses;
-        });
-
-        print('Servicios cargados desde caché.');
-      }
-
-      // Verifica si el caché es reciente (por ejemplo, 1 hora)
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final isCacheStale =
-          cacheTimestamp == null || (now - cacheTimestamp > 3600000);
-
-      if (isCacheStale || cachedServices == null) {
-        // Llama al backend si el caché está vacío o desactualizado
-        String parentId = 'h3ZOnJLzLTKldW8Py7wC';
-
-        final List<ServiceResponse> serviceResponses =
-            await _apiService2.fetchServicesFromBackend2(token, parentId);
-
-        // Ordena y actualiza el estado con los servicios del servidor
-        serviceResponses.sort((a, b) => a.name.compareTo(b.name));
-        setState(() {
-          _allServices = serviceResponses;
-          subcategoriesToShow = serviceResponses;
-        });
-
-        // Guarda los datos en caché
-        prefs.setInt('cache_timestamp', now);
-
-        print('Servicios cargados del backend y almacenados en caché.');
-      }
-    } else {
-      print('No se pudo obtener el token.');
-    }
-  } catch (e) {
-    print('Error al cargar los servicios: $e');
-  }
-}
+class HomeServicesScreen extends StatelessWidget {
+  final String parentCategoryId; 
+  const HomeServicesScreen({Key? key, required this.parentCategoryId,})
+      : super(key: key);
 
   @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    // Llama a la función para obtener los servicios desde el backend aquí
-    _loadServices();
-  }
-
-  // Nueva función para cargar servicios principales y subcategorías
-  List<ServiceResponse> loadSubcategories(
-      List<ServiceResponse> allServices, String categoryId) {
-    return allServices
-        .where((service) => service.parentId == categoryId)
-        .toList();
-  }
-
-  // En tu función loadServicesForSubcategory, carga las subcategorías específicas
-  void loadServicesForSubcategory(String categoryId) {
-  // Limpia la selección actual
-  final subcategories = loadSubcategories(_allServices, categoryId);
-
-  setState(() {
-    _allServices = subcategories;
-    subcategoriesToShow = subcategories;
-    searchText = '';
-    searchController.clear();
-  });
-}
-
-  void _showNotifications(BuildContext context) {
-    ServiceFunctions.showNotifications(
-      context,
-      title: 'Nuevo Servicio Creado',
-      body: 'Haz clic para ver los detalles del servicio.',
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) =>
+          HomeServicesProvider()..loadServices(parentId: parentCategoryId),
+      child: const _HomeServicesView(),
     );
   }
+}
 
-  void _limpiarTextoBusqueda() {
-    setState(() {
-      searchText = '';
-      _textEditingController.clear();
-    });
-  }
+class _HomeServicesView extends StatelessWidget {
+  const _HomeServicesView();
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      iconTheme: IconThemeData(color: Colors.white),
-      title: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Servicios Profesionales',
-              style: MyTextStyles.buttonTextStyle,
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Buscar servicios...',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 15),
-                  border: InputBorder.none,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      searchController.text.isEmpty ? Icons.search : Icons.clear,
-                      color: Color(0xFF1A819A),
-                    ),
-                    onPressed: () {
-                      if (searchController.text.isNotEmpty) {
-                        searchController.clear();
-                        setState(() {
-                          searchText = '';
-                          _filterServices();
-                        });
-                      }
-                    },
+  Widget build(BuildContext context) {
+    final prov = context.watch<HomeServicesProvider>();
+
+    return Scaffold(
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: true,
+        title: prov.isSearching
+            ? Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: TextField(
+                  onChanged: prov.filter,
+                  decoration: InputDecoration(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 15),
+                    hintText: 'Buscar servicios...',
+                    border: InputBorder.none,
+                    suffixIcon:
+                        prov.displayedServices.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear,
+                                    color: Color(0xFF1A819A)),
+                                onPressed: prov.clearFilter,
+                              )
+                            : null,
                   ),
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    searchText = value;
-                    _filterServices();
-                  });
-                },
+              )
+            : const Text(
+                'Servicios Profesionales',
+                style: MyTextStyles.buttonTextStyle,
               ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              prov.isSearching ? Icons.close : Icons.search,
+              color: Colors.white,
             ),
+            onPressed: prov.toggleSearchMode,
           ),
         ],
       ),
-    ),
       body: GestureDetector(
-        onTap: () {
-          if (_selectedServiceIndex != -1) {
-            setState(() {
-              _selectedServiceIndex = -1;
-            });
-          }
-        },
+        behavior: HitTestBehavior.opaque,
+        onTap: prov.clearSelection,
         child: Container(
-          color: Color(0xFF6AB8D6), // Color de fondo
+          color: const Color(0xFF6AB8D6),
           child: Column(
-            children: [
+            children: const [
               SizedBox(height: 20),
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 10),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 20.0, // Espacio entre celdas
-                      mainAxisSpacing: 20.0, // Espacio entre celdas
-                    ),
-                    itemCount: subcategoriesToShow.length,
-                    itemBuilder: (context, index) {
-                      final subcategory = subcategoriesToShow[index];
-                      return GestureDetector(
-                        onTap: () {
-                          _onSubcategoryTap(subcategory);
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    const Color(0xFF1A819A).withOpacity(0.35),
-                                spreadRadius: 0.5,
-                                blurRadius: 2,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white70,
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(50),
-                                  child: CachedNetworkImage(
-                                    imageUrl: subcategory.image,
-                                    height: 80,
-                                    width: 80,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        CircularProgressIndicator(), // Indicador de carga
-                                    errorWidget: (context, url, error) => Icon(
-                                        Icons.error), // Widget para errores
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                subcategory.name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: MyTextStyles.drawerButtonTextStyle1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
+              Expanded(child: _ServiceGrid()),
               SizedBox(height: 10),
-              // Cuadro deslizable
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                height: _selectedServiceIndex != -1 ? 500 : 0,
-                alignment: Alignment.bottomCenter,
-                child: _selectedServiceIndex != -1
-                    ? Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        child: _buildServiceDetails(),
-                      )
-                    : null,
-              ),
-              if (selectedButtonType.isNotEmpty)
-                Text(
-                  'Tipo de botón seleccionado: $selectedButtonType',
-                  style: const TextStyle(fontSize: 16),
-                ),
+              _DetailsPanel(),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildServiceDetails() {
-    if (_selectedServiceIndex < 0 ||
-        _selectedServiceIndex >= subcategoriesToShow.length) {
-      return Container(); // No mostrar si el índice es inválido.
+class _ServiceGrid extends StatelessWidget {
+  const _ServiceGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final prov = context.watch<HomeServicesProvider>();
+    if (prov.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (prov.errorMessage != null) {
+      return Center(child: Text('Error: ${prov.errorMessage}'));
+    }
+    if (prov.displayedServices.isEmpty) {
+      return const Center(
+        child: Text(
+          'No se encontraron servicios',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
     }
 
-    final subcategory = subcategoriesToShow[_selectedServiceIndex];
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, crossAxisSpacing: 20, mainAxisSpacing: 20),
+      itemCount: prov.displayedServices.length,
+      itemBuilder: (_, i) {
+        final svc = prov.displayedServices[i];
+        return GestureDetector(
+          onTap: () => prov.selectIndex(i),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1A819A).withOpacity(0.15),
+                  spreadRadius: 0.5,
+                  blurRadius: 2,
+                  offset: const Offset(0, 3),
+                )
+              ],
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: svc.image,
+                  height: 80,
+                  width: 80,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      const CircularProgressIndicator(),
+                  errorWidget: (_, __, ___) => const Icon(Icons.error),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  svc.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: MyTextStyles.drawerButtonTextStyle1,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DetailsPanel extends StatelessWidget {
+  const _DetailsPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final prov = context.watch<HomeServicesProvider>();
+    if (!prov.hasSelection) return const SizedBox.shrink();
+    final svc = prov.selectedService!;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0),
-      ),
+          borderRadius: BorderRadius.circular(20)),
       elevation: 4,
-      margin: EdgeInsets.all(10),
+      margin: const EdgeInsets.all(10),
       child: Container(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
@@ -433,79 +206,96 @@ Widget build(BuildContext context) {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                subcategory.name,
+                svc.name,
                 style: MyTextStyles.titleTextStyle,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               Text(
-                subcategory.description,
+                svc.description,
                 style: MyTextStyles.formServiceTextStyle,
               ),
               const SizedBox(height: 10),
-              Row(
+              const Row(
                 children: [
-                  Icon(
-                    Icons.arrow_drop_down, // Ícono de flecha hacia abajo
-                    color: Color(0xFF20819A),
-                  ),
-                  const SizedBox(width: 8),
+                  Icon(Icons.arrow_drop_down,
+                      color: Color(0xFF20819A)),
+                  SizedBox(width: 8),
                   Text(
                     'Deslice hacia abajo para más:',
                     style: TextStyle(
-                      color: Color(0xFF20819A),
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Color(0xFF20819A),
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                alignment:
-                    WrapAlignment.center, // Alinear los botones al centro
-                direction: Axis
-                    .horizontal, // Asegurar que los botones se distribuyan horizontalmente
-                children:
-                    subcategory.serviceTypes.map((ServiceType serviceType) {
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: svc.serviceTypes.map((type) {
                   return SizedBox(
-                    width: MediaQuery.of(context).size.width *
-                        0.8, // Ancho del botón (40% del ancho de la pantalla)
+                    width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Obtén categoryId y subcategoryId de la subcategoría seleccionada
-                        final categoryId = subcategory.parentId;
-                        final subcategoryId = subcategory.id;
-                        final subcategoryName = subcategory.name;
-
-                        // Asegúrate de tener una lista de Expertises, no una cadena
-                        final List<Expertises> expertises =
-                            []; // Aquí debes obtener los expertises correspondientes.
-
-                        // Llama a openNewPage con todos los argumentos necesarios
-                        openNewPage(
-                          serviceType,
-                          List<Expertise>.from(
-                              expertises), // Conversión explícita de Expertises a Expertise
-                          categoryId!,
-                          subcategoryId,
-                          subcategoryName,
+                        final status =
+                            StatusUtils.getStatusById('');
+                        final req = ServiceRequest(
+                          serviceDateTime: nowIso,
+                          description: '',
+                          images: [],
+                          location: {'lat': 0, 'lng': 0},
+                          offeredPrice: 0,
+                          serviceType: type,
+                          userId: '',
+                          workerId: '',
+                          isFavorite: false,
+                          selectedDate: nowIso,
+                          selectedTime:
+                              type.selectedTime ?? '',
+                          acceptedTerms: true,
+                          id: '',
+                          status: status,
+                          expertises: [],
+                          devicesId: '',
+                          hasOffer: false,
+                          offers: [],
+                          subcategoryName: svc.name,
+                        );
+                        Navigator.push(
                           context,
+                          MaterialPageRoute(
+                            builder: (_) => ServiceFormPage(
+                              serviceRequest: req,
+                              acceptTerms: true,
+                              selectedDate: DateTime.now(),
+                              token: '',
+                              selectedServiceTitle:
+                                  type.name,
+                              selectedTime: '',
+                              serviceRequests: [],
+                              categoryId: svc.parentId!,
+                              expertiseId: svc.id,
+                              expertiseName: svc.name,
+                            ),
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF20819A),
+                        backgroundColor:
+                            const Color(0xFF20819A),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius:
+                              BorderRadius.circular(8),
                         ),
                         elevation: 4,
-                        minimumSize: Size(0, 50), // Altura mínima del botón
-                        maximumSize: Size(double.infinity,
-                            50), // Altura máxima del botón (ancho completo)
+                        minimumSize: const Size(0, 50),
+                        maximumSize: const Size(
+                            double.infinity, 50),
                       ),
                       child: Text(
-                        serviceType.name,
+                        type.name,
                         style: MyTextStyles.buttonTextStyle,
                       ),
                     ),
@@ -517,18 +307,5 @@ Widget build(BuildContext context) {
         ),
       ),
     );
-  }
-
-  void _onSubcategoryTap(ServiceResponse subcategory) {
-    if (subcategory.id.isNotEmpty) {
-      final index = subcategoriesToShow
-          .indexWhere((service) => service.id == subcategory.id);
-
-      if (index != -1) {
-        setState(() {
-          _selectedServiceIndex = index;
-        });
-      }
-    }
   }
 }

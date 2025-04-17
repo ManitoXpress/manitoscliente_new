@@ -6,7 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'package:http/http.dart' as http;
 
-import '../metodos/auth_utils.dart';
+import '../controller/auth_utils.dart';
 class RemoteNotificationService {
   DateTime? _lastNotificationTime;
   Timer? _serviceCheckTimer;

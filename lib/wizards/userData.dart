@@ -7,7 +7,7 @@ import 'package:rive/rive.dart' hide Image;
 
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
-import '../metodos/RegisController.dart';
+import '../controller/RegisController.dart';
 class userDataWizard extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;

@@ -5,13 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../metodos/auth_utils.dart';
+import '../controller/auth_utils.dart';
 import '../request/ResponseGet.dart';
 import '../request/ResponsePost.dart';
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../home.dart';
-import '../metodos/RegisController.dart';
+import '../controller/RegisController.dart';
 import '../wizards/datalocation.dart';
 import '../wizards/userData.dart';
 

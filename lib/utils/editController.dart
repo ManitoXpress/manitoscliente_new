@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../metodos/auth_utils.dart';
+import '../controller/auth_utils.dart';
 import '../request/ResponseGet.dart';
 import '../request/ResponsePost.dart';
 import '../Styles/stilo.dart';
 
-import '../metodos/RegisController.dart';
+import '../controller/RegisController.dart';
 
 import 'colors.dart';
 

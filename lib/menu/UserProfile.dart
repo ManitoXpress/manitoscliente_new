@@ -12,7 +12,7 @@ import '../request/ResponseGet.dart';
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 
-import '../metodos/RegisController.dart';
+import '../controller/RegisController.dart';
 import '../utils/colors.dart';
 import '../utils/editController.dart';
 import '../utils/favoriteUbi.dart';
@@ -163,6 +163,10 @@ class _ProfilePageState extends State<ProfilePage> {
       Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => LoginScreen(
                 deviceId: '',
+                onLoginSuccess: () {
+                  // Add your logic here for successful login
+                  _loadAndRefreshUserData();
+                },
               )));
     } catch (e) {
       print('Error al cerrar sesión: $e');
