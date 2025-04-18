@@ -8,6 +8,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Importa flutter_screenutil
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:manitoscliente_new/controller/data_provider.dart';
+import 'package:manitoscliente_new/controller/home_Provider.dart';
+import 'package:manitoscliente_new/controller/service_provider.dart';
+import 'package:provider/provider.dart';
 import '../utils/fcmToken.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,75 +27,47 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'dart:io';
-// Handler para mensajes en segundo plano
+
 @pragma('vm:entry-point')
-import 'dart:io';
-
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-
-/// Handler de mensajes en background
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // App Check
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
   );
 
-  // Permisos y Firestore persistence en iOS
-  if (Platform.isIOS) {
-    await requestTrackingPermission(); // Solo en iOS
-    FirebaseFirestore.instance.settings =
-        const Settings(persistenceEnabled: true);
-  }
-
-  // Inicializa tu servicio de FCM
   await FCMService().init();
 
-  // Obtén el deviceId
   final deviceId = await obtenerDeviceId();
   print("Device ID: $deviceId");
 
   runApp(
-    ScreenUtilInit(
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) => MyApp(deviceId: deviceId),
+    MultiProvider(
+      providers: [
+        // Aquí agregas todos tus providers
+        ChangeNotifierProvider(create: (_) => ServiceDataProvider()),
+        ChangeNotifierProvider(create: (_) => HomeServicesProvider()),
+        ChangeNotifierProvider(create: (_) => ProfessionalServicesProvider()),
+        // Puedes agregar más providers si los necesitas
+      ],
+      child: ScreenUtilInit(
+        designSize: Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) => MyApp(deviceId: deviceId),
+      ),
     ),
   );
 }
-
-/// Solicita permiso ATT en iOS
-Future<void> requestTrackingPermission() async {
-  if (Platform.isIOS) {
-    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-    if (status == TrackingStatus.notDetermined) {
-      final result =
-          await AppTrackingTransparency.requestTrackingAuthorization();
-      print("Estado de ATT: $result");
-    }
-  }
-}
-
 /// Obtiene un identificador del dispositivo
 Future<String> obtenerDeviceId() async {
   try {
@@ -108,6 +85,20 @@ Future<String> obtenerDeviceId() async {
     return 'Error Device ID';
   }
 }
+
+/// Solicita permiso ATT en iOS
+Future<void> requestTrackingPermission() async {
+  if (Platform.isIOS) {
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      final result =
+          await AppTrackingTransparency.requestTrackingAuthorization();
+      print("Estado de ATT: $result");
+    }
+  }
+}
+
+
 
 class MyApp extends StatefulWidget {
   final String deviceId;
