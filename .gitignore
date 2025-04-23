@@ -30,6 +30,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+/scripts/manitoxpress-cf855-firebase-adminsdk-vawdb-eb13e80ee5.json
 
 # Symbolication related
 app.*.symbols

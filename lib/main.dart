@@ -44,6 +44,12 @@ void main() async {
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
   );
+  // Permisos y Firestore persistence en iOS
+  if (Platform.isIOS) {
+    await requestTrackingPermission(); // Solo en iOS
+    FirebaseFirestore.instance.settings =
+        const Settings(persistenceEnabled: true);
+  }
 
   await FCMService().init();
 

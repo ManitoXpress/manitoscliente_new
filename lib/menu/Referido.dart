@@ -4,13 +4,13 @@ import '../Styles/stilo.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ReferralScreen extends StatelessWidget {
-  final String referralCode; // Código de referido del usuario
+  final String codeReferral; // Código de referido del usuario
 
-  ReferralScreen({required this.referralCode});
+  ReferralScreen({required this.codeReferral});
 
   void _compartirEnlaceReferido(String referralCode) {
     final enlace =
-        '¡Únete a ManitosXpress! Usa mi código de referido: $referralCode\nDescarga la app aquí: https://play.google.com/store/apps/details?id=com.xpress.manitosocio';
+        '¡Únete a ManitosXpress! Usa mi código de referido: $codeReferral\nDescarga la app aquí: https://play.google.com/store/apps/details?id=com.xpress.manitosocio';
 
     Share.share(enlace, subject: 'Únete a ManitosXpress');
   }
@@ -46,19 +46,22 @@ class ReferralScreen extends StatelessWidget {
               style: MyTextStyles.inputTextStyle1,
             ),
             Text(
-              referralCode,
+              codeReferral, // Muestra el UID como código de referido
               style: MyTextStyles.inputTextStyle1,
             ),
             const SizedBox(height: 30), // Espaciado antes del botón
 
             // Botón de compartir
             GestureDetector(
-              onTap: () => _compartirEnlaceReferido(referralCode),
+              onTap: () {
+                _compartirEnlaceReferido(codeReferral);
+                // Aquí puedes agregar lógica adicional si es necesario
+              },
               child: Container(
                 width: 250,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A819A),
+                  color: const Color(0xFF841813),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: Colors.white, width: 2),
                 ),

@@ -829,7 +829,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             },
             icon: Icon(Icons.chat, color: Colors.white),
             label: Text(
-              "Chat",
+              "WhatsApp",
               style: GoogleFonts.karla(
                 color: Colors.white,
                 fontSize: 9,
@@ -875,40 +875,18 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   }
 
   void _openChat(String workerId, String userId) async {
-  print("Abriendo chat...");
-  final chatId = _generateChatId(workerId, userId);
-  print("Chat ID generado: $chatId");
-
-  final chatDoc = FirebaseFirestore.instance.collection('chats').doc(chatId);
-
-  final chatSnapshot = await chatDoc.get();
-  print("Existe chat? ${chatSnapshot.exists}");
-
-  if (!chatSnapshot.exists) {
-    print("Creando nuevo documento de chat...");
-    await chatDoc.set({
-      'chatId': chatId,
-      'participants': [userId, workerId],
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-    print("Chat creado exitosamente");
-  } else {
-    print("El chat ya existe");
-  }
 
   // Navegar a la pantalla de chat
   print("Navegando a la pantalla de chat");
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => ChatScreen(
-        chatId: chatId,
-        userId: userId,
-        workerId: workerId,
-        isUser: true, // Add the required 'isUser' parameter
-      ),
+ Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => WhatsAppContactScreen(
+      workerId: workerId,
     ),
-  );
+  ),
+);
+
 }
 
 

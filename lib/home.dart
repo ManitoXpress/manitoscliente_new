@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -53,6 +54,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+  }
+   Future<String?> getCodeReferral() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return null;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    return doc.data()?['codeReferral'] as String?;
   }
 
   @override
@@ -152,12 +164,22 @@ class _HomeScreenState extends State<HomeScreen> {
               // Solo usuarios autenticados pueden compartir referidos
               if (!widget.isGuest)
                 ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => ReferralScreen(referralCode: '12345')),
-                    );
+                  onPressed: () async {
+                    final code = await getCodeReferral();
+                    if (code != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ReferralScreen(codeReferral: code),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("No se encontró tu código de referido."),
+                        ),
+                      );
+                    }
                   },
                   icon: Icon(Icons.share, color: Color(0xFF1A819A)),
                   label: Align(
