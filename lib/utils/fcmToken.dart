@@ -1,14 +1,26 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+
 class FCMService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
+    // 1) Pide permisos
     await _firebaseMessaging.requestPermission();
 
-    _initLocalNotifications();
+    // 2) En iOS, indica que en primer plano muestre alert, badge y sonido
+    await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // 3) Inicializa tu plugin de notificaciones locales
+    await _initLocalNotifications();
+
+    // 4) Arranca los listeners de Firebase Messaging
     _initFirebaseMessagingListeners();
   }
 
@@ -70,9 +82,8 @@ class FCMService {
   }
 
 
-  Future<void> showLocalNotification(String title, String body,
-      {String? payload}) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+  Future<void> showLocalNotification(String title, String body, {String? payload}) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'high_importance_channel',
       'High Importance Notifications',
       channelDescription: 'Este canal es para notificaciones importantes',
@@ -81,15 +92,23 @@ class FCMService {
       playSound: true,
     );
 
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
+    // DarwinNotificationDetails para iOS
+    const DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iOSDetails,
     );
 
     await _flutterLocalNotificationsPlugin.show(
-      0, // ID de la notificación
+      0,
       title,
       body,
-      platformChannelSpecifics,
+      platformDetails,
       payload: payload,
     );
   }
