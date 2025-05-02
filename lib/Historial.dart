@@ -116,7 +116,7 @@ class _HistorialState extends State<Historial>
       workerDetails: WorkerDetails(
         id: '',
         phoneNumber: '',
-        certificateImagePaths: '',
+        certificateImagePaths: [],
         idDocumentImagePath: '',
         imagePath: '',
         displayName: '',
@@ -230,7 +230,7 @@ class _HistorialState extends State<Historial>
               workerDetails: WorkerDetails(
                 id: '',
                 phoneNumber: '',
-                certificateImagePaths: '',
+                certificateImagePaths: [],
                 idDocumentImagePath: '',
                 imagePath: '',
                 displayName: '',
@@ -568,7 +568,7 @@ class _HistorialState extends State<Historial>
               workerDetails: WorkerDetails(
                 id: '',
                 phoneNumber: '',
-                certificateImagePaths: '',
+                certificateImagePaths: [],
                 idDocumentImagePath: '',
                 imagePath: '',
                 displayName: '',
