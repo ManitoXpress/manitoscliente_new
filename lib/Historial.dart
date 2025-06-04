@@ -8,747 +8,492 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/controller/historialProvider.dart';
+import 'package:provider/provider.dart';
 import '../request/ResponseGet.dart';
 import '../request/ResponsePost.dart';
 import '../request/dataprofile.dart';
-import '../request/requestLocation.dart';
-import '../request/requestServiceType.dart';
-import '../request/requestStatus.dart';
-import '../request/requestWoker.dart';
-import '../request/resquest.dart';
-import '../utils/offerRepository.dart';
-import '../utils/serviceCancelled.dart';
-import '../utils/serviceComplete.dart';
-import '../utils/serviceFetcher.dart';
-import '../utils/serviceInProgress.dart';
+
 import '../widgets/serviceList.dart';
 
 import 'Styles/stilo.dart';
-import 'controller/RegisController.dart';
-import 'controller/notificationService.dart';
-import 'controller/serviceFetcher.dart';
-
-class Historial extends StatefulWidget {
-  final VoidCallback? onTabTapped;
-
-  const Historial({Key? key, this.onTabTapped}) : super(key: key);
+class HistorialScreen extends StatefulWidget {
+  final UserData userData;
+  final VoidCallback onTabTapped;
+  const HistorialScreen({
+    Key? key,
+    required this.userData,
+    required this.onTabTapped,
+  }) : super(key: key);
 
   @override
-  _HistorialState createState() => _HistorialState();
+  _HistorialScreenState createState() => _HistorialScreenState();
 }
 
-class _HistorialState extends State<Historial>
+class _HistorialScreenState extends State<HistorialScreen>
     with SingleTickerProviderStateMixin {
-  List<ServiceRequest> serviceRequests = [];
-  List<Status> statuses = [];
-  late final UserData userData;
-  int unreadMessagesCount = 0;
-  int offerServiceCount = 0;
-  StreamSubscription? _foregroundServiceListener;
+  late final TabController _tabController;
+  late final HistorialProvider _historialProv;
 
-  late final RegistrationData registrationData;
-  late TabController _tabController;
-  final ApiService apiService = ApiService();
-  late NotificationService notificationService;
-  late final ServiceDataFetcher serviceDataFetcher;
-  late OfferRepository _offerRepository;
-
-  Timer? _notificationTimer;
-  bool isLoading = false;
-  int notificationCount = 0;
-  String workerId = '';
-  String userId = '';
-  String authToken = '';
-  String token = '';
-
-  String deviceId = '';
-  late ServiceRequest? serviceRequest;
-  String value = '';
-
-  final ServiceRepository _serviceRepository = ServiceRepository(
-    apiService: ApiService(),
-    firestore: FirebaseFirestore.instance,
-  );
-  final ServiceRepository2 _serviceRepository2 = ServiceRepository2(
-    apiService: ApiService2(),
-    firestore: FirebaseFirestore.instance,
-  );
-  final ServiceRepository3 _serviceRepository3 = ServiceRepository3(
-    apiService: ApiService(),
-    firestore: FirebaseFirestore.instance,
-  );
-  final ServiceRepository4 _serviceRepository4 = ServiceRepository4(
-    apiService: ApiService(),
-    firestore: FirebaseFirestore.instance,
-  );
-
-  int inProgressServiceCount = 0;
-
-  int globalServiceCount = 0;
-  int availableServiceCount = 0;
-
-  int completedServiceCount = 0;
-  int cancelledServiceCount = 0;
+  String _userId = '';
+  String _token = '';
+  String _deviceId = '';
+  bool _welcomeShown = false;
 
   @override
   void initState() {
     super.initState();
-    serviceRequest = ServiceRequest(
-      serviceDateTime: '',
-      id: '',
-      devicesId: '',
-      description: '',
-      images: [],
-      location: {},
-      offeredPrice: 0.0,
-      serviceType:
-          ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
-      userId: '',
-      workerId: '',
-      isFavorite: false,
-      selectedDate: null,
-      selectedTime: null,
-      acceptedTerms: false,
-      expertises: [],
-      status: Status(id: '', name: ''),
-      hasOffer: false,
-      offers: [],
-      workerDetails: WorkerDetails(
-        id: '',
-        phoneNumber: '',
-        certificateImagePaths: [],
-        idDocumentImagePath: '',
-        imagePath: '',
-        displayName: '',
-        email: '',
-        expLevel: [],
-        expertises: [],
-        criminalRecordImagePath: '',
-        fcmToken: '',
-        location: Location(
-          lat: 0.0, // Latitud predeterminada
-          lng: 0.0, // Longitud predeterminada
-        ),
-        verificationStatus: '',
-        idCardNumber: '',
-      ),
-      subcategoryName: '',
-    );
-    registrationData = RegistrationData(
-      userId: '',
-      displayName: '',
-      phoneNumber: '',
-      paymentType: '',
-      selectedCountryCode: '',
-      location: {},
-      email: '',
-      devicesId: '',
-      fcmToken: '',
-      points: 0,
-    );
-
-    userData = UserData(
-      displayName: '',
-      email: '',
-      phoneNumber: '',
-      userId: '',
-      location: {},
-      paymentType: '',
-      selectedCountryCode: '',
-      registrationData: registrationData,
-      getToken: '',
-      referrerUserId: '',
-      referralCode: '',
-      points: 0,
-    );
-
-    // Configurar el controlador de pestañas
     _tabController = TabController(length: 5, vsync: this);
 
-    _offerRepository = OfferRepository(
-      apiService2: ApiService2(),
-      serviceDataFetcher: ServiceDataFetcher(),
-      firestore: FirebaseFirestore.instance,
-    );
-  }
+    // 1) Creamos el provider UNA sola vez
+    _historialProv = HistorialProvider();
 
-// Método corregido _refreshHistorial
-  Future<void> _refreshHistorial() async {
-    setState(() {
-      isLoading = true;
-      availableServiceCount = 0;
-      offerServiceCount = 0;
-      inProgressServiceCount = 0;
-      completedServiceCount = 0;
-      cancelledServiceCount = 0;
-    });
-
-    try {
+    // 2) Obtenemos credenciales y disparamos la carga
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        print("Usuario no autenticado.");
-        return;
-      }
-      final userId = user.uid;
+      if (user == null) return;
+
       final token = await user.getIdToken();
+      final deviceId = await _fetchDeviceId();
 
-      // Crear todas las llamadas en paralelo
-      final futures = [
-        _serviceRepository.fetchServicesByStatus(
-          'available',
-          'status', // Corregido de 'available' a 'status'
-          userId,
-          token ?? '',
-          [],
-        ),
-        _offerRepository.fetchOffersForUser(
-            'offer', // type: String (por ejemplo, el estado "offer")
-            userId, // userId: String (ID del usuario autenticado)
-            token ?? '', // token: String
-            ServiceRequest(
-              serviceDateTime: '',
-              id: '',
-              devicesId: '',
-              description: '',
-              images: [],
-              location: {},
-              offeredPrice: 0.0,
-              serviceType: ServiceType(
-                id: '',
-                name: '',
-                selectedDate: '',
-                selectedTime: '',
-              ),
-              userId: userId, // Se asigna el userId real aquí
-              workerId: '',
-              isFavorite: false,
-              acceptedTerms: false,
-              expertises: [],
-              status: Status(id: 'offer', name: 'Ofertado'),
-              hasOffer: false,
-              offers: [],
-              workerDetails: WorkerDetails(
-                id: '',
-                phoneNumber: '',
-                certificateImagePaths: [],
-                idDocumentImagePath: '',
-                imagePath: '',
-                displayName: '',
-                email: '',
-                expLevel: [],
-                expertises: [],
-                criminalRecordImagePath: '',
-                fcmToken: '',
-                location: Location(lat: 0.0, lng: 0.0),
-                verificationStatus: '',
-                idCardNumber: '',
-              ),
-              subcategoryName: '',
-            ),
-            userId // Aquí se pasa el deviceId; si cuentas con un deviceId real, reemplázalo.
-            ),
-        _serviceRepository2.fetchServicesByInProgress(
-          'in_progress', // type: String
-          'status', // column: String (nombre de columna para filtrar)
-          userId, // userId: String
-          token ?? '', // token: String
-        ),
-        _serviceRepository.fetchServicesByStatus(
-          'completed',
-          'completed',
-          userId,
-          token ?? '',
-          [],
-        ),
-        _serviceRepository.fetchServicesByStatus(
-          'cancelled',
-          'cancelled',
-          userId,
-          token ?? '',
-          [],
-        ),
-      ];
-
-      // Ejecutar todas las llamadas en paralelo
-      final results = await Future.wait(futures);
-
-      // Extraer resultados
-      final availableServices = results[0] as List<ServiceRequest>;
-      final offerServices = results[1] as List<ServiceRequest>;
-      final inProgressServices = results[2] as List<ServiceRequest>;
-      final completedServices = results[3] as List<ServiceRequest>;
-      final cancelledServices = results[4] as List<ServiceRequest>;
-
-      // Calcular total de ofertas
-      final totalOffers = offerServices.fold<int>(
-        0,
-        (sum, service) => sum + service.offers.length,
-      );
-
-      // Actualizar estado
+      if (!mounted) return;
       setState(() {
-        availableServiceCount = availableServices.length;
-        offerServiceCount = totalOffers;
-        inProgressServiceCount = inProgressServices.length;
-        completedServiceCount = completedServices.length;
-        cancelledServiceCount = cancelledServices.length;
-        serviceRequests = [
-          ...availableServices,
-          ...offerServices,
-          ...inProgressServices,
-          ...completedServices,
-          ...cancelledServices,
-        ];
-        isLoading = false;
+        _userId = user.uid;
+        _token = token ?? '';
+        _deviceId = deviceId;
       });
 
-      // Navegar a ofertas si hay nuevas
-      if (totalOffers > 0) {
-        _tabController.animateTo(1);
-      }
-    } catch (e) {
-      print("Error al actualizar el historial: $e");
-      setState(() => isLoading = false);
+      // 4) Carga inicial de TODO el historial
+      await _historialProv.loadAll(
+        userId: _userId,
+        token: _token,
+        deviceId: _deviceId,
+      );
+    });
+  }
+
+  Future<String> _fetchDeviceId() async {
+    final info = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      final a = await info.androidInfo;
+      return a.id ?? 'unknown';
+    } else if (Platform.isIOS) {
+      final i = await info.iosInfo;
+      return i.identifierForVendor ?? 'unknown';
     }
+    return 'unsupported';
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _foregroundServiceListener?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    double? _fetchedOfferedPrice;
-
-    // Obtener el userId de Firebase Auth
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-
-    // Asegúrate de que userId no sea nulo
-    if (userId == null) {
-      return Scaffold(
-        body: Center(
-          child: Text('Usuario no autenticado.'),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(18.0),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelPadding: EdgeInsets.symmetric(horizontal: 8.0),
-              labelStyle: MyTextStyles.tabTextStyle,
-              unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(width: 3.0, color: Color(0xFF1A819A)),
-                insets: EdgeInsets.symmetric(horizontal: 20.0),
-              ),
-              tabs: [
-                Tab(
-                  icon: Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Icon(Icons.task_alt, color: Colors.black),
-                  ),
-                  text: 'Disponibles ($availableServiceCount)',
-                ),
-                Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Icon(Icons.local_offer, color: Colors.black),
-                          ),
-                          if (offerServiceCount > 0)
-                            Positioned(
-                              top: -10,
-                              right: -10,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                constraints: BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  offerServiceCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
+    // 5) Abrimos el provider UNA sola vez con .value
+    return ChangeNotifierProvider.value(
+      value: _historialProv,
+      child: Consumer<HistorialProvider>(
+        builder: (__, prov, _) {
+          return Scaffold(
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              bottom: PreferredSize(
+                preferredSize: Size.fromHeight(12),
+                child: Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelPadding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    labelStyle: MyTextStyles.tabTextStyle,
+                    unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
+                    indicator: const UnderlineTabIndicator(
+                      borderSide:
+                          BorderSide(width: 3, color: Color(0xFF1A819A)),
+                      insets: EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    tabs: [
+                      Tab(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.task_alt,
+                                        color: Colors.black)),
+                                if (prov.availableCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A819A),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.availableCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
+                              ],
                             ),
-                        ],
+                            const SizedBox(height: 4),
+                            const Text('Disponibles'),
+                          ],
+                        ),
                       ),
-                      SizedBox(height: 4.0),
-                      Text(
-                        'Ofertados',
-                        style: TextStyle(fontSize: 12.0),
+                      Tab(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.local_offer,
+                                        color: Colors.black)),
+                                if (prov.offerServiceCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A819A),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.offerServiceCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Cotizaciones'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.assignment_ind,
+                                        color: Colors.black)),
+                                if (prov.inProgressCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A819A),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.inProgressCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Asignados'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.check_circle,
+                                        color: Colors.black)),
+                                if (prov.completedCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A819A),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.completedCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Completados'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.cancel,
+                                        color: Colors.black)),
+                                if (prov.cancelledCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A819A),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.cancelledCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Cancelados'),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Tab(
-                  icon: Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Icon(Icons.assignment_ind, color: Colors.black),
-                  ),
-                  text: 'Asignados ($inProgressServiceCount)',
-                ),
-                Tab(
-                  icon: Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Icon(Icons.check_circle, color: Colors.black),
-                  ),
-                  text: 'Completados ($completedServiceCount)',
-                ),
-                Tab(
-                  icon: Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Icon(Icons.cancel, color: Colors.black),
-                  ),
-                  text: 'Cancelados ($cancelledServiceCount)',
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(10.0),
-            child: Row(
+            body: Column(
               children: [
-                Text(
-                  'Historial',
-                  style: MyTextStyles.buttonTextStyle3,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text('Historial', style: MyTextStyles.buttonTextStyle3),
+                      const Spacer(),
+                      IconButton(
+                        icon:
+                            const Icon(Icons.refresh, color: Color(0xFF1A819A)),
+                        onPressed: () => prov.refresh(
+                          userId: _userId,
+                          token: _token,
+                          deviceId: _deviceId,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Color(0xFF1A819A)),
-                  onPressed: _refreshHistorial,
+                const Divider(height: 1),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _ServiceListTab(
+                        status: 'available',
+                        userId: _userId,
+                        userData: widget.userData,
+                        apiService: ApiService(),
+                        apiService2: ApiService2(),
+                      ),
+                      _ServiceListTab(
+                        status: 'offer',
+                        userId: _userId,
+                        userData: widget.userData,
+                        apiService: ApiService(),
+                        apiService2: ApiService2(),
+                      ),
+                      _ServiceListTab(
+                        status: 'in_progress',
+                        userId: _userId,
+                        userData: widget.userData,
+                        apiService: ApiService(),
+                        apiService2: ApiService2(),
+                      ),
+                      _ServiceListTab(
+                        status: 'completed',
+                        userId: _userId,
+                        userData: widget.userData,
+                        apiService: ApiService(),
+                        apiService2: ApiService2(),
+                      ),
+                      _ServiceListTab(
+                        status: 'cancelled',
+                        userId: _userId,
+                        userData: widget.userData,
+                        apiService: ApiService(),
+                        apiService2: ApiService2(),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 1.0),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildServiceListByStatus(
-                  'available',
-                  _fetchedOfferedPrice,
-                  screenWidth,
-                  screenHeight,
-                  userId,
-                  token,
-                  deviceId,
-                ),
-                _buildServiceListByStatus(
-                  'offer',
-                  _fetchedOfferedPrice,
-                  screenWidth,
-                  screenHeight,
-                  userId,
-                  token,
-                  deviceId,
-                ),
-                _buildServiceListByStatus(
-                  'in_progress',
-                  _fetchedOfferedPrice,
-                  screenWidth,
-                  screenHeight,
-                  userId,
-                  token,
-                  deviceId,
-                ),
-                _buildServiceListByStatus(
-                  'completed',
-                  _fetchedOfferedPrice,
-                  screenWidth,
-                  screenHeight,
-                  userId,
-                  token,
-                  deviceId,
-                ),
-                // Agrega esta quinta pestaña
-                _buildServiceListByStatus(
-                  'cancelled',
-                  _fetchedOfferedPrice,
-                  screenWidth,
-                  screenHeight,
-                  userId,
-                  token,
-                  deviceId,
-                ),
-              ],
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
+}
 
-  Widget _buildServiceListByStatus(
-    String statusIds,
-    double? _fetchedOfferedPrice,
-    double screenWidth,
-    double screenHeight,
-    String userId,
-    String token,
-    String deviceId,
-  ) {
-    Future<List<ServiceRequest>>? future;
+/// Un widget por pestaña, que conserva scroll y no se rebuild innecesariamente
+class _ServiceListTab extends StatefulWidget {
+  final String status;
+  final String userId;
+  final UserData userData;
+  final ApiService apiService;
+  final ApiService2 apiService2;
 
-    final offerRepository = OfferRepository(
-      apiService2: ApiService2(),
-      serviceDataFetcher: ServiceDataFetcher(),
-      firestore: FirebaseFirestore.instance,
-    );
+  const _ServiceListTab({
+    required this.status,
+    required this.userId,
+    required this.userData,
+    required this.apiService,
+    required this.apiService2,
+    Key? key,
+  }) : super(key: key);
 
-    switch (statusIds) {
-      case 'available':
-        future = _serviceRepository.fetchServicesByStatus(
-          statusIds,
-          'status', // Corregido de 'available' a 'status'
-          userId,
-          token,
-          [],
-        );
-        break;
-      case 'offer':
-        future = offerRepository.fetchOffersForUser(
-            statusIds, // type: String (por ejemplo, el status que deseas filtrar)
-            userId, // userId: String (ID del usuario autenticado)
-            token, // token: String
-            ServiceRequest(
-              // service: ServiceRequest de ejemplo
-              id: '',
-              serviceDateTime: '',
-              devicesId: '',
-              description: '',
-              images: [],
-              location: {},
-              offeredPrice: 0.0,
-              serviceType: ServiceType(
-                id: '',
-                name: '',
-                selectedDate: '',
-                selectedTime: '',
-              ),
-              userId: userId, // se asigna el userId real
-              workerId: '',
-              isFavorite: false,
-              acceptedTerms: false,
-              expertises: [],
-              status: Status(id: 'offer', name: 'Ofertado'),
-              hasOffer: false,
-              offers: [],
-              workerDetails: WorkerDetails(
-                id: '',
-                phoneNumber: '',
-                certificateImagePaths: [],
-                idDocumentImagePath: '',
-                imagePath: '',
-                displayName: '',
-                email: '',
-                expLevel: [],
-                expertises: [],
-                criminalRecordImagePath: '',
-                fcmToken: '',
-                location: Location(lat: 0.0, lng: 0.0),
-                verificationStatus: '',
-                idCardNumber: '',
-              ),
-              subcategoryName: '',
-            ),
-            userId // deviceId: aquí puedes usar el userId o reemplazarlo por el deviceId real
-            );
-        break;
+  @override
+  State<_ServiceListTab> createState() => _ServiceListTabState();
+}
 
-      case 'in_progress':
-        future = Future.wait([
-          _serviceRepository2
-              .fetchServicesByInProgress(
-            'in_progress',
-            userId,
-            'status',
-            token,
-          )
-              .catchError((e) {
-            print("Error al obtener in_progress: $e");
-            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-          }),
-          _serviceRepository2
-              .fetchServicesByInProgress(
-            'pending_confirmation',
-            userId,
-            'status',
-            token,
-          )
-              .catchError((e) {
-            print("Error al obtener pending_confirmation: $e");
-            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-          }),
-          _serviceRepository2
-              .fetchServicesByInProgress(
-            'pending_confirmation2',
-            userId,
-            'status',
-            token,
-          )
-              .catchError((e) {
-            print("Error al obtener pending_confirmation2: $e");
-            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-          }),
-        ]).then((results) {
-          final servicesInProgress = results[0] ?? [];
-          final pendingConfirmationServices = results[1] ?? [];
-          final pendingConfirmationServices2 = results[2] ?? [];
-          return [
-            ...servicesInProgress,
-            ...pendingConfirmationServices,
-            ...pendingConfirmationServices2
-          ];
-        });
-        break;
+class _ServiceListTabState extends State<_ServiceListTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
-      case 'completed':
-        future = _serviceRepository3.fetchServicesByComplete(
-          statusIds,
-          'status', // Corregido de 'available' a 'status'
-          userId,
-          token,
-          [],
-        );
-        break;
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final prov = context.watch<HistorialProvider>();
+    final list = prov.list(widget.status);
 
-      case 'cancelled':
-        future = _serviceRepository4.fetchServicesByCancelled(
-          statusIds,
-          'status', // Corregido de 'available' a 'status'
-          userId,
-          token,
-          [],
-        );
-        break;
-
-      default:
-        return Center(child: Text("Estado no válido."));
+    if (prov.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (prov.errorMessage != null) {
+      return Center(child: Text('Error: ${prov.errorMessage}'));
+    }
+    if (list.isEmpty) {
+      return const Center(child: Text('No hay servicios.'));
     }
 
-    return FutureBuilder<List<ServiceRequest>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
 
-        if (snapshot.hasError) {
-          return Center(child: Text("No hay servicios."));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-              child: Text("No hay servicios disponibles para este estado."));
-        }
-
-        final services = snapshot.data!;
-        if (statusIds == 'available') {
-          final services = snapshot.data!;
-
-          return ServiceListBuilder.buildServiceListAvailable(
-            services, // Servicio asociado
-
-            screenWidth,
-            screenHeight,
-            userId,
-            userData,
-          );
-        }
-
-        if (statusIds == 'offer') {
-          final services = snapshot.data!;
-          // Extrae todas las ofertas de los servicios
-          final offers = services.expand((s) => s.offers).toList();
-
-          return ServiceListBuilder.buildOfferList(
-            services, // Servicio asociado
-            offers,
-            screenWidth,
-            screenHeight,
-            userId,
-            userData,
-          );
-        }
-        if (statusIds == 'in_progress') {
-          final services = snapshot.data!;
-          final offers = services.expand((s) => s.offers).toList();
-          return ServiceListBuilder.buildServiceList(
-            services, // Servicio asociado
-            offers,
-            screenWidth,
-            screenHeight,
-            userId,
-            userData,
-          );
-        }
-        if (statusIds == 'completed') {
-          final services = snapshot.data!;
-
-          return ServiceListBuilder.buildServiceListComplete(
-            services, // Servicio asociado
-
-            screenWidth,
-            screenHeight,
-            userId,
-            userData,
-          );
-        }
-        if (statusIds == 'cancelled') {
-          final services = snapshot.data!;
-
-          return ServiceListBuilder.buildServiceListCancelled(
-            services, // Servicio asociado
-
-            screenWidth,
-            screenHeight,
-            userId,
-            userData,
-          );
-        }
-        final offers = services.expand((s) => s.offers).toList();
-        return ServiceListBuilder.buildServiceList(
-          services, // Servicio asociado
-
-          offers,
-          screenWidth,
-          screenHeight,
-          userId,
-          userData,
+    switch (widget.status) {
+      case 'available':
+        final offers = list.expand((s) => s.offers).toList();
+        return ServiceListBuilder.buildServiceListAvailable(
+          list,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
         );
-      },
-    );
+      case 'offer':
+        final offers = list.expand((s) => s.offers).toList();
+        return ServiceListBuilder.buildOfferList(
+          list,
+          offers,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+      case 'in_progress':
+        final offers = list.expand((s) => s.offers).toList();
+        return ServiceListBuilder.in_progressList(
+          list,
+          offers,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+      case 'completed':
+        final offers = list.expand((s) => s.offers).toList();
+        return ServiceListBuilder.buildServiceListComplete(
+          list,
+          offers,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+      case 'cancelled':
+        return ServiceListBuilder.buildServiceListCancelled(
+          list,        // tu lista de ServiceRequest (incluye offers internamente)
+          w,           // ancho
+          h,           // alto
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }

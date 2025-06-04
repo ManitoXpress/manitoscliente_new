@@ -35,6 +35,6 @@ async function exportCollectionToCSV(collectionName, fileName, fields = []) {
     }
   }
   
-  exportCollectionToCSV('workers', 'workers_filtered.csv', ['displayName', 'points']);
+  exportCollectionToCSV('workers', 'workers_filtered.csv', ['displayName', 'phoneNumber','expertises']);
 // Cambia 'workers' por el nombre de tu colección y 'workers_filtered.csv' por el nombre del archivo de salida  
 // Cambia el array de fields por los campos que realmente quieras exportar

@@ -52,6 +52,7 @@ class OfferRepository {
       expertises: [],
       images: [],
       location: {},
+      createdAt: DateTime.now(),
       offeredPrice: 0.0,
       userId: userId,
       workerId: '',
@@ -119,7 +120,7 @@ class OfferRepository {
           column,
           userId,
           type,
-          deviceId,
+          
         );
         print('token=$token');
         print('columnoffer=$column');
@@ -147,6 +148,7 @@ class OfferRepository {
                 return ServiceRequest(
                   expertises: _extractExpertises(item),
                   id: item['id'] ?? '',
+                  createdAt: DateTime.now(),
                   serviceDateTime: item['serviceDateTime'] ?? '',
                   description: item['description'] ?? '',
                   images: (item['images'] as List<dynamic>?)

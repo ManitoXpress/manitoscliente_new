@@ -1,5 +1,4 @@
 import '../controller/RegisController.dart';
-
 class UserData {
   String userId;
   String displayName;
@@ -67,6 +66,30 @@ class UserData {
       email: email, devicesId: '', fcmToken: '', points: 0,
     ),
   );
+  UserData.empty()
+      : userId             = '',
+        displayName        = '',
+        phoneNumber        = '',
+        selectedCountryCode= '',
+        getToken           = null,
+        location           = const <String, double?>{},
+        paymentType        = '',
+        email              = '',
+        referrerUserId     = '',
+        referralCode       = '',
+        points             = 0,
+        registrationData   = RegistrationData(
+          userId:             '',
+          displayName:        '',
+          phoneNumber:        '',
+          paymentType:        '',
+          selectedCountryCode:'',
+          location:           const <String, double?>{},
+          email:              '',
+          devicesId:          '',
+          fcmToken:           '',
+          points:             0,
+        );
 
 
   factory UserData.fromJson(Map<String, dynamic> json) {

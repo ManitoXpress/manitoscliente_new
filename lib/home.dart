@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../request/dataprofile.dart';
 import '../widgets/maps.dart';
 
@@ -14,12 +17,16 @@ import 'menu/Referido.dart';
 import 'menu/UserProfile.dart';
 import 'menu/help.dart';
 import 'controller/RegisController.dart';
-
+import 'utils/fcmToken.dart';
 class HomeScreen extends StatefulWidget {
   final int initialPageIndex;
-  final bool isGuest; // Indica si es modo invitado
+  final UserData userData;
 
-  HomeScreen({this.initialPageIndex = 0, this.isGuest = false});
+  HomeScreen({
+    this.initialPageIndex = 0,
+    required this.userData,
+    // ← lo hacemos requerido
+  });
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -28,53 +35,48 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late int _currentIndex;
   late PageController _pageController;
-
+  late final UserData userData;
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialPageIndex;
-    _pageController = PageController(initialPage: widget.initialPageIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FCMService().registerTokenForUser(widget.userData.userId);
+    });
+
+    _currentIndex =
+        widget.initialPageIndex; // Inicializar con la página seleccionada.
+    _pageController = PageController(
+        initialPage: widget.initialPageIndex); // Controlador de PageView.
   }
 
-  void _openWhatsApp() async {
-    final String supportPhoneNumber = "59173666393";
-    final String supportMessage = "Hola, necesito soporte técnico en ManitosXpress.";
-    final String encodedMessage = Uri.encodeComponent(supportMessage);
-    final String whatsappUrl = "https://wa.me/$supportPhoneNumber?text=$encodedMessage";
-
-    final Uri uri = Uri.parse(whatsappUrl);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint("No se pudo abrir WhatsApp.");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("No se pudo abrir WhatsApp. Asegúrate de tenerlo instalado."),
-        ),
-      );
-    }
-  }
-   Future<String?> getCodeReferral() async {
+  Future<String?> getCodeReferral() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return null;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
     return doc.data()?['codeReferral'] as String?;
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final name = Uri.encodeComponent(user?.displayName ?? 'Usuario');
+    final supportUrl =
+        'https://wa.me/59173666393?text=Hola%20Soy%20$name,%20Necesito%20soporte%20';
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween, // Distribuir elementos
           children: [
-            Text('Soluciones Rápidas', style: MyTextStyles.buttonTextStyle),
+            // Texto en la parte izquierda
+            Text(
+              'Soluciones Rápidas',
+              style: MyTextStyles.buttonTextStyle,
+            ),
+            // Logo en la parte derecha
             Flexible(
               child: Container(
                 padding: EdgeInsets.all(10.w),
@@ -88,7 +90,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(
+            color: Colors.white), // Cambia el color del ícono del menú a blanco
       ),
       drawer: Drawer(
         child: Container(
@@ -96,35 +99,44 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView(
             padding: const EdgeInsets.all(10.0),
             children: [
+              // Aquí va tu código para el menú del Drawer...
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    constraints: BoxConstraints(maxWidth: 200, maxHeight: 200),
+                    constraints:
+                        const BoxConstraints(maxWidth: 200, maxHeight: 200),
                     child: Image.network("https://i.imgur.com/AWrWerE.png"),
                     margin: const EdgeInsets.only(top: 70, bottom: 40),
                   ),
+                  const SizedBox(height: 1.0),
                 ],
               ),
-              SizedBox(height: 1.0),
-
-              // Botón de Perfil (Deshabilitado en modo invitado)
+              const SizedBox(height: 1.0),
               ElevatedButton.icon(
-                onPressed: widget.isGuest ? null : () async {
+                onPressed: () async {
+                  // Obtener el usuario autenticado
                   final user = FirebaseAuth.instance.currentUser;
+
                   if (user != null) {
+                    // Obtener el nombre y el correo electrónico del usuario
                     final displayName = user.displayName ?? '';
                     final email = user.email ?? '';
 
-                    final userData = UserData.fromJson({
-                      'userId': 'defaultId',
-                      'displayName': 'defaultName',
-                      'email': 'defaultEmail',
-                      'phoneNumber': 'defaultPhoneNumber',
-                      'imagePath': 'defaultImagePath'
-                    });
+                    // Ejemplo: Crear un objeto UserData con valores predeterminados si userData es nulo
+                    final userData =
+                        UserData.fromJson(user.metadata.creationTime != null
+                            ? {
+                                'userId': 'defaultId',
+                                'displayName': 'defaultName',
+                                'email': 'defaultEmail',
+                                'phoneNumber': 'defaultPhoneNumber',
+                                'imagePath': 'defaultImagePath'
+                              }
+                            : {});
 
+                    // Navegar a la página del perfil pasando los datos del usuario
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -152,80 +164,92 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }
                 },
-                icon: Icon(Icons.person, color: Color(0xFF1A819A)),
+                icon: const Icon(Icons.person, color: Color(0xFF1A819A)),
                 label: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text("Perfil", style: MyTextStyles.linkTextStyle),
-                ),
-              ),
-
-              SizedBox(height: 3.h),
-              
-              // Solo usuarios autenticados pueden compartir referidos
-              if (!widget.isGuest)
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final code = await getCodeReferral();
-                    if (code != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ReferralScreen(codeReferral: code),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("No se encontró tu código de referido."),
-                        ),
-                      );
-                    }
-                  },
-                  icon: Icon(Icons.share, color: Color(0xFF1A819A)),
-                  label: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text("Referidos", style: MyTextStyles.linkTextStyle),
+                  child: const Text(
+                    "Perfil",
+                    style: MyTextStyles.linkTextStyle,
                   ),
                 ),
-
-              SizedBox(height: 3.h),
+              ),
+              SizedBox(height: 3.h), // Cambiado a screenutil
               ElevatedButton.icon(
-                onPressed: _openWhatsApp,
-                icon: Icon(Icons.help, color: Color(0xFF1A819A)),
+                onPressed: () async {
+                  final code = await getCodeReferral();
+                  if (code != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReferralScreen(codeReferral: code),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("No se encontró tu código de referido."),
+                      ),
+                    );
+                  }
+                },
+                icon: Icon(Icons.share, color: Color(0xFF1A819A)),
                 label: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text("Soporte Técnico", style: MyTextStyles.linkTextStyle),
+                  child: Text("Referidos", style: MyTextStyles.linkTextStyle),
                 ),
               ),
-              
-              SizedBox(height: 10.h),
-              
+              SizedBox(height: 3.h), // Cambiado a screenutil
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HelpScreen()),
+                  );
+                },
+                icon: const Icon(
+                  Icons.help,
+                  color: Color(0xFF1A819A),
+                ),
+                label: Align(
+                  alignment: Alignment.centerLeft,
+                  child: const Text(
+                    "Ayuda",
+                    style: MyTextStyles.linkTextStyle,
+                  ),
+                ),
+              ),
+              SizedBox(height: 3.h), // Cambiado a screenutil
+              ElevatedButton.icon(
+                onPressed: () => _abrirEnlace(supportUrl),
+                icon: const Icon(
+                  Icons.support_agent,
+                  color: Color(0xFF1A819A),
+                ),
+                label: Align(
+                  alignment: Alignment.centerLeft,
+                  child: const Text(
+                    "Soporte Técnico",
+                    style: MyTextStyles.linkTextStyle,
+                  ),
+                ),
+              ),
+              SizedBox(height: 18.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.facebook, color: Colors.white),
-                    iconSize: 40,
-                    onPressed: () async {
-                      const facebookUrl = 'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress';
-                      if (await canLaunchUrl(Uri.parse(facebookUrl))) {
-                        await launchUrl(Uri.parse(facebookUrl));
-                      } else {
-                        await _abrirEnlace('https://www.facebook.com/ManitosXpress');
-                      }
-                    },
-                  ),
-                  SizedBox(width: 20),
-                  IconButton(
-                    icon: Icon(Icons.camera_alt, color: Colors.white),
-                    iconSize: 40,
-                    onPressed: () async {
-                      const instagramUrl = 'https://www.instagram.com/manitosxpress';
-                      await _abrirEnlace(instagramUrl);
-                    },
-                  ),
+                  _buildSocialButton(
+                      icon: Icons.facebook,
+                      url: 'https://www.facebook.com/ManitosXpress'),
+                  SizedBox(width: 18.w),
+                  _buildSocialButton(
+                      icon: Icons.camera_alt,
+                      url: 'https://www.instagram.com/manitosxpress'),
+                  SizedBox(width: 18.w),
+                  _buildSocialButton(
+                      icon: Icons.tiktok,
+                      url: 'https://www.tiktok.com/@manitosxpress'),
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -243,26 +267,44 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (!widget.isGuest || index == 0) {
-            setState(() {
-              _currentIndex = index;
-            });
-            _pageController.jumpToPage(index);
-          }
+          setState(() {
+            _currentIndex = index;
+          });
+          _pageController.jumpToPage(index);
         },
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.app_registration_outlined), label: 'SERVICIOS'),
-          if (!widget.isGuest)
-            BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'MAPA'),
-          if (!widget.isGuest)
-            BottomNavigationBarItem(icon: Icon(Icons.library_books_outlined), label: 'SOLICITUDES'),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.app_registration_outlined),
+            label: 'SERVICIOS',
+            backgroundColor: const Color(0xFF1A819A),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.map_outlined),
+            label: 'MAPA',
+            backgroundColor: const Color(0xFF1A819A),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.library_books_outlined),
+            label: 'SOLICITUDES',
+            backgroundColor: const Color(0xFF1A819A),
+          ),
         ],
         selectedItemColor: Colors.white,
         unselectedItemColor: Color(0xFF6AB8D6),
-        backgroundColor: Color(0xFF1A819A),
+        selectedLabelStyle: MyTextStyles.navBarTextStyle,
+        unselectedLabelStyle: MyTextStyles.navBarTextStyle,
+        selectedIconTheme: IconThemeData(color: Colors.white),
+        unselectedIconTheme: IconThemeData(color: Color(0xFF6AB8D6)),
+        backgroundColor: const Color(0xFF1A819A),
       ),
     );
   }
+
+  Widget _buildSocialButton({required IconData icon, required String url}) =>
+      IconButton(
+        icon: Icon(icon, size: 45.w, color: Colors.white),
+        onPressed: () => _abrirEnlace(url),
+      );
 
   Future<void> _abrirEnlace(String url) async {
     final uri = Uri.parse(url);
@@ -274,10 +316,17 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildScreens() {
     return [
       ServiceScreen(),
-      if (!widget.isGuest) MapScreen(),
-      if (!widget.isGuest) Historial(onTabTapped: _refreshHistorial),
+      MapScreen(), // Pantalla del mapa
+      HistorialScreen(
+        onTabTapped: () {
+          _refreshHistorial();
+        },
+        userData: UserData.empty(),
+      ),
     ];
   }
 
-  void _refreshHistorial() {}
+  void _refreshHistorial() {
+    // Aquí puedes actualizar el historial desde tu backend
+  }
 }

@@ -4,6 +4,14 @@ import 'package:intl/intl.dart';
 
 import 'package:flutter_cupertino_date_picker_fork/flutter_cupertino_date_picker_fork.dart';
 
+
+import 'package:flutter/material.dart';
+
+import 'package:intl/intl.dart';
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 class DateTimeSelectionWizard extends StatefulWidget {
   final DateTime? selectedDate;
   final TimeOfDay? selectedTime;
@@ -21,8 +29,7 @@ class DateTimeSelectionWizard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _DateTimeSelectionWizardState createState() =>
-      _DateTimeSelectionWizardState();
+  _DateTimeSelectionWizardState createState() => _DateTimeSelectionWizardState();
 }
 
 class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
@@ -32,7 +39,10 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.selectedDate;
+    // Normalize incoming DateTime to local date only
+    _selectedDate = widget.selectedDate != null
+        ? DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day)
+        : null;
     _selectedTime = widget.selectedTime;
   }
 
@@ -41,8 +51,7 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
       context,
       pickerTheme: DateTimePickerTheme(
         showTitle: true,
-        confirm:
-            Text('Confirmar', style: TextStyle(color: const Color(0xFF1A819A))),
+        confirm: Text('Confirmar', style: TextStyle(color: const Color(0xFF1A819A))),
         cancel: Text('Cancelar', style: TextStyle(color: Colors.red)),
       ),
       minDateTime: DateTime.now().subtract(const Duration(days: 365)),
@@ -50,40 +59,28 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
       initialDateTime: _selectedDate ?? DateTime.now(),
       dateFormat: 'yyyy-MM-dd',
       onConfirm: (date, _) {
+        // Drop any timezone offset by reconstructing date-only
+        final pureDate = DateTime(date.year, date.month, date.day);
         setState(() {
-          _selectedDate = date;
-          widget.onDateSelected(_selectedDate);
+          _selectedDate = pureDate;
+          widget.onDateSelected(pureDate);
         });
       },
     );
   }
 
   void _pickTime() {
-    DatePicker.showDatePicker(
-      context,
-      pickerMode: DateTimePickerMode
-          .time, // Cambiamos el modo para el selector de tiempo
-      pickerTheme: DateTimePickerTheme(
-        showTitle: true,
-        confirm:
-            Text('Confirmar', style: TextStyle(color: const Color(0xFF1A819A))),
-        cancel: Text('Cancelar', style: TextStyle(color: Colors.red)),
-      ),
-      initialDateTime: DateTime(
-        1,
-        1,
-        1,
-        _selectedTime?.hour ?? TimeOfDay.now().hour,
-        _selectedTime?.minute ?? TimeOfDay.now().minute,
-      ),
-      dateFormat: 'HH:mm',
-      onConfirm: (time, _) {
+    showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+    ).then((time) {
+      if (time != null) {
         setState(() {
-          _selectedTime = TimeOfDay(hour: time.hour, minute: time.minute);
-          widget.onTimeSelected(_selectedTime);
+          _selectedTime = time;
+          widget.onTimeSelected(time);
         });
-      },
-    );
+      }
+    });
   }
 
   @override
@@ -91,30 +88,43 @@ class _DateTimeSelectionWizardState extends State<DateTimeSelectionWizard> {
     final dateFormat = DateFormat('yyyy-MM-dd');
     final timeFormat = DateFormat.Hm();
 
+    String dateLabel = _selectedDate != null
+        ? dateFormat.format(_selectedDate!)
+        : 'Seleccione fecha';
+
+    String timeLabel;
+    if (_selectedTime != null) {
+      // Construct a dummy DateTime with only hour/minute to format
+      final dt = DateTime(0, 1, 1, _selectedTime!.hour, _selectedTime!.minute);
+      timeLabel = timeFormat.format(dt);
+    } else {
+      timeLabel = 'Seleccione hora';
+    }
+
     return Column(
-      children: [
-        ListTile(
-          title: Text(
-            _selectedDate != null
-                ? dateFormat.format(_selectedDate!)
-                : 'Seleccione una fecha',
-            style: TextStyle(fontSize: 16.0),
-          ),
-          trailing: Icon(Icons.calendar_today),
-          onTap: _pickDate,
-        ),
-        ListTile(
-          title: Text(
-            _selectedTime != null
-                ? timeFormat.format(DateTime(
-                    1, 1, 1, _selectedTime!.hour, _selectedTime!.minute))
-                : 'Seleccione una hora',
-            style: TextStyle(fontSize: 16.0),
-          ),
-          trailing: Icon(Icons.access_time),
-          onTap: _pickTime,
-        ),
-      ],
-    );
-  }
+        children: [
+    Row(
+    children: [
+    Expanded(
+    child: ListTile(
+        title: Text(dateLabel, style: TextStyle(fontSize: 16.0)),
+    trailing: Icon(Icons.calendar_today),
+    onTap: _pickDate,
+    ),
+
+    ),
+      SizedBox(width: 12),
+      Expanded(
+        child: ListTile(
+        title: Text(timeLabel, style: TextStyle(fontSize: 16.0)),
+      trailing: Icon(Icons.access_time),
+      onTap: _pickTime,
+                ),
+
+              ),
+              ],
+            ),
+          ],
+        );
+       }
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -9,12 +10,118 @@ import '../controller/RegisController.dart';
 import '../controller/baseurl.dart';
 import 'requestStatus.dart';
 import 'resquest.dart';
-
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl; // URL base de la API
   String? getToken;
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseStorage storage = FirebaseStorage.instance;
+    Future<bool> deleteWorker(String userId, String authToken) async {
+  try {
+    final url = Uri.parse('$baseUrl/workers/$userId');
+    final response = await http.delete(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      debugPrint('✅ Worker eliminado correctamente');
+      return true;
+    } else {
+      debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+      return false;
+    }
+  } catch (e) {
+    debugPrint('❌ Excepción al eliminar worker: $e');
+    return false;
+  }
+}
+  Future<http.Response> addCommentToService({
+    required String serviceId,
+    required Map<String, String> comment,
+  }) async {
+    final token = await _getAuthToken();
+
+    final url = Uri.parse('$baseUrl/services/$serviceId');
+    final body = jsonEncode({
+      'comments': [comment]
+    });
+
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error añadiendo comentario: '
+          '${response.statusCode} ${response.body}');
+    }
+    return response;
+  }
+
+  Future<http.Response> addCommentToOffer({
+    required String offerId,
+    required Map<String, String> comment,
+    required String token,
+  }) async {
+    // Preparamos el body con el array de un solo comentario
+    final body = jsonEncode({
+      'comments': [comment]
+    });
+
+    // PATCH directo a /offer/{offerId}
+    final url = Uri.parse('$baseUrl/offer/$offerId');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error añadiendo comentario a la oferta: '
+          '${response.statusCode} ${response.body}');
+    }
+    return response;
+  }
+
+  Future<http.Response> updateFcmToken(
+    String userId,
+    String authToken,
+    String fcmToken,
+  ) async {
+    try {
+      final body = jsonEncode({'fcmToken': fcmToken});
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: body,
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('✅ FCM token actualizado en backend');
+      } else {
+        debugPrint('❌ Error al actualizar FCM token: ${response.statusCode}');
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('❌ Excepción actualizando FCM token: $e');
+      rethrow;
+    }
+  }
 
   // Método para obtener el token de autenticación desde Firebase
   Future<String?> _getAuthToken() async {
@@ -33,6 +140,8 @@ class ApiService {
       return null;
     }
   }
+
+  Future<String?> getAuthToken() => _getAuthToken();
 
   // Método para realizar la solicitud GET a la API del backend
   Future<List<Map<String, dynamic>>> getServices(
@@ -100,6 +209,29 @@ class ApiService {
       print('Error al enviar datos al servidor: $e');
       throw Exception('Error al enviar datos al servidor');
     }
+  }
+
+  Future<void> updateOfferStatus({
+    required String offerId,
+    required String newStatus,
+  }) async {
+    final token = await _getAuthToken();
+    if (token == null) throw Exception('Token nulo');
+
+    final url = Uri.parse('$baseUrl/offers/$offerId');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': newStatus}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+          'Error al actualizar oferta: ${response.statusCode} ${response.body}');
+    }
+    debugPrint('✅ Oferta $offerId actualizada a $newStatus');
   }
 
   Future<void> updateServiceStatus(
@@ -201,8 +333,7 @@ class ApiService {
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
       final String extension = image.path.split('.').last;
-      final String imageName =
-          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String imageName = 'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final String userFolderPath = '$userId/';
       final String imagePath = '$userFolderPath$imageName';
 
@@ -227,37 +358,32 @@ class ApiService {
   }
 
   Future<http.Response> sendDataToBackend(
-    ServiceRequest serviceRequest,
-    String token,
-    String id,
-    String expertises,
-    String categoryId,
-    String subcategoryId,
-    Status status,
-    String subcategoryName,
-    List<String> imageUrls,
-    String? devicesId, // Asegúrate de que este parámetro esté aquí
-    String? fcmToken,
-  ) async {
-    print('sendDataToBackend() called');
-    print('Enviando datos al backend:');
+      ServiceRequest serviceRequest,
+      String token,
+      String id,
+      String expertises,
+      String categoryId,
+      String subcategoryId,
+      Status status,
+      String subcategoryName,
+      List<String> imageUrls,
+      String? devicesId,
+      String? fcmToken,
+      String date,   // yyyy-MM-dd
+      String time    // HH:mm
+      ) async {
+    // Timestamp de creación en UTC
+    final String createdAt = DateTime.now().toUtc().toIso8601String();
 
-    // Convierte la latitud y longitud a double o usa 0.0 si son nulas
     double latitude = serviceRequest.location['lat'] ?? 0.0;
     double longitude = serviceRequest.location['lng'] ?? 0.0;
 
-    // Construir expertises con el serviceType y el subcategoryId
-    final expertisesList = [
-      {
-        'id': serviceRequest.serviceType.id,
-        'name': serviceRequest.serviceType.name,
-      }
-    ];
-
-    // Crear una instancia de FormData
     final formData = {
       'subcategoryName': subcategoryName,
-      'serviceDateTime': serviceRequest.serviceDateTime,
+      'date': date,                   // tu date
+      'time': time,                   // tu time
+      'createdAt': createdAt,
+      // 'serviceDateTime': serviceRequest.serviceDateTime,  // <- quitas esta línea
       'description': serviceRequest.description,
       'images': imageUrls,
       'location': {
@@ -266,38 +392,39 @@ class ApiService {
       },
       'userId': serviceRequest.userId,
       'status': status.id,
-      'expertises':
-          expertisesList, // Aquí es donde se agrega la lista de expertises
+      'expertises': [
+        {
+          'id': serviceRequest.serviceType.id,
+          'name': serviceRequest.serviceType.name,
+        }
+      ],
       'categoryId': categoryId,
-      'subcategory': {'id': subcategoryId, 'name': subcategoryName},
-      'devicesId': devicesId, // Agrega devicesId aquí
+      'subcategory': {
+        'id': subcategoryId,
+        'name': subcategoryName,
+      },
+      'devicesId': devicesId,
       'fcmToken': fcmToken,
       'token': token,
     };
 
     print('FormData: $formData');
-    print('Token: $token');
 
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/services'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(formData),
-      );
+    final response = await http.post(
+      Uri.parse('$baseUrl/services'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(formData),
+    );
 
-      if (response.statusCode == 200) {
-        print('Datos enviados al backend con éxito');
-      } else {
-        print('Solicitud HTTP: ${response.statusCode}');
-      }
-      return response;
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al enviar datos al backend');
+    if (response.statusCode == 200) {
+      print('Datos enviados al backend con éxito');
+    } else {
+      print('Solicitud HTTP: ${response.statusCode}');
     }
+    return response;
   }
 
   Future<http.Response> updateUser(

@@ -51,14 +51,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         fcmToken = value;
       });
     });
-    // Obtener el usuario actual de Firebase
-  final currentUser = FirebaseAuth.instance.currentUser;
-  final currentDisplayName = currentUser?.displayName ?? '';
 
     setState(() {
       registrationData = RegistrationData(
         userId: '',
-        displayName: currentDisplayName,
+        displayName: '',
         phoneNumber: '',
         location: {},
         email: '',
@@ -71,7 +68,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       userData = UserData(
         userId: '',
-        displayName: currentDisplayName,
+        displayName: '',
         email: '',
         phoneNumber: '',
         location: {},
@@ -221,33 +218,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   Future<void> _completeRegistration() async {
     print('Entrando a _completeRegistration');
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return WillPopScope(
-          onWillPop: () async => false,
-          child: AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20),
-                Text(
-                  'Espere por favor, estamos registrando en el sistema',
-                  style: MyTextStyles.drawerButtonTextStyle3,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    setState(() {
-      loadingCompleteRegistration = true;
-    });
 
     try {
       final apiService = ApiService();
@@ -351,7 +321,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         widget.completeRegistrationCallback();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => HomeScreen(userData: userData!,)),
         );
       } else {
         print('Error en la respuesta del servidor: ${response.statusCode}');
@@ -373,6 +343,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           'Registro de Usuario',
           style: MyTextStyles.buttonTextStyle,
         ),
+        backgroundColor: const Color(0xFF1A819A),
       ),
       body: Theme(
         data: ThemeData(

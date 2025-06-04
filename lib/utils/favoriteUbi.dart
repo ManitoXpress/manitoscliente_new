@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 
 import '../Styles/stilo.dart';
 import '../wizards/datalocation.dart';
-
 class FavoriteLocationsScreen extends StatefulWidget {
   @override
   _FavoriteLocationsScreenState createState() =>
@@ -62,25 +61,25 @@ class _FavoriteLocationsScreenState extends State<FavoriteLocationsScreen> {
   }
 
   void _navigateToLocationAndFavoritesWizard(String location) async {
-  try {
-    // Convertir la dirección guardada en coordenadas (geocodificación)
-    List<Location> locations = await locationFromAddress(location);
-    if (locations.isNotEmpty) {
-      LatLng coords = LatLng(locations[0].latitude, locations[0].longitude);
-      // Retornar las coordenadas a la pantalla anterior (LocationAndFavoritesWizard)
-      Navigator.pop(context, coords);
-    } else {
+    try {
+      // Convertir la dirección guardada en coordenadas (geocodificación)
+      List<Location> locations = await locationFromAddress(location);
+      if (locations.isNotEmpty) {
+        LatLng coords = LatLng(locations[0].latitude, locations[0].longitude);
+        // Retornar las coordenadas a la pantalla anterior (LocationAndFavoritesWizard)
+        Navigator.pop(context, coords);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo encontrar la ubicación')),
+        );
+      }
+    } catch (e) {
+      print("Error al convertir la dirección a coordenadas: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo encontrar la ubicación')),
+        SnackBar(content: Text('Error al procesar la ubicación')),
       );
     }
-  } catch (e) {
-    print("Error al convertir la dirección a coordenadas: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al procesar la ubicación')),
-    );
   }
-}
 
   Widget build(BuildContext context) {
     return Scaffold(

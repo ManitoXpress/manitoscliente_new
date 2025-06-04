@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
 import 'package:manitoscliente_new/controller/service_provider.dart';
+import 'package:manitoscliente_new/provider/userProvider.dart';
 import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:provider/provider.dart';
@@ -29,31 +30,31 @@ class _ProfessionalServicesView extends StatelessWidget {
         automaticallyImplyLeading: true,
         title: provider.isSearching
             ? Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  onChanged: provider.filter,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-                    hintText: 'Buscar servicios...',
-                    border: InputBorder.none,
-                    suffixIcon: provider.displayedServices.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: Color(0xFF1A819A)),
-                            onPressed: provider.clearFilter,
-                          )
-                        : null,
-                  ),
-                ),
+          width: double.infinity,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: TextField(
+            onChanged: provider.filter,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+              hintText: 'Buscar servicios...',
+              border: InputBorder.none,
+              suffixIcon: provider.displayedServices.isNotEmpty
+                  ? IconButton(
+                icon: const Icon(Icons.clear, color: Color(0xFF1A819A)),
+                onPressed: provider.clearFilter,
               )
+                  : null,
+            ),
+          ),
+        )
             : const Text(
-                'Servicios de hogar',
-                style: MyTextStyles.buttonTextStyle,
-              ),
+          'Servicios de hogar',
+          style: MyTextStyles.buttonTextStyle,
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -94,9 +95,9 @@ class _SearchField extends StatelessWidget {
             border: InputBorder.none,
             suffixIcon: prov.displayedServices.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: prov.clearFilter,
-                  )
+              icon: const Icon(Icons.clear),
+              onPressed: prov.clearFilter,
+            )
                 : null,
           ),
           onChanged: prov.filter,
@@ -112,7 +113,7 @@ class _ServiceGrid extends StatelessWidget {
     return Consumer<ProfessionalServicesProvider>(
       builder: (ctx, prov, _) {
         if (prov.isLoading) return const Center(child: CircularProgressIndicator());
-        if (prov.errorMessage != null) return Center(child: Text('Error: \${prov.errorMessage}'));  
+        if (prov.errorMessage != null) return Center(child: Text('Error: \${prov.errorMessage}'));
         if (prov.displayedServices.isEmpty) {
           return const Center(
             child: Text(
@@ -182,14 +183,22 @@ class _ServiceGrid extends StatelessWidget {
   }
 }
 
+
 class _DetailsPanel extends StatelessWidget {
   const _DetailsPanel();
 
   @override
   Widget build(BuildContext context) {
+    // 1) Obtenemos el provider de servicios profesionales
     final prov = context.watch<ProfessionalServicesProvider>();
     if (!prov.hasSelection) return const SizedBox.shrink();
     final svc = prov.selectedService!;
+
+    // 2) Obtenemos el UserData desde el provider (o la fuente que uses)
+    //    Este provider debe haber sido registrado en un nivel superior (por ejemplo, en main.dart).
+    final userData = context.read<UserDataProvider>().userData;
+
+    // 3) Calculamos la fecha/hora actual en ISO
     final nowIso = DateTime.now().toUtc().toIso8601String();
 
     return Card(
@@ -199,8 +208,7 @@ class _DetailsPanel extends StatelessWidget {
       elevation: 4,
       margin: const EdgeInsets.all(10),
       child: SizedBox(
-        // Ajusta la altura según convenga
-        height: MediaQuery.of(context).size.height * 0.55,
+        height: MediaQuery.of(context).size.height * 0.35,
         child: ListView(
           shrinkWrap: true,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -231,11 +239,14 @@ class _DetailsPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
+
+            // 4) Por cada tipo de servicio, mostramos un botón que abre ServiceFormPage
             ...svc.serviceTypes.map((type) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ElevatedButton(
                   onPressed: () {
+                    // 4.a) Creamos un ServiceRequest base para enviar al formulario
                     final status = StatusUtils.getStatusById('');
                     final req = ServiceRequest(
                       serviceDateTime: nowIso,
@@ -244,7 +255,7 @@ class _DetailsPanel extends StatelessWidget {
                       location: {'lat': 0, 'lng': 0},
                       offeredPrice: 0,
                       serviceType: type,
-                      userId: '',
+                      userId: userData.userId, // ← si quieres prellenar userId
                       workerId: '',
                       isFavorite: false,
                       selectedDate: nowIso,
@@ -257,21 +268,25 @@ class _DetailsPanel extends StatelessWidget {
                       hasOffer: false,
                       offers: [],
                       subcategoryName: svc.name,
+                      createdAt: DateTime.now(),
                     );
+
+                    // 4.b) Navegamos a ServiceFormPage, pasándole userData
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => ServiceFormPage(
                           serviceRequest: req,
                           acceptTerms: true,
+                          serviceRequests: [], // ← lista si la necesitas
                           selectedDate: DateTime.now(),
-                          token: '',
+                          selectedTime: type.selectedTime ?? '',
                           selectedServiceTitle: type.name,
-                          selectedTime: '',
-                          serviceRequests: [],
+                          token: '', // ← si tienes un token válido, pásalo aquí
                           categoryId: svc.parentId!,
                           expertiseId: svc.id,
                           expertiseName: svc.name,
+                          userData: userData, // ← importante: lo pasamos aquí
                         ),
                       ),
                     );

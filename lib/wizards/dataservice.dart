@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/controller/data_provider.dart';
+import 'package:manitoscliente_new/provider/data_provider.dart';
+
 import 'package:provider/provider.dart';
 
 import '../Styles/stilo.dart';

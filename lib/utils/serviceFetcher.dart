@@ -99,7 +99,7 @@ class ServiceRepository {
           "userId", // Aquí pasamos "userId" como columna de filtro
           column,   // Aquí realmente está el userId, por lo que se pasa como valor
           type,
-          deviceId,
+          
         );
 
 
@@ -132,6 +132,7 @@ class ServiceRepository {
                     )
                   ],
                   id: item['id'] ?? '',
+                  createdAt: DateTime.now(),
                   serviceDateTime: item['serviceDateTime'] ?? '',
                   description: item['description'] ?? '',
                   images: (item['images'] as List<dynamic>?)

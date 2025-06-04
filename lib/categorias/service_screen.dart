@@ -19,7 +19,6 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import '../utils/status.dart';
-
 class ServiceScreen extends StatefulWidget {
   static int notificationCount = 0;
 
@@ -43,17 +42,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
     super.initState();
     _loadServices();
     _pageController = PageController(initialPage: 0);
-    _startNotificationTimer();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showWelcomeDialog();
     });
   }
 
-  void _handleFCMMessage(RemoteMessage message) {
-    if (message.data['status'] == 'offer') {
-      _checkForNewNotifications();
-    }
-  }
+
 
   @override
   void dispose() {
@@ -130,7 +125,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
       if (token != null) {
         final List<ServiceResponse> serviceResponses =
-            await _apiService2.fetchServicesFromBackend(token);
+        await _apiService2.fetchServicesFromBackend(token);
 
         // Ordenar los servicios para que HomeServices aparezca primero
         serviceResponses.sort((a, b) {
@@ -155,58 +150,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
     }
   }
 
-  Future<void> _checkForNewNotifications() async {
-    try {
-      String? userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        final serviceQuery = await FirebaseFirestore.instance
-            .collection(
-                'serviceRequests') // Asegúrate de que esta sea la colección correcta
-            .where('userId', isEqualTo: userId)
-            .where('status', isEqualTo: 'offer')
-            .get();
 
-        final newOfferCount = serviceQuery.docs.length;
 
-        if (newOfferCount > 0) {
-          setState(() {
-            notificationCount = newOfferCount;
-          });
-          _showNotifications(context, newOfferCount);
-        }
-      }
-    } catch (e) {
-      print('Error al comprobar las notificaciones: $e');
-    }
-  }
-
-  void _startNotificationTimer() {
-    _notificationTimer = Timer.periodic(Duration(minutes: 5), (timer) {
-      _checkForNewNotifications();
-    });
-  }
-
-  void _showNotifications(BuildContext context, int offerCount) {
-    ServiceFunctions.showNotifications(
-      context,
-      title: 'Nuevas Ofertas Disponibles',
-      body: 'Tienes $offerCount nueva(s) oferta(s) para tus servicios.',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => Historial()),
-        );
-      },
-    );
-  }
-
-  void _limpiarTextoBusqueda() {
-    setState(() {
-      searchText = '';
-      _showClearButton = false;
-      _textEditingController.clear();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +196,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           case 1:
                             final String statusName = '';
                             final Status status =
-                                StatusUtils.getStatusById(statusName);
+                            StatusUtils.getStatusById(statusName);
                             ServiceRequest serviceRequest = ServiceRequest(
                               serviceDateTime: '',
                               id: '',
@@ -276,7 +221,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                               devicesId: '',
                               hasOffer: false,
                               offers: [],
-                              subcategoryName: '',
+                              subcategoryName: '', createdAt: DateTime.now(),
                             );
                             navigateToHomeServices(context, service.id);
                             break;
@@ -333,10 +278,10 @@ class _ServiceScreenState extends State<ServiceScreen> {
                   child: IconButton(
                     icon: _currentPage == services.length - 1
                         ? Icon(Icons.arrow_back,
-                            color: Colors.white) // Flecha hacia atrás blanca
+                        color: Colors.white) // Flecha hacia atrás blanca
                         : Icon(Icons.arrow_forward,
-                            color:
-                                Colors.white), // Flecha hacia adelante blanca
+                        color:
+                        Colors.white), // Flecha hacia adelante blanca
                     onPressed: () {
                       if (_currentPage < services.length - 1) {
                         _pageController.nextPage(

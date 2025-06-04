@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/controller/home_Provider.dart';
+import 'package:manitoscliente_new/provider/userProvider.dart';
 import '../request/resquest.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,10 +21,8 @@ import 'Service_DetailsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:cached_network_image/cached_network_image.dart';
-
 class HomeServicesScreen extends StatelessWidget {
-  final String parentCategoryId; 
+  final String parentCategoryId;
   const HomeServicesScreen({Key? key, required this.parentCategoryId,})
       : super(key: key);
 
@@ -31,7 +30,7 @@ class HomeServicesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) =>
-          HomeServicesProvider()..loadServices(parentId: parentCategoryId),
+      HomeServicesProvider()..loadServices(parentId: parentCategoryId),
       child: const _HomeServicesView(),
     );
   }
@@ -50,34 +49,34 @@ class _HomeServicesView extends StatelessWidget {
         automaticallyImplyLeading: true,
         title: prov.isSearching
             ? Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  onChanged: prov.filter,
-                  decoration: InputDecoration(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 15),
-                    hintText: 'Buscar servicios...',
-                    border: InputBorder.none,
-                    suffixIcon:
-                        prov.displayedServices.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear,
-                                    color: Color(0xFF1A819A)),
-                                onPressed: prov.clearFilter,
-                              )
-                            : null,
-                  ),
-                ),
+          width: double.infinity,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: TextField(
+            onChanged: prov.filter,
+            decoration: InputDecoration(
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 15),
+              hintText: 'Buscar servicios...',
+              border: InputBorder.none,
+              suffixIcon:
+              prov.displayedServices.isNotEmpty
+                  ? IconButton(
+                icon: const Icon(Icons.clear,
+                    color: Color(0xFF1A819A)),
+                onPressed: prov.clearFilter,
               )
+                  : null,
+            ),
+          ),
+        )
             : const Text(
-                'Servicios Profesionales',
-                style: MyTextStyles.buttonTextStyle,
-              ),
+          'Servicios Profesionales',
+          style: MyTextStyles.buttonTextStyle,
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -164,7 +163,7 @@ class _ServiceGrid extends StatelessWidget {
                   width: 80,
                   fit: BoxFit.cover,
                   placeholder: (_, __) =>
-                      const CircularProgressIndicator(),
+                  const CircularProgressIndicator(),
                   errorWidget: (_, __, ___) => const Icon(Icons.error),
                 ),
                 const SizedBox(height: 8),
@@ -192,6 +191,9 @@ class _DetailsPanel extends StatelessWidget {
     final prov = context.watch<HomeServicesProvider>();
     if (!prov.hasSelection) return const SizedBox.shrink();
     final svc = prov.selectedService!;
+    // 2) Obtenemos el UserData desde el provider (o la fuente que uses)
+    //    Este provider debe haber sido registrado en un nivel superior (por ejemplo, en main.dart).
+    final userData = context.read<UserDataProvider>().userData;
     final nowIso = DateTime.now().toUtc().toIso8601String();
 
     return Card(
@@ -246,7 +248,7 @@ class _DetailsPanel extends StatelessWidget {
                       location: {'lat': 0, 'lng': 0},
                       offeredPrice: 0,
                       serviceType: type,
-                      userId: '',
+                      userId: userData.userId,
                       workerId: '',
                       isFavorite: false,
                       selectedDate: nowIso,
@@ -258,7 +260,7 @@ class _DetailsPanel extends StatelessWidget {
                       devicesId: '',
                       hasOffer: false,
                       offers: [],
-                      subcategoryName: svc.name,
+                      subcategoryName: svc.name, createdAt: DateTime.now(),
                     );
                     Navigator.push(
                       context,
@@ -274,6 +276,7 @@ class _DetailsPanel extends StatelessWidget {
                           categoryId: svc.parentId!,
                           expertiseId: svc.id,
                           expertiseName: svc.name,
+                          userData: userData, // ← importante: lo pasamos aquí
                         ),
                       ),
                     );

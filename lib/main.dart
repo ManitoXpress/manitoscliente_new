@@ -1,131 +1,174 @@
+
+// Handler para mensajes en segundo plano
 import 'dart:io';
-
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // Importa flutter_screenutil
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:manitoscliente_new/controller/data_provider.dart';
-import 'package:manitoscliente_new/controller/home_Provider.dart';
-import 'package:manitoscliente_new/controller/service_provider.dart';
-import 'package:provider/provider.dart';
-import '../utils/fcmToken.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-
-import 'Loading.dart';
-import 'firebase_options.dart';
-import 'home.dart';
-import 'menu/Login.dart';
-
-
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
-import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:manitoscliente_new/Loading.dart';
+import 'package:manitoscliente_new/controller/RegisController.dart';
+import 'package:manitoscliente_new/controller/home_Provider.dart';
+import 'package:manitoscliente_new/controller/service_provider.dart';
+import 'package:manitoscliente_new/firebase_options.dart';
+import 'package:manitoscliente_new/home.dart';
+import 'package:manitoscliente_new/menu/Login.dart';
+import 'package:manitoscliente_new/provider/data_provider.dart';
+import 'package:manitoscliente_new/provider/userProvider.dart';
+import 'package:manitoscliente_new/provider/workerProvider.dart';
+import 'package:manitoscliente_new/request/dataprofile.dart';
+import 'package:manitoscliente_new/utils/fcmToken.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
-}
 
+}
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // 1. Pedimos permiso ATT inmediatamente
+  if (Platform.isIOS) {
+    final status = await AppTrackingTransparency.requestTrackingAuthorization();
+    print("📊 Estado ATT inicial: $status");
+  }
+
+  // 2. Ahora inicializamos Firebase y el resto de SDKs
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
   );
-  // Permisos y Firestore persistence en iOS
+
+  // 3. Firestore persistence (iOS)
   if (Platform.isIOS) {
-    await requestTrackingPermission(); // Solo en iOS
-    FirebaseFirestore.instance.settings =
-        const Settings(persistenceEnabled: true);
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+    );
   }
 
+  // 4. Inicializamos tu servicio de FCM y demás
   await FCMService().init();
 
   final deviceId = await obtenerDeviceId();
-  print("Device ID: $deviceId");
+  print("📱 Device ID: $deviceId");
 
   runApp(
     MultiProvider(
       providers: [
-        // Aquí agregas todos tus providers
         ChangeNotifierProvider(create: (_) => ServiceDataProvider()),
         ChangeNotifierProvider(create: (_) => HomeServicesProvider()),
         ChangeNotifierProvider(create: (_) => ProfessionalServicesProvider()),
-        // Puedes agregar más providers si los necesitas
+        ChangeNotifierProvider(create: (_) => WorkerProvider()),
+        ChangeNotifierProvider(create: (_) => UserDataProvider()), // ← Agrega este
       ],
       child: ScreenUtilInit(
-        designSize: Size(375, 812),
+        designSize: const Size(375, 812),
         minTextAdapt: true,
         splitScreenMode: true,
-        builder: (context, child) => MyApp(deviceId: deviceId),
+        builder: (_, __) => MyApp(deviceId: deviceId),
       ),
     ),
+
   );
 }
-/// Obtiene un identificador del dispositivo
+Future<void> requestNotificationPermissions() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  print('User granted permission: ${settings.authorizationStatus}');
+}
+
+
+
 Future<String> obtenerDeviceId() async {
   try {
     final deviceInfo = DeviceInfoPlugin();
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id;
+      final id = androidInfo.id?.toString() ?? 'Unknown Device ID';
+      return id;
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor ?? 'Unknown Device ID';
+      final id = iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
+      return id;
+    } else {
+      return 'Unsupported Platform';
     }
-    return 'Unsupported Platform';
   } catch (e) {
     print('Error obteniendo Device ID: $e');
     return 'Error Device ID';
   }
 }
 
-/// Solicita permiso ATT en iOS
-Future<void> requestTrackingPermission() async {
-  if (Platform.isIOS) {
-    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-    if (status == TrackingStatus.notDetermined) {
-      final result =
-          await AppTrackingTransparency.requestTrackingAuthorization();
-      print("Estado de ATT: $result");
-    }
-  }
-}
-
-
-
 class MyApp extends StatefulWidget {
   final String deviceId;
-  const MyApp({required this.deviceId, Key? key}) : super(key: key);
+
+  const MyApp({required this.deviceId});
 
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  final _secureStorage = const FlutterSecureStorage();
-
   bool isLoading = true;
   bool isLoggedIn = false;
+  UserData? userData;
+  RegistrationData? registrationData;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkLoginStatus();
+
+    // Espera al primer render para no bloquear la UI:
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+    
+      requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
+      _checkLoginStatus();
+    });
   }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (loggedIn) {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        userData = await fetchUserData(user.uid);
+        registrationData = userData?.registrationData;
+
+      }
+    }
+
+    // Simula tiempo de carga si es necesario
+    await Future.delayed(const Duration(seconds: 5));
+
+    setState(() {
+      isLoggedIn = loggedIn;
+      isLoading = false;
+    });
+  }
+
 
   @override
   void dispose() {
@@ -133,29 +176,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Lee el flag desde Keychain/Keystore
-  Future<void> _checkLoginStatus() async {
-    final value = await _secureStorage.read(key: 'isLoggedIn');
-    // flutter_secure_storage guarda todo como String
-    final loggedIn = value == 'true';
-    await Future.delayed(const Duration(seconds: 2)); // tu splash
-    setState(() {
-      isLoggedIn = loggedIn;
-      isLoading = false;
-    });
-  }
-
-  /// Llamar desde tu LoginScreen cuando el login sea exitoso
-  Future<void> _onLoginSuccess() async {
-    await _secureStorage.write(key: 'isLoggedIn', value: 'true');
-    print('Guardado en secure storage');
-    setState(() {
-      isLoggedIn = true;
-    });
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       print('App is in foreground');
     } else if (state == AppLifecycleState.paused) {
@@ -169,7 +192,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       title: 'Manitos Xpress',
       theme: ThemeData(
-        primarySwatch: _customPrimarySwatch(),
+        primarySwatch: MaterialColor(
+          0xFF1A819A,
+          <int, Color>{
+            50: Color(0xFF1A819A),
+            100: Color(0xFF1A819A),
+            200: Color(0xFF1A819A),
+            300: Color(0xFF1A819A),
+            400: Color(0xFF1A819A),
+            500: Color(0xFF1A819A),
+            600: Color(0xFF1A819A),
+            700: Color(0xFF1A819A),
+            800: Color(0xFF1A819A),
+            900: Color(0xFF1A819A),
+          },
+        ),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           secondary: Colors.grey,
           background: Colors.white,
@@ -182,32 +219,49 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       home: isLoading
           ? LoadingScreen()
           : isLoggedIn
-              ?  HomeScreen()
-              : LoginScreen(
-                  deviceId: widget.deviceId,
-                  onLoginSuccess: _onLoginSuccess, // pasamos el callback
-                ),
-      routes: {
-        '/home': (context) =>  HomeScreen(),
-      },
+          ? HomeScreen(userData: userData!,)
+          : LoginScreen(deviceId: widget.deviceId, onLoginSuccess: () {  },),
     );
   }
+}
 
-  MaterialColor _customPrimarySwatch() {
-    return const MaterialColor(
-      0xFF1A819A,
-      <int, Color>{
-        50: Color(0xFFE1F5F7),
-        100: Color(0xFFB3E0E5),
-        200: Color(0xFF80CCD3),
-        300: Color(0xFF4DB8C1),
-        400: Color(0xFF26A7B1),
-        500: Color(0xFF1A819A),
-        600: Color(0xFF15788D),
-        700: Color(0xFF126F80),
-        800: Color(0xFF0E6573),
-        900: Color(0xFF084D59),
-      },
-    );
-  }
+// Ejemplo de función para obtener los datos del usuario
+Future<UserData> fetchUserData(String userId) async {
+  // Aquí debes implementar la lógica para obtener los datos del usuario
+  // Por ejemplo, desde una base de datos o un servicio web
+  // Este es solo un ejemplo de retorno
+  return UserData(
+    userId: userId,
+    displayName: '',
+
+    phoneNumber: '',
+    getToken: null,
+
+    selectedCountryCode: '',
+
+    location: null,
+    paymentType: '',
+    email: '',
+    registrationData: RegistrationData(
+      userId: userId,
+      devicesId: '',
+      fcmToken: '',
+      displayName: '',
+
+      phoneNumber: '',
+      paymentType: '',
+
+      selectedCountryCode: '',
+
+      location: null,
+
+      email: '',
+
+      points: 0,
+
+    ),
+
+    referralCode: '',
+    points: 0, referrerUserId: '',
+  );
 }

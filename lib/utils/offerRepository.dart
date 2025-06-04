@@ -61,7 +61,7 @@ class OfferRepository {
       devicesId: '',
       hasOffer: false,
       offers: [],
-      subcategoryName: '',
+      subcategoryName: '', createdAt: DateTime.now(),
     );
 
     // Se invoca la función que obtiene los servicios y sus ofertas filtrando por userId.
@@ -114,7 +114,7 @@ class OfferRepository {
         "userId", // Columna de filtro fija
         userId,   // Valor del usuario autenticado
         type,
-        deviceId,
+        
       );
 
       print('token=$token');
@@ -139,6 +139,7 @@ class OfferRepository {
                   );
 
                   return ServiceRequest(
+                    createdAt: DateTime.now(),
                     expertises: _extractExpertises(item),
                     id: item['id'] ?? '',
                     serviceDateTime: item['serviceDateTime'] ?? '',

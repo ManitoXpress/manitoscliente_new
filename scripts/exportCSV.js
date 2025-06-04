@@ -34,4 +34,4 @@ async function exportCollectionToCSV(collectionName, fileName) {  // Corrige la 
 }
 
 // Llama a la función con el nombre de la colección y el archivo de salida
-exportCollectionToCSV('workers', 'workers.csv'); // Cambia 'workers' por el nombre de tu colección
+exportCollectionToCSV('users', 'users.csv'); // Cambia 'workers' por el nombre de tu colección

@@ -87,6 +87,7 @@ class Offer {
   }
 }
 class ServiceRequest {
+  final DateTime createdAt;
   String serviceDateTime;
   String devicesId;
   String id;
@@ -110,6 +111,7 @@ class ServiceRequest {
 
   // Constructor principal
   ServiceRequest({
+    required this.createdAt,
     required this.serviceDateTime,
     required this.id,
     required this.devicesId,
@@ -157,7 +159,7 @@ class ServiceRequest {
       subcategoryName: '',
       hasOffer: false,
       offers: [],
-      workerDetails: null,
+      workerDetails: null, createdAt: DateTime.now(),
     );
   }
 
@@ -224,7 +226,8 @@ class ServiceRequest {
           : [],
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
-          : null,
+          : null, 
+      createdAt: _parseDateTime(map['createdAt'] ?? DateTime.now().toString()),
     );
   }
 
@@ -244,5 +247,15 @@ class ServiceRequest {
     }
     return 0.0;
   }
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
 }
-

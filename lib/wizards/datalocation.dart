@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:geolocator/geolocator.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:location/location.dart' as location;
+import 'package:location/location.dart' as loc_pkg;
+import 'package:manitoscliente_new/controller/mapsController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Styles/stilo.dart';
@@ -32,208 +33,108 @@ class LocationAndFavoritesWizard extends StatefulWidget {
 
 class _LocationAndFavoritesWizardState
     extends State<LocationAndFavoritesWizard> {
-  LatLng? selectedLocation; // Ubicación seleccionada
-  bool isFavorite = false; // Indica si es favorito
-  late GoogleMapController mapController; // Controlador del mapa de Google
-  Set<Marker> markers = {}; // Conjunto de marcadores para el mapa
-  TextEditingController locationController =
-      TextEditingController(); // Controlador de texto para la ubicación
-  TextEditingController writtenLocationController =
-      TextEditingController(); // Controlador de texto para la dirección escrita
-  Uint8List? mapSnapshot; // Instantánea del mapa
-  TextEditingController additionalInfoController =
-      TextEditingController(); // Controlador para la información adicional
-  Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>(); // Controlador asíncrono del mapa
-  final LatLng santaCruzLocation = LatLng(-17.7833, -63.1833);
-  final LatLng santaCruzDefaultLocation = LatLng(-17.7833,
-      -63.1821); // Coordenadas predeterminadas de Santa Cruz de la Sierra
-  TextEditingController searchController = TextEditingController();
-  late TextEditingController _searchController;
+  LatLng? selectedLocation;
+  bool isFavorite = false;
+  late GoogleMapController mapController;
+  Set<Marker> markers = {};
+  TextEditingController writtenLocationController = TextEditingController();
+  Uint8List? mapSnapshot;
+  TextEditingController additionalInfoController = TextEditingController();
+  Completer<GoogleMapController> _controller = Completer();
+  final LatLng santaCruzDefaultLocation = LatLng(-17.7833, -63.1821);
+  final LatLng _initialPosition = LatLng(-17.7833, -63.1833);
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
-    // Llamamos a _showMapScreen al iniciar el widget
-  
-
     _getCurrentLocation();
-    // Obtención de la ubicación actual cuando se inicializa el estado
-
   }
 
-  // Verifica si la ubicación y los favoritos son válidos
-  bool isLocationAndFavoritesValid() {
-    return selectedLocation != null;
+  Future<void> _persistFavorite(LatLng loc) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'favoriteLocations';
+    List<String> favs = prefs.getStringList(key) ?? [];
+    final entry = '${loc.latitude},${loc.longitude}';
+    if (!favs.contains(entry)) {
+      favs.add(entry);
+      await prefs.setStringList(key, favs);
+    }
+    widget.onFavoritesSelected(true);
+    widget.onLocationSelected(loc);
   }
 
-  void _searchLocation(dynamic searchController) {
-    // Aquí pondrías la lógica para realizar la búsqueda de la ubicación
-    print("Buscando ubicación: ${searchController.text}");
-    // Llamar a la función de búsqueda o mostrar la ubicación en el mapa
-  }
-
-  // Función para obtener la ubicación actual del dispositivo
   Future<void> _getCurrentLocation() async {
     try {
-      location.Location loc = location.Location();
-
-      // Verificar si los servicios de ubicación están habilitados
-      bool serviceEnabled = await loc.serviceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await loc.requestService();
-        if (!serviceEnabled) {
-          return;
-        }
+      final loc = loc_pkg.Location();
+      if (!await loc.serviceEnabled() && !(await loc.requestService())) {
+        return;
       }
-
-      // Verificar si los permisos de ubicación han sido otorgados
-      location.PermissionStatus permissionGranted = await loc.hasPermission();
-      if (permissionGranted == location.PermissionStatus.denied) {
-        permissionGranted = await loc.requestPermission();
-        if (permissionGranted != location.PermissionStatus.granted) {
-          return;
-        }
+      var perm = await loc.hasPermission();
+      if (perm == loc_pkg.PermissionStatus.denied &&
+          await loc.requestPermission() != loc_pkg.PermissionStatus.granted) {
+        return;
       }
-
-      // Obtener la ubicación actual
-      location.LocationData locationData = await loc.getLocation();
-      LatLng currentLocation =
-          LatLng(locationData.latitude!, locationData.longitude!);
-
-      setState(() {
-        selectedLocation = currentLocation;
-        markers.clear();
-        markers.add(
-          Marker(
-            markerId: MarkerId(currentLocation.toString()),
-            position: currentLocation,
-            icon:
-                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ),
-        );
-      });
-
+      final data = await loc.getLocation();
+      final curr = LatLng(data.latitude!, data.longitude!);
+      _updateSelectedLocation(curr);
       mapController.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: currentLocation,
-            zoom: 14.0,
-          ),
+          CameraPosition(target: curr, zoom: 14),
         ),
       );
-
-      _handleTap(currentLocation); // Maneja el toque en el mapa
-    } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
-
-      // Si no se puede obtener la ubicación actual, usa una ubicación predeterminada
-      setState(() {
-        selectedLocation = santaCruzDefaultLocation;
-        markers.clear();
-        markers.add(
-          Marker(
-            markerId: MarkerId(santaCruzDefaultLocation.toString()),
-            position: santaCruzDefaultLocation,
-            icon:
-                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ),
-        );
-      });
-
+    } catch (_) {
+      _updateSelectedLocation(santaCruzDefaultLocation);
       mapController.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: santaCruzDefaultLocation,
-            zoom: 14.0,
-          ),
+          CameraPosition(target: santaCruzDefaultLocation, zoom: 14),
         ),
       );
-
-      _handleTap(
-          santaCruzDefaultLocation); // Maneja el toque en la ubicación predeterminada
     }
   }
 
-  // Función para capturar y guardar una instantánea del mapa
-  Future<void> _captureAndSaveMapSnapshot() async {
-    final Uint8List? snapshotBytes = await mapController.takeSnapshot();
-    setState(() {
-      mapSnapshot = snapshotBytes;
-    });
-  }
-
-  // Función que se llama cuando se crea el mapa
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
-    print("Mapa creado correctamente");
-  }
-
-  // Maneja el toque en el mapa para actualizar la ubicación seleccionada
-  void _handleTap(LatLng loc) async {
-    widget.onLocationSelected(
-        loc); // Llama al callback para pasar la ubicación seleccionada
-
+  void _updateSelectedLocation(LatLng loc) async {
+    widget.onLocationSelected(loc);
+    final address = await _getAddressFromLatLng(loc);
     setState(() {
       selectedLocation = loc;
-      markers.clear();
-      markers.add(Marker(
-        markerId: MarkerId(loc.toString()),
-        position: loc,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      ));
+      markers = {
+        Marker(
+          markerId: MarkerId(loc.toString()),
+          position: loc,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        )
+      };
+      writtenLocationController.text = address;
     });
 
-    try {
-      // Obtener la dirección basada en las coordenadas
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(loc.latitude, loc.longitude);
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        String address =
-            "${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}";
-        writtenLocationController.text = address;
-      } else {
-        writtenLocationController.text = "Dirección no encontrada";
-      }
-    } catch (e) {
-      print("Error obteniendo dirección: $e");
-      writtenLocationController.text = "Error obteniendo dirección";
+    // Centra el mapa en la ubicación seleccionada
+    if (mapController != null) {
+      mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: loc, zoom: 14),
+        ),
+      );
     }
   }
 
-  // Muestra la pantalla del mapa para que el usuario seleccione una ubicación
-  Future<void> _showMapScreen() async {
-    TextEditingController searchController = TextEditingController();
-
-    // Obtener la ubicación actual del usuario
-    Position position;
+  Future<String> _getAddressFromLatLng(LatLng latLng) async {
     try {
-      position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-    } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
-      position = Position(
-        latitude: santaCruzDefaultLocation.latitude,
-        longitude: santaCruzDefaultLocation.longitude,
-        timestamp: DateTime.now(),
-        accuracy: 1.0,
-        altitude: 0.0,
-        heading: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-        altitudeAccuracy: 1.0,
-        headingAccuracy: 1.0,
-      );
-    }
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        return "${place.street}, ${place.locality}, ${place.country}";
+      }
+    } catch (_) {}
+    return "Ubicación desconocida";
+  }
 
-    // Navegar a la pantalla del mapa
+  Future<void> _showMapScreen() async {
+    LatLng? tempSelected = selectedLocation;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Scaffold(
+        builder: (_) => Scaffold(
           appBar: AppBar(
             iconTheme: IconThemeData(color: Colors.white),
             title: Text(
@@ -242,141 +143,83 @@ class _LocationAndFavoritesWizardState
             ),
           ),
           body: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setStateDialog) {
-              return Stack(
+            builder: (context, setStateDialog) {
+              return Column(
                 children: [
-                  Column(
+                  Expanded(
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: tempSelected ?? _initialPosition,
+                        zoom: 14,
+                      ),
+                      onMapCreated: (controller) {
+                        mapController = controller;
+                      },
+                      onTap: (loc) {
+                        setStateDialog(() {
+                          tempSelected = loc;
+                        });
+                      },
+                      markers: tempSelected != null
+                          ? {
+                              Marker(
+                                markerId: MarkerId(tempSelected.toString()),
+                                position: tempSelected!,
+                              )
+                            }
+                          : {},
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          labelText: 'Buscar dirección',
-                          suffixIcon: IconButton(
-                            icon: Icon(Icons.search),
-                            onPressed: () async {
-                              final query = searchController.text;
-                              if (query.isNotEmpty) {
-                                try {
-                                  final locations =
-                                      await locationFromAddress(query);
-                                  if (locations.isNotEmpty) {
-                                    final location = locations.first;
-                                    // Aquí es donde puedes manejar el latLng, si es necesario
-                                    print("Ubicación encontrada: $location");
-                                    // Actualizar la posición en el mapa
-                                    setStateDialog(() {
-                                      _handleTap(LatLng(location.latitude,
-                                          location.longitude));
-                                    });
-                                  } else {
-                                    print("No se encontró la dirección");
-                                  }
-                                } catch (e) {
-                                  print("Error buscando dirección: $e");
-                                }
-                              }
-                            },
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Volver',
+                            style: MyTextStyles.tabTextStyle1,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A819A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: GoogleMap(
-                          onMapCreated: (controller) {
-                            _onMapCreated(controller);
-                            _controller.complete(controller);
-                            // Establecer la posición inicial del mapa con la ubicación del usuario
-                            setStateDialog(() {
-                              _handleTap(LatLng(
-                                  position.latitude, position.longitude));
-                            });
-                          },
-                          onTap: (LatLng loc) {
-                            setStateDialog(() {
-                              _handleTap(loc);
-                            });
-                          },
-                          initialCameraPosition: CameraPosition(
-                            target:
-                                LatLng(position.latitude, position.longitude),
-                            zoom: 14.0,
-                          ),
-                          markers: markers,
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Volver',
-                                style: MyTextStyles.drawerButtonLabelTextStyle,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A819A),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (selectedLocation != null) {
-                                widget.onLocationSelected(selectedLocation!);
-                                Navigator.pop(context);
-                              } else {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(SnackBar(
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (tempSelected != null) {
+                            if (isFavorite) {
+                              await _persistFavorite(tempSelected!);
+                            }
+                            _updateSelectedLocation(tempSelected!);
+                            Navigator.pop(context);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
                                   content: Text(
-                                      'Por favor, selecciona una ubicación.'),
-                                ));
-                              }
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Aceptar',
-                                style: MyTextStyles.drawerButtonLabelTextStyle,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A819A),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
+                                      'Por favor, selecciona una ubicación.')),
+                            );
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Seleccionar',
+                            style: MyTextStyles.tabTextStyle1,
                           ),
-                        ],
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A819A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  Positioned(
-                    bottom: 160,
-                    right: 10,
-                    child: FloatingActionButton(
-                      onPressed: () async {
-                        try {
-                          final currentPosition =
-                              await Geolocator.getCurrentPosition(
-                            desiredAccuracy: LocationAccuracy.high,
-                          );
-                          setStateDialog(() {
-                            _handleTap(LatLng(currentPosition.latitude,
-                                currentPosition.longitude));
-                          });
-                        } catch (e) {
-                          print("Error obteniendo la ubicación actual: $e");
-                        }
-                      },
-                      child: Icon(Icons.gps_fixed),
-                      tooltip: "Ir a mi ubicación",
-                      backgroundColor: Color(0xFF1A819A),
-                    ),
                   ),
                 ],
               );
@@ -385,9 +228,6 @@ class _LocationAndFavoritesWizardState
         ),
       ),
     );
-
-    // Captura una instantánea después de seleccionar la ubicación
-    await _captureAndSaveMapSnapshot();
   }
 
   @override
@@ -415,23 +255,26 @@ class _LocationAndFavoritesWizardState
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                GestureDetector(
-                  onTap: _showMapScreen,
-                  child: Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.0),
-                      color: Colors.grey[200],
+                SizedBox(
+                  height: 75,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _showMapScreen,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF1A819A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
                     ),
-                    child: mapSnapshot != null
-                        ? Image.memory(
-                            mapSnapshot!,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.asset(
-                            'assets/map.png',
-                            fit: BoxFit.cover,
-                          ),
+                    child: Center(
+                      // Centrar el texto
+                      child: Text(
+                        'Click para seleccionar ubicación',
+                        style: MyTextStyles.buttonTextStyle,
+                        textAlign: TextAlign
+                            .center, // Esto también asegura que el texto esté centrado
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(height: 10),
@@ -467,76 +310,31 @@ class _LocationAndFavoritesWizardState
             style: MyTextStyles.drawerButtonTextStyle,
           ),
           value: isFavorite,
-          onChanged: (bool value) async {
-            setState(() {
-              isFavorite = value; // Actualiza el estado del switch
-            });
-
-            if (isFavorite && writtenLocationController.text.isNotEmpty) {
-              // Si el switch está activado y la ubicación no está vacía, guarda la ubicación
-              String location = writtenLocationController.text;
-
-              // Guardar ubicación en SharedPreferences
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              List<String> _favoriteLocations =
-                  prefs.getStringList('favoriteLocations') ?? [];
-
-              // Añadir la ubicación a la lista de favoritos
-              _favoriteLocations.add(location);
-
-              // Guardar la lista actualizada
-              await prefs.setStringList(
-                  'favoriteLocations', _favoriteLocations);
-
-              print('Ubicación guardada: $location');
-            } else {
-              print('Ubicación no guardada porque el switch está apagado.');
+          onChanged: (val) async {
+            setState(() => isFavorite = val);
+            if (val && selectedLocation != null) {
+              await _persistFavorite(selectedLocation!);
             }
-
-            widget.onFavoritesSelected(
-                value); // Pasamos el valor de favorito al callback
           },
           activeColor: Color(0xFF1A819A), // Color cuando está activado
           inactiveTrackColor: Colors.grey, // Color cuando está desactivado
-          inactiveThumbColor: const Color.fromRGBO(
-              0, 0, 0, 1), // Color del pulgar cuando está desactivado
-        ), // Cambiado a screenutil
+          inactiveThumbColor: const Color.fromRGBO(0, 0, 0, 1),
+        ),
         ElevatedButton.icon(
           onPressed: () async {
-            // Navegar a FavoriteLocationsScreen y esperar el resultado
-            final selectedLocation = await Navigator.push(
+            final LatLng? fav = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => FavoriteLocationsScreen()),
+              MaterialPageRoute(builder: (_) => FavoriteLocationsScreen()),
             );
-            
-            // Si se recibió una ubicación válida
-            if (selectedLocation != null && selectedLocation is LatLng) {
-              // Actualizar el estado del wizard
-              setState(() {
-                this.selectedLocation = selectedLocation;
-                markers.clear();
-                markers.add(Marker(
-                  markerId: MarkerId(selectedLocation.toString()),
-                  position: selectedLocation,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-                ));
-              });
-              
-              // Mover la cámara del mapa a la nueva ubicación
-              if (mapController != null) {
-                mapController.animateCamera(
-                  CameraUpdate.newLatLng(selectedLocation),
-                );
-              }
-              
-              // Actualizar la dirección escrita en el TextField
-              _handleTap(selectedLocation);
+            if (fav != null) {
+              _updateSelectedLocation(fav);
             }
           },
           icon: Icon(Icons.star, color: Color(0xFF1A819A)),
           label: Align(
             alignment: Alignment.centerLeft,
-            child: Text("Ubicaciones Favoritas", style: MyTextStyles.linkTextStyle),
+            child: Text("Ubicaciones Favoritas",
+                style: MyTextStyles.linkTextStyle),
           ),
         ),
         SizedBox(height: 3.h),
@@ -552,6 +350,7 @@ class _LocationAndFavoritesWizardState
           ),
         ),
         TextFormField(
+          controller: additionalInfoController,
           maxLines: 2,
           decoration: InputDecoration(
             labelText: 'Añadir información adicional',

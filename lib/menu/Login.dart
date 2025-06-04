@@ -52,6 +52,7 @@ class _LoginFormState extends State<LoginScreen> {
   // Loaders
   bool isLoadingGoogle = false;
   bool isLoadingApple = false;
+  bool isLoadingAnonymous = false;
 
   @override
   void initState() {
@@ -128,15 +129,23 @@ class _LoginFormState extends State<LoginScreen> {
     });
   }
 
-  /// Inicio como invitado
-  Future<void> _signInAsGuest() async {
-    try {
-      print("Usuario ingresó como invitado");
-      widget.onLoginSuccess();
-    } catch (e) {
-      print('Error al iniciar como invitado: $e');
-    }
+Future<void> _signInAsGuest() async {
+  setState(() => isLoadingAnonymous = true);
+  try {
+    // Llamas a tu controlador para manejo uniforme
+    await LoginScreenController.signInAnonymously(context);
+    // No hace falta llamar onLoginSuccess() porque dentro
+    // de signInAnonymously ya navega al siguiente screen.
+  } catch (e) {
+    print('Error al iniciar como invitado: $e');
+    // Quizás mostrar _showErrorDialog(context, '…');
+  } finally {
+    setState(() {
+      // Ocultar loader si tuviste uno
+    });
   }
+}
+
 
   /// Login con Google
   Future<void> signInWithGoogle() async {
@@ -268,6 +277,7 @@ class _LoginFormState extends State<LoginScreen> {
                       ),
                     ),
                     SizedBox(width: 10.w),
+            
                     // Apple
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -300,8 +310,9 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 20.h),
-                // Eliminar cuenta
+               SizedBox(height: 20.h),
+
+                // Botón Eliminar cuenta
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A819A),
@@ -321,6 +332,20 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
+                // Botón Ingresar como Invitado (TextButton pequeño)
+                TextButton(
+                  onPressed: _signInAsGuest,
+                  child: const Text(
+                    'Ingresar como invitado',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+
               ],
             ),
           ),

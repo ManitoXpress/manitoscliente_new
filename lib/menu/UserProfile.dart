@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
+import 'package:manitoscliente_new/utils/deleteAccount.dart';
 
 import '../request/ResponseGet.dart';
 import '../request/dataprofile.dart';
@@ -257,9 +258,49 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: customColor,
                 ),
               ),
+              
             ],
           ),
           const SizedBox(height: 20),
+          const SizedBox(height: 20),
+              ElevatedButton(
+                    onPressed: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user != null) {
+                        final authToken = await user.getIdToken();
+                        showDialog(
+                          context: context,
+                          builder: (_) => DeleteAccountByIdDialog(
+                            userId: user.uid,
+                            authToken: authToken!,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade700,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 3,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_forever, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          'Eliminar Cuenta',
+                          style: MyTextStyles.buttonTextStyle.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
           Container(
             width: double.infinity,
             decoration: BoxDecoration(

@@ -21,12 +21,12 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import 'cacheLocal.dart';
-class ServiceRepository2 {
+class ServiceRepositoryInProgress {
   final ApiService2 apiService;
   final FirebaseFirestore firestore;
   final String baseUrl = ApiConfiguration.baseUrl;
 
-  ServiceRepository2({required this.apiService, required this.firestore});
+  ServiceRepositoryInProgress({required this.apiService, required this.firestore});
 
   Future<List<ServiceRequest>> fetchServicesByInProgress(
     String status,
@@ -81,7 +81,7 @@ class ServiceRepository2 {
 
       final deviceId = await obtenerDeviceId();
       final response =
-          await apiService.getAllServices(token, column, userId, status, deviceId);
+          await apiService.getAllServices(token, column, userId, status, );
 
       if (response.statusCode != 200) {
         print('Error en la solicitud HTTP: ${response.statusCode}');
@@ -135,7 +135,7 @@ class ServiceRepository2 {
           devicesId: item['devicesId']?.toString() ?? '',
           hasOffer: false,
           offers: [],
-          subcategoryName: '',
+          subcategoryName: item['subcategoryName']?.toString() ?? '', createdAt: DateTime.now(),
         );
       }).toList();
 

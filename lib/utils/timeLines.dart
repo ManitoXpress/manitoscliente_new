@@ -9,17 +9,23 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:manitoscliente_new/provider/serviceFormProvider.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
+import 'package:manitoscliente_new/utils/chats.dart';
+import 'package:manitoscliente_new/utils/fullMap.dart';
+import 'package:manitoscliente_new/utils/imageComplete.dart';
+import 'package:manitoscliente_new/widgets/completeDialog.dart';
+import 'package:manitoscliente_new/widgets/imagePreview.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../Styles/stilo.dart';
 import '../request/ResponseGet.dart';
 import '../request/dataprofile.dart';
 import '../request/requestWoker.dart';
 import '../request/resquest.dart';
-import '../widgets/imagePreview.dart';
-import 'chats.dart';
-import 'fullMap.dart';
-import 'imageComplete.dart';
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final String initialStatus;
@@ -30,6 +36,8 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final WorkerDetails? workerDetails;
   final List<Offer> offers;
   final List<String> images;
+  final ApiService apiService;
+  final String userId;
 
   const ServiceFormWithTimeline({
     required this.serviceRequest,
@@ -40,7 +48,9 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.workerId,
     required this.images,
     required this.workerDetails,
-    required this.offers, // Parámetro añadido
+    required this.apiService,
+    required this.offers,
+    required this.userId, // Parámetro añadido
   });
 
   @override
@@ -62,6 +72,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   WorkerDetails? _workerDetails;
   double? _workerOfferedPrice;
   final ApiService2 apiService = ApiService2();
+  String? _offerStatus;
+  String? _previousStatus;
+  bool _completionDialogShown = false;
+  String? phoneNumber;
+  String? displayName;
+
+  List<Map<String, String>> comentarios = [];
+
   final Map<String, String> statusNames = {
     "available": "Disponible",
     "offer": "Ofertado",
@@ -92,18 +110,43 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _initialPosition = LatLng(latitude, longitude);
 
     // Verificar ofertas activas
-    if (widget.offers.isNotEmpty) {
-      final offer = widget.offers.first;
+    if (widget.serviceRequest.offers.isNotEmpty) {
+      final offer = widget.serviceRequest.offers.first;
+      _hasOffer = true;
+      _offerStatus = offer.status.id; // Ej: "pending", "cancelled", etc.
       _fetchedOfferedPrice = offer.offeredPrice;
       if (_fetchedOfferedPrice != null) {
         _priceController.text = _fetchedOfferedPrice.toString();
       }
-      _hasOffer = offer.hasOffer;
     }
 
     // Inicializar el stream
+    _previousStatus = null; // <-- sin valor al arrancar
     _initializeServiceStream();
     _fetchWorkerOffer();
+    _loadServiceComments();
+    _fetchUserInfo();
+  }
+
+  Future<void> _loadServiceComments() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .get();
+
+      final data = doc.data();
+      if (data == null || data['comments'] == null) {
+        comentarios = [];
+      } else {
+        final raw = data['comments'] as List<dynamic>;
+        comentarios = raw.map((c) => Map<String, String>.from(c)).toList();
+      }
+
+      setState(() {});
+    } catch (e) {
+      print('Error cargando comentarios desde Firestore: $e');
+    }
   }
 
   void _initializeControllers() {
@@ -155,32 +198,44 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         .snapshots();
 
     _subscription = _serviceRequestStream.listen((snapshot) async {
-      if (snapshot.exists) {
-        final data = snapshot.data();
-        if (data != null) {
-          final newStatus = data['status'] ?? _currentStatus;
-          bool hasOffer = await _checkHasOffers(widget.serviceRequest.id);
+      if (!snapshot.exists) return;
+      final data = snapshot.data()!;
+      final newStatus = data['status'] as String? ?? 'available';
 
-          if (newStatus == 'pending_confirmation' &&
-              _currentStatus != 'pending_confirmation') {
-            setState(() {
-              _currentStatus = newStatus;
-            });
+      final String? proofUrl = serviceData['completionImageUrl'] as String?;
 
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                showConfirmCompletionDialog(context, widget.serviceRequest.id);
-              }
-            });
-          }
-
-          setState(() {
-            _currentStatus = newStatus;
-            serviceData = data;
-            _hasOffer = hasOffer;
+      // 1) Detectar transición limpia a "completed"
+      if (newStatus == 'completed' && _previousStatus != 'completed') {
+        // Solo mostramos una vez
+        if (!_completionDialogShown) {
+          _completionDialogShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            showDialog(
+              context: context,
+              builder: (_) => PaymentDetailsDialog(
+                offeredPrice: _workerOfferedPrice ??
+                    0.0, // Provee un valor por defecto si es null
+                completionImageUrl: proofUrl,
+              ),
+            );
           });
         }
       }
+
+      // 2) Actualizar estados para la próxima iteración
+      () async {
+        final hasOffer = await _checkHasOffers(widget.serviceRequest.id);
+
+        if (!mounted) return;
+
+        setState(() {
+          _previousStatus = newStatus;
+          _currentStatus = newStatus;
+          serviceData = data;
+          _hasOffer = hasOffer;
+        });
+      }();
     });
   }
 
@@ -192,103 +247,207 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     super.dispose();
   }
 
-  void _initializeMap() {
-    // Verifica si los datos de ubicación están presentes en la solicitud del servicio.
-    if (widget.serviceRequest.location != null) {
-      double? latitude = widget.serviceRequest.location['lat'];
-      double? longitude = widget.serviceRequest.location['lng'];
+  void _mostrarComentarios(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final _comentarioController = TextEditingController();
+    final api = ApiService2();
+    final sr = widget.serviceRequest;
 
-      // Si los datos son válidos, inicializa la posición; de lo contrario, usa valores predeterminados.
-      if (latitude != null && longitude != null) {
-        _initialPosition = LatLng(latitude, longitude);
-      } else {
-        _initialPosition = LatLng(
-            0.0, 0.0); // Ubicación predeterminada (ejemplo: coordenadas 0,0)
-        print(
-            'Ubicación no válida. Usando la posición predeterminada (0.0, 0.0).');
-      }
-    } else {
-      _initialPosition = LatLng(0.0,
-          0.0); // Ubicación predeterminada si no se proporciona la ubicación.
-      print(
-          'No se encontró ubicación en la solicitud de servicio. Usando la posición predeterminada (0.0, 0.0).');
-    }
-  }
-
-// Abre el mapa en pantalla completa
-  void _openFullMap(BuildContext context) {
-    if (_initialPosition.latitude == 0.0 && _initialPosition.longitude == 0.0) {
-      // Advertencia si la posición no es válida (opcional)
-      print('Advertencia: abriendo mapa con posición predeterminada.');
-    }
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => FullMapScreen(initialPosition: _initialPosition),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
-  }
-
-  // Función para mostrar el diálogo de confirmación
-  void showConfirmCompletionDialog(BuildContext context, String serviceId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ServiceCompletionDialog(
-          serviceId: serviceId,
-          workerDetails: _workerDetails,
-          fetchedOfferedPrice: _fetchedOfferedPrice ??
-              widget
-                  .serviceRequest.offeredPrice, // Aquí pasas el precio ofertado
-        );
-      },
-    ).then((confirmed) {
-      if (confirmed == true) {
-        // El trabajo ha sido confirmado como completado
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Trabajo confirmado como completado')),
-        );
-        // Aquí puedes agregar cualquier lógica adicional después de la confirmación
-      }
-    });
-  }
-
-  // Rechazo de la finalización del trabajo por el cliente
-  void _rejectCompletion() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({'status': 'in_progress'});
-
-      widget.onStatusChanged('in_progress');
-      Navigator.of(context).pop();
-    } catch (e) {
-      print('Error al rechazar la finalización del trabajo: $e');
-    }
-  }
-
-  // Diálogo de rechazo para la finalización del trabajo
-  void _showRejectCompletionDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Rechazar Finalización'),
-          content: Text(
-              '¿Estás seguro de que quieres rechazar la finalización de este trabajo?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: FutureBuilder<Map<String, dynamic>>(
+            future: api.fetchSingleService(
+              'userId',
+              sr.userId,
+              'status',
+              sr.devicesId,
+              sr.id,
             ),
-            ElevatedButton(
-              onPressed: _rejectCompletion,
-              child: Text('Rechazar'),
-            ),
-          ],
+            builder: (context, snap) {
+              if (snap.hasError) {
+                return Center(
+                  child: Text(
+                    'Error cargando comentarios:\n${snap.error}',
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+              if (!snap.hasData) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              final serviceJson = snap.data!;
+              final List<Map<String, String>> comentarios =
+                  (serviceJson['comments'] as List<dynamic>? ?? [])
+                      .map((e) => Map<String, String>.from(e as Map))
+                      .toList();
+
+              return DraggableScrollableSheet(
+                expand: false,
+                builder: (context, scrollController) {
+                  return StatefulBuilder(
+                    builder: (context, setModalState) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 16),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Comentarios (${comentarios.length})',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Divider(),
+                            Expanded(
+                              child: ListView.builder(
+                                controller: scrollController,
+                                itemCount: comentarios.length,
+                                itemBuilder: (ctx, i) {
+                                  final c = comentarios[i];
+                                  final isClient = c['rol'] == 'cliente';
+                                  final alignment = isClient
+                                      ? MainAxisAlignment.end
+                                      : MainAxisAlignment.start;
+                                  final color = isClient
+                                      ? const Color(0xFF1A819A)
+                                      : const Color(0xFF841813);
+                                  final textAlign = isClient
+                                      ? TextAlign.end
+                                      : TextAlign.start;
+                                  final nombre =
+                                      isClient ? 'Cliente' : 'Trabajador';
+
+                                  return ListTile(
+                                    title: Row(
+                                      mainAxisAlignment: alignment,
+                                      children: [
+                                        Text(
+                                          nombre,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: color,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          c['hora'] ?? '',
+                                          style: TextStyle(
+                                              fontSize: 12, color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      c['mensaje'] ?? '',
+                                      textAlign: textAlign,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _comentarioController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Escribe un comentario...',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                IconButton(
+                                  icon: Icon(Icons.send),
+                                  onPressed: () async {
+                                    final text =
+                                        _comentarioController.text.trim();
+                                    if (text.isEmpty) return;
+
+                                    final currentUid = user?.uid;
+                                    String rol = 'desconocido';
+
+                                    // Determinar rol revisando colecciones Firestore
+                                    if (currentUid != null) {
+                                      final userDoc = await FirebaseFirestore
+                                          .instance
+                                          .collection('users')
+                                          .doc(currentUid)
+                                          .get();
+                                      if (userDoc.exists) {
+                                        rol = 'cliente';
+                                      } else {
+                                        final workerDoc =
+                                            await FirebaseFirestore.instance
+                                                .collection('workers')
+                                                .doc(currentUid)
+                                                .get();
+                                        if (workerDoc.exists) {
+                                          rol = 'trabajador';
+                                        }
+                                      }
+                                    }
+
+                                    // Nombre fijo según rol
+                                    final nombre = (rol == 'cliente')
+                                        ? 'Cliente'
+                                        : (rol == 'trabajador')
+                                            ? 'Trabajador'
+                                            : 'Anónimo';
+
+                                    final now = TimeOfDay.now();
+                                    final hora =
+                                        '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+
+                                    final nuevo = {
+                                      'nombre': nombre,
+                                      'mensaje': text,
+                                      'hora': hora,
+                                      'rol': rol,
+                                    };
+
+                                    try {
+                                      comentarios.add(nuevo);
+                                      await api.patchServiceComments(
+                                          sr.id, comentarios);
+                                      setModalState(() {});
+                                    } catch (e) {
+                                      print('Error enviando comentario: $e');
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'No se pudo enviar el comentario'),
+                                        ),
+                                      );
+                                    }
+
+                                    _comentarioController.clear();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -331,117 +490,58 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-  void _showDialog(
-    BuildContext context,
-    String title,
-    String content,
-    VoidCallback onConfirm,
-    String confirmText,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            title,
-            style: MyTextStyles
-                .drawerButtonTextStyle4, // Aplicar el estilo al título
-          ),
-          content: Text(content),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: onConfirm,
-              child: Text(
-                confirmText,
-                style: MyTextStyles
-                    .ButtonTextStyle, // Aplicar un estilo personalizado al botón si es necesario
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: Color(0xFF1A819A),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF1A819A), // Color del borde del botón
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _cancelOffer(String serviceId, String workerId) async {
+  Future<void> _fetchUserInfo() async {
     try {
-      // Actualiza el estado del servicio a 'cancelled' en la colección 'offers'
-      await FirebaseFirestore.instance
-          .collection('offers')
-          .doc(widget
-              .serviceRequest.id) // Asumiendo que el ID del servicio está aquí
-          .set(
-        {'status': 'cancelled'}, // Actualiza el campo 'status'
-        SetOptions(merge: true), // No sobrescribe otros campos, solo 'status'
-      );
-
-      // Actualiza el estado del servicio a 'available' y el offeredPrice a 0 en la colección 'services'
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(serviceId) // El ID del servicio en la colección 'services'
-          .set(
-        {
-          'status': 'available', // Actualiza el campo 'status' a 'available'
-          'offeredPrice': 0, // Establece el 'offeredPrice' a 0
-        },
-        SetOptions(
-            merge:
-                true), // No sobrescribe otros campos, solo 'status' y 'offeredPrice'
-      );
-
-      // Mostrar un mensaje o snackbar para confirmar la cancelación
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'El servicio ha sido cancelado y está disponible nuevamente.'),
-        ),
-      );
-
-      // Regresar a la pantalla anterior o hacer alguna otra acción
-      Navigator.of(context).pop();
+      final workerDoc = await FirebaseFirestore.instance
+          .collection('workers')
+          .doc(widget.workerId)
+          .get();
+      if (workerDoc.exists) {
+        setState(() {
+          displayName = workerDoc['displayName'];
+          phoneNumber = workerDoc['phoneNumber'];
+        });
+      }
     } catch (e) {
-      print('Error al cancelar el servicio: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cancelar el servicio. Inténtalo de nuevo.'),
-        ),
-      );
+      print('Error al obtener datos del trabajador: $e');
     }
   }
 
   Future<void> _cancelService() async {
+    final api = ApiService();
     try {
-      // Actualiza el estado del servicio a 'cancelled'
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({'status': 'cancelled'});
+      // 1. Obtener token de autenticación
+      final token = await api.getAuthToken();
+      if (token == null) {
+        throw Exception('No se pudo obtener el token de autenticación.');
+      }
 
-      // Mostrar un mensaje o snackbar para confirmar la cancelación
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('El servicio ha sido cancelado.'),
-        ),
+      // 2. Actualizar el estado del servicio en el backend
+      await api.updateServiceStatus(
+        widget.serviceRequest, // tu objeto ServiceRequest
+        'cancelled', // nuevo estado
+        token,
       );
 
-      // Regresar a la pantalla anterior o hacer alguna otra acción
+      // 3. Iterar y actualizar el estado de cada oferta asociada
+      for (final offer in widget.serviceRequest.offers) {
+        await api.updateOfferStatus(
+          offerId: offer.id,
+          newStatus: 'cancelled',
+        );
+      }
+
+      // 4. Feedback al usuario
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('El servicio y todas sus ofertas han sido cancelados.')),
+      );
+
+      // 5. Volver a la pantalla anterior
       Navigator.of(context).pop();
     } catch (e) {
-      print('Error al cancelar el servicio: $e');
+      debugPrint('Error al cancelar servicio/ofertas: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cancelar el servicio. Inténtalo de nuevo.'),
@@ -474,7 +574,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       stream: _serviceRequestStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error al cargar los datos del servicio'));
+          return Center(
+            child: Text('Error al cargar los datos del servicio'),
+          );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -486,40 +588,22 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           return Center(child: Text('No se encontraron datos del servicio'));
         }
 
-        // Asignar datos del servicio
-        final String newStatus = serviceData['status'] ?? 'available';
-
-        // Detectar cambio a pending_confirmation y mostrar cuadro de diálogo
-        if (newStatus == 'pending_confirmation' &&
-            _currentStatus != 'pending_confirmation') {
-          setState(() {
-            _currentStatus = newStatus;
-          });
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showConfirmCompletionDialog(context, widget.serviceRequest.id);
-          });
-        }
-
-        // Actualizar el estado actual
-        _currentStatus = newStatus;
+        // Actualizar estado y posición
+        _currentStatus = serviceData['status'] as String? ?? 'available';
         _initialPosition = LatLng(
           (serviceData['location']?['lat'] as num?)?.toDouble() ?? 0.0,
           (serviceData['location']?['lng'] as num?)?.toDouble() ?? 0.0,
         );
 
+        // Datos varios
         final List<String> images =
             List<String>.from(serviceData['images'] ?? []);
         final String description =
-            serviceData['description'] ?? 'Sin descripción';
-        final String categoryName =
-            serviceData['categoryId'] ?? 'Sin categoría';
-        final String expertiseName =
-            serviceData['expertiseName'] ?? 'Sin subcategoría';
-
-        // Usar _fetchedOfferedPrice obtenido de ApiService
+            serviceData['description'] as String? ?? 'Sin descripción';
+        final String dateOnly =
+            serviceData['date'] as String? ?? '—'; // e.g. "2025-06-15"
+        final String timeOnly = serviceData['time'] as String? ?? '—';
         final double? offeredPrice = _workerOfferedPrice;
-        print('Precio Ofertado Obtenido: $offeredPrice'); // Depuración
-
         final WorkerDetails? workerDetails = widget.workerDetails;
         final List<Map<String, dynamic>> expertises =
             List<Map<String, dynamic>>.from(serviceData['expertises'] ?? []);
@@ -538,8 +622,10 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               child: Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  border:
-                      Border.all(color: const Color(0xFF1A819A), width: 2.0),
+                  border: Border.all(
+                    color: const Color(0xFF1A819A),
+                    width: 2.0,
+                  ),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 child: Column(
@@ -549,17 +635,22 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                       'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
                       style: MyTextStyles.inputTextStyle6,
                     ),
-                    const SizedBox(height: 16.0),
+                    Text('Fecha: $dateOnly',
+                        style: MyTextStyles.inputTextStyle1),
+                    Text('Hora: $timeOnly',
+                        style: MyTextStyles.inputTextStyle1),
+                    const SizedBox(height: 5.0),
                     _buildRichText('Descripción:', description),
-                    const SizedBox(height: 16.0),
+                    const SizedBox(height: 10.0),
                     _buildRichText(
-                        'Precio Ofertado:',
-                        _workerOfferedPrice != null
-                            ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}'
-                            : 'No ofertado'),
+                      'Precio Ofertado:',
+                      offeredPrice != null
+                          ? 'Bs ${offeredPrice.toStringAsFixed(2)}'
+                          : 'No ofertado',
+                    ),
                     const SizedBox(height: 16.0),
 
-                    // Mostrar imágenes en un carrusel
+                    // Carrusel de imágenes
                     if (images.isNotEmpty)
                       CarouselSlider(
                         options: CarouselOptions(
@@ -577,15 +668,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                           return Builder(
                             builder: (BuildContext context) {
                               return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ImageViewer(imageUrl: url),
-                                    ),
-                                  );
-                                },
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ImageViewer(imageUrl: url),
+                                  ),
+                                ),
                                 child: Hero(
                                   tag: url,
                                   child: ClipRRect(
@@ -593,9 +681,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                                     child: CachedNetworkImage(
                                       imageUrl: url,
                                       fit: BoxFit.cover,
-                                      placeholder: (context, url) =>
+                                      placeholder: (_, __) =>
                                           CircularProgressIndicator(),
-                                      errorWidget: (context, url, error) =>
+                                      errorWidget: (_, __, ___) =>
                                           Icon(Icons.error),
                                     ),
                                   ),
@@ -606,20 +694,21 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                         }).toList(),
                       ),
                     const SizedBox(height: 16.0),
-                    // Mostrar habilidades
+
+                    // Habilidades/subcategorías
                     if (expertises.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: expertises.map((expertise) {
+                        children: expertises.map((e) {
                           return Text(
-                            'Tipo de servicio: ${expertise['name'] ?? 'Sin nombre'}',
+                            'Tipo de servicio: ${e['name'] ?? 'Sin nombre'}',
                             style: MyTextStyles.inputTextStyle6,
                           );
                         }).toList(),
                       ),
                     const SizedBox(height: 16.0),
 
-                    // Mostrar detalles del trabajador con un botón de expansión
+                    // Detalles del trabajador
                     if (workerDetails != null ||
                         _currentStatus == 'in_progress')
                       ExpansionTile(
@@ -632,37 +721,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                         ],
                       ),
 
+                    // Botones de acción según estado (incluye el diálogo de pago al pulsar)
                     _buildActionButtons(context, widget.workerId),
-                    // Mostrar el botón "Hacer el pago" solo si el estado es 'pending_confirmation'
-                    if (_currentStatus == 'pending_confirmation')
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            showConfirmCompletionDialog(
-                                context, widget.serviceRequest.id);
-                          },
-                          child: Text(
-                            'Hacer el pago',
-                            style: GoogleFonts.karla(
-                              color: Color(0xFF1A819A),
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            backgroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                              side: BorderSide(
-                                color: Color(0xFF1A819A),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -742,57 +802,90 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
 // Widget para los botones de acción según el estado
   Widget _buildActionButtons(BuildContext context, String selectedWorkerId) {
-    debugPrint("Valor de _hasOffer: $_hasOffer"); // Depuración
+    debugPrint(
+        "hasOffer=$_hasOffer, offerStatus=$_offerStatus, serviceStatus=$_currentStatus");
 
-    if (_hasOffer == true) {
-      // Comparación explícita
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    // 1) Si hay oferta y está en estado "pending" (o el que corresponda), mostramos solo los botones de propuesta
+    if (_hasOffer) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ElevatedButton.icon(
-            onPressed: () => _acceptProposal(selectedWorkerId),
-            icon: Icon(Icons.architecture, color: const Color(0xFF1A819A)),
-            label: Text(
-              "Aceptar Propuesta",
-              style: GoogleFonts.karla(
-                color: const Color(0xFF1A819A),
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _acceptProposal(selectedWorkerId),
+                icon: Icon(Icons.architecture, color: const Color(0xFF1A819A)),
+                label: Text(
+                  "Aceptar Propuesta",
+                  style: GoogleFonts.karla(
+                    color: const Color(0xFF1A819A),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: const Color(0xFF1A819A)),
+                  ),
+                ),
               ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: const Color(0xFF1A819A)),
+              ElevatedButton.icon(
+                onPressed: _cancelService,
+                icon: Icon(Icons.dangerous, color: Colors.white),
+                label: Text(
+                  "Cancelar Trabajo",
+                  style: GoogleFonts.karla(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF830A09),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                ),
               ),
-            ),
+            ],
           ),
-          ElevatedButton.icon(
-            onPressed: () =>
-                _cancelOffer(widget.serviceRequest.id, widget.workerId),
-            icon: Icon(Icons.dangerous, color: const Color(0xFF1A819A)),
-            label: Text(
-              "Cancelar Propuesta",
-              style: GoogleFonts.karla(
-                color: const Color(0xFF1A819A),
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () => _mostrarComentarios(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: const Color(0xFF1A819A)),
+              backgroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(
+                vertical: 25, // Altura fija del padding
+                horizontal: MediaQuery.of(context).size.width *
+                    0.2, // Padding dinámico basado en el ancho de la pantalla
               ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.comment, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Comentarios (${comentarios.length})',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       );
     }
-
-    if (_currentStatus == 'in_progress') {
+    // 2) Si el servicio está en progreso
+    else if (_currentStatus == 'in_progress') {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -817,7 +910,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               final userId = FirebaseAuth.instance.currentUser?.uid;
 
               print("Botón de Chat presionado");
-              print("workerId: ${widget.workerId}");
+              print("workerId: ${widget.userId}");
               print("userId (actual): $userId");
 
               if (userId == null) {
@@ -825,7 +918,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 return;
               }
 
-              _openChat(widget.workerId, userId);
+              _openWhatsApp(userId);
             },
             icon: Icon(Icons.chat, color: Colors.white),
             label: Text(
@@ -837,63 +930,90 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A819A),
+              backgroundColor: const Color(0xFF25D366),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
             ),
-          )
+          ),
         ],
       );
     }
-
-    if (_currentStatus == 'available') {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    // 3) Servicio disponible sin ofertas pendientes
+    else if (_currentStatus == 'available') {
+      return Column(
         children: [
-          ElevatedButton.icon(
-            onPressed: _cancelService,
-            icon: Icon(Icons.dangerous, color: Colors.white),
-            label: Text(
-              "Cancelar Trabajo",
-              style: GoogleFonts.karla(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _cancelService,
+                icon: Icon(Icons.dangerous, color: Colors.white),
+                label: Text(
+                  "Cancelar Trabajo",
+                  style: GoogleFonts.karla(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF830A09),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                ),
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () => _mostrarComentarios(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF830A09),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+              backgroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(
+                vertical: 25, // Altura fija del padding
+                horizontal: MediaQuery.of(context).size.width *
+                    0.2, // Padding dinámico basado en el ancho de la pantalla
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.comment, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Comentarios (${comentarios.length})',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       );
     }
 
+    // Ningún otro caso
     return SizedBox.shrink();
   }
 
-  void _openChat(String workerId, String userId) async {
+  void _openWhatsApp(userId) async {
+    if (phoneNumber == null) return;
 
-  // Navegar a la pantalla de chat
-  print("Navegando a la pantalla de chat");
- Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => WhatsAppContactScreen(
-      workerId: workerId,
-    ),
-  ),
-);
-
-}
-
-
-  String _generateChatId(String workerId, String userId) {
-    // Generar un ID único basado en los IDs de los participantes
-    return workerId.hashCode <= userId.hashCode
-        ? '$workerId\_$userId'
-        : '$userId\_$workerId';
+    final whatsappUrl = Uri.parse(
+        "https://wa.me/$phoneNumber?text=Hola $displayName, soy el cliente del trabajo desde ManitosXpress.");
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+      );
+    }
   }
 }

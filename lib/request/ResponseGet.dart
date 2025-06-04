@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../request/requestExpertise.dart';
 import '../request/requestServiceType.dart';
@@ -11,7 +13,6 @@ import '../request/resquest.dart';
 import '../controller/auth_utils.dart';
 import '../controller/baseurl.dart';
 import 'dataprofile.dart';
-
 class ApiService2 {
   String? getToken; // Variable para almacenar el token del usuario
   ServiceRequest? serviceRequest;
@@ -22,6 +23,106 @@ class ApiService2 {
   ApiService() {
     _initializeToken();
   }
+  /// Trae todos los servicios y devuelve el que coincide con serviceId
+  Future<Map<String, dynamic>> fetchSingleService(
+  String workerColumn,
+  String workerValue,
+  String type,
+  String deviceId,
+  String serviceId,
+) async {
+  try {
+    // Llamas a tu método que ya funciona para obtener todos los servicios
+    final resp = await getAllServices(
+      await AuthUtils.getToken() ?? '',
+      workerColumn,
+      workerValue,
+      type,
+    );
+
+    // Verificas que la respuesta sea exitosa
+    if (resp.statusCode != 200) {
+      throw Exception('Error al obtener servicios: ${resp.statusCode}');
+    }
+
+    // Parseas el body como una lista de JSON
+    final List<dynamic> data = json.decode(resp.body);
+
+    // Conviertes la lista a un Map para optimizar la búsqueda
+    final Map<String, Map<String, dynamic>> servicesMap = {
+      for (var service in data)
+        service['id']: service,
+    };
+
+    // Intentas obtener el servicio directamente del Map
+    final found = servicesMap[serviceId];
+    
+    if (found == null) {
+      throw Exception('Servicio no encontrado');
+    }
+
+    return found;
+  } catch (e) {
+    // Manejo más específico de errores
+    if (e is TimeoutException) {
+      throw Exception('La solicitud ha expirado');
+    } else {
+      throw Exception('Error inesperado: $e');
+    }
+  }
+}
+ Future<void> patchServiceComments(
+    String serviceId,
+    List<Map<String, String>> commentsList,
+) async {
+  // 1) Obtén el token correctamente
+  final token = await AuthUtils.getToken();
+  if (token == null || token.isEmpty) {
+    throw Exception('No se pudo obtener un token válido');
+  }
+
+  // 2) Usa el token en la cabecera
+  final resp = await http.patch(
+    Uri.parse('$baseUrl/services/$serviceId'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: json.encode({'comments': commentsList}),
+  );
+
+  // 3) Manejo de errores
+  if (resp.statusCode < 200 || resp.statusCode >= 300) {
+    throw Exception(
+      'Error al actualizar comentarios: ${resp.statusCode} – ${resp.body}'
+    );
+  }
+}
+
+
+  Future<List<Map<String, String>>> getServiceComments(String serviceId) async {
+    await _initializeToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/services/$serviceId/comments'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al obtener comentarios: '
+          '${response.statusCode} ${response.body}');
+    }
+
+    // Suponemos que el backend devuelve algo así:
+    // [ { "nombre":"John", "mensaje":"Hola", "hora":"12:34" }, ... ]
+    final List<dynamic> raw = json.decode(response.body);
+    return raw
+        .map((e) => Map<String, String>.from(e as Map))
+        .toList();
+  }
+
 
   Future<void> _initializeToken() async {
     final user = auth.currentUser;
@@ -33,6 +134,25 @@ class ApiService2 {
       print('Usuario no autenticado.');
     }
   }
+  /// POST /services/{serviceId}/comments
+  Future<void> postServiceComment(
+      String serviceId,
+      Map<String, String> comment,
+      ) async {
+    await _initializeToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/services/$serviceId/comments'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(comment),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al enviar comentario: '
+          '${response.statusCode} ${response.body}');
+      }
+    }
 
   Future<List<Map<String, dynamic>>> getOffers2(String offerId) async {
     await _initializeToken(); // Asegúrate de que el token esté actualizado
@@ -186,26 +306,13 @@ class ApiService2 {
     }
   }
 
-  Future<http.Response> getAllServices(String authToken, String column,
-      String value, String type, String deviceId) async {
+  Future<http.Response> getAllServices(
+      String authToken, String column, String value, String type) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
 
-      // Imprimir los valores de los parámetros para depuración
-      print('Parámetro column: $column');
-      print('Parámetro value: $value');
-      print('Parámetro type: $type');
-      print('Parámetro deviceId: $deviceId');
-
-      // Construir la URL con los parámetros
-      final url = Uri.parse(
-          '$baseUrl/services?workerId=$column&columns=status&values=$value&type=$type&deviceId=$deviceId');
-
-      // Imprimir la URL solicitada para depuración
-      print('URL solicitada: $url');
-
       final response = await http.get(
-        url,
+        Uri.parse('$baseUrl/services?columns=$column&values=$value&type=$type'),
         headers: <String, String>{
           'Authorization': 'Bearer $authTokenValue',
         },
@@ -222,6 +329,7 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
+
 
   Future<String> getImageUrls(String userId, String imageName) async {
     try {
@@ -242,65 +350,73 @@ class ApiService2 {
       return '';
     }
   }
-
   Future<List<ServiceRequest>> getOffers(
-    String column,
-    String value,
-    String type,
-    String deviceId,
-    List<ServiceRequest> services,
-    String status, // Nuevo parámetro para filtrar por estado
-  ) async {
+      String column,
+      String value,
+      String type,
+      String deviceId,
+      List<ServiceRequest> services,
+      String status, // ya no lo usamos dentro de getOffers
+      ) async {
+    debugPrint('▶️ getOffers iniciado: column=$column, value=$value, type=$type, deviceId=$deviceId');
     try {
       final String? authTokenValue = await AuthUtils.getToken();
-
       if (authTokenValue == null) {
+        debugPrint('   ⚠️ Token de autorización no encontrado');
         throw Exception('Token de autorización no encontrado');
       }
 
-      if (services.isEmpty || services.any((service) => service.id.isEmpty)) {
+      if (services.isEmpty) {
+        debugPrint('   ⚠️ Lista de servicios vacía');
         throw Exception('ID del servicio no encontrado');
       }
 
       List<ServiceRequest> allOffers = [];
 
-      List<Future> requests = services.map((service) async {
+      final futures = services.map((service) async {
         final url = Uri.parse(
           '$baseUrl/offers/${service.id}?'
-          'columns=$column&'
-          'values=$value&'
-          'type=$type&'
-          'deviceId=$deviceId&'
-          'status=$status', // Añadir parámetro de estado
+              'columns=$column&'
+              'values=$value&'
+              'type=$type&'
+              'deviceId=$deviceId',
         );
+        debugPrint('   • Petición GET → $url');
 
         final response = await http.get(
           url,
-          headers: <String, String>{
-            'Authorization': 'Bearer $authTokenValue',
-          },
+          headers: {'Authorization': 'Bearer $authTokenValue'},
         );
+        debugPrint('     – statusCode: ${response.statusCode}');
 
         if (response.statusCode == 200) {
-          List<dynamic> offersJson = json.decode(response.body);
-          allOffers.addAll(offersJson
-              .map((offer) => ServiceRequest.fromSnapshot(offer))
-              .where((offer) =>
-                  offer.status.id == status) // Filtro adicional en cliente
-              .toList());
+          final offersJson = json.decode(response.body) as List<dynamic>;
+          debugPrint('     – offersJson.length: ${offersJson.length}');
+
+          // Aquí ya no filtramos por status.id, tomamos todo
+          final parsed = offersJson
+              .map((o) => ServiceRequest.fromSnapshot(o as Map<String, dynamic>))
+              .toList();
+          debugPrint('     – parsed.length: ${parsed.length}');
+
+          allOffers.addAll(parsed);
         } else {
-          print(
-              'Error al obtener ofertas para el servicio ${service.id}: ${response.statusCode}');
+          debugPrint(
+              '     ❌ Error al obtener ofertas para servicio ${service.id}: HTTP ${response.statusCode}'
+          );
         }
       }).toList();
 
-      await Future.wait(requests);
+      await Future.wait(futures);
+      debugPrint('◀️ getOffers devuelve allOffers.length = ${allOffers.length}');
       return allOffers;
     } catch (e) {
-      print('Error al obtener ofertas del backend: $e');
+      debugPrint('❌ Error en getOffers: $e');
       throw Exception('Error al obtener ofertas');
     }
   }
+
+
 
   Future<UserData> fetchUserData(String userId, String getIdToken) async {
     try {
@@ -578,8 +694,8 @@ class ApiService2 {
     }
   }
 
-  Future<void> updateWorkerPoints(String workerId, String token) async {
-    final url = Uri.parse('$baseUrl/workers/$workerId');
+  Future<void> updateWorkerPoints(String userId, String token) async {
+    final url = Uri.parse('$baseUrl/users/$userId');
 
     print('Token usado para la autenticación: $token');
 
