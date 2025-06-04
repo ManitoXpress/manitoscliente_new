@@ -463,7 +463,7 @@ class _ServiceListTabState extends State<_ServiceListTab>
         );
       case 'in_progress':
         final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.in_progressList(
+        return ServiceListBuilder.inProgressList(
           list,
           offers,
           w,

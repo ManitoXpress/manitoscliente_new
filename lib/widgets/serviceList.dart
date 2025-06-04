@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:manitoscliente_new/provider/serviceDetails_providers.dart';
 import 'package:manitoscliente_new/request/ResponsePost.dart';
 
 import '../Styles/stilo.dart';
@@ -10,83 +11,91 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import '../utils/timeLines.dart';
+// lib/widgets/service_list_builder.dart
+ // suponiendo que ahí defines los estilos de texto
+import 'package:provider/provider.dart';
+
 class ServiceListBuilder {
+  /// Lista de ofertas ("Ofertas recibidas") usando Provider internamente.
   static Widget buildOfferList(
     List<ServiceRequest> services,
     List<Offer> offers,
     double screenWidth,
     double screenHeight,
     String userId,
-    final UserData userData,
-    final ApiService apiService,
+    UserData userData,
+    ApiService apiService,
   ) {
     final serviceDataFetcher = ServiceDataFetcher();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
         itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
+
+          // Buscamos el ServiceRequest en la lista local (si la tienes cargada).
+          // Si no lo tienes, podrías omitir este paso y dejar que el Provider dentro de ServiceFormWithTimeline lo haga.
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
             orElse: () => throw Exception(
-                'Servicio no encontrado para oferta ${offer.id}'),
+              'Servicio no encontrado para oferta ${offer.id}',
+            ),
           );
+
           return GestureDetector(
             onTap: () async {
               try {
+                // Opcionalmente, aún puedes precargar detalles del trabajador.
                 final workerDetails =
                     await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
-                if (workerDetails == null) return;
-                if (userData is UserData) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ServiceFormWithTimeline(
-                        serviceRequest: ServiceRequest(
-                          id: offer.serviceId,
-                          serviceDateTime: '',
-                          devicesId: '',
-                          description: '',
-                          images: [],
-                          location: {},
-                          offeredPrice: offer.offeredPrice,
-                          serviceType: ServiceType(
-                              id: '',
-                              name: '',
-                              selectedDate: '',
-                              selectedTime: ''),
+                // Si necesitas chequear algo con workerDetails antes de navegar, lo haces aquí.
+                // Pero el widget destino (ServiceFormWithTimeline) se encargará de refrescar en tiempo real.
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) {
+                      // Envolvemos el nuevo screen en Provider
+                      return ChangeNotifierProvider<ServiceDetailsProvider>(
+                        create: (_) {
+                          final prov = ServiceDetailsProvider(
+                            serviceId: offer.serviceId,
+                            workerId: offer.workerId,
+                          );
+                          // Inicia la suscripción y carga inicial
+                          prov.init();
+                          return prov;
+                        },
+                        child: ServiceFormWithTimeline(
+                          // Ahora le pasamos los IDs; ya no necesitamos construir un ServiceRequest completo
+                          serviceId: offer.serviceId,
+                          initialStatus: offer.status.id,
+                          onComplete: (status) {
+                            print('Estado completado: $status');
+                          },
+                          onStatusChanged: (newStatus) {
+                            print('Estado cambiado a: $newStatus');
+                          },
+                          userData: userData,
                           workerId: offer.workerId,
-                          isFavorite: false,
-                          acceptedTerms: false,
-                          expertises: offer.expertises,
-                          status: Status(id: '', name: ''),
-                          subcategoryName: offer.subcategoryName,
-                          hasOffer: false,
-                          offers: [],
-                          workerDetails: workerDetails,
-                          userId: '',
-                          createdAt: DateTime.now(),
+                          apiService: apiService,
+                          userId: userId,
                         ),
-                        initialStatus: offer.status.id,
-                        onComplete: (status) {
-                          print('Estado completado: $status');
-                        },
-                        onStatusChanged: (newStatus) {
-                          print('Estado cambiado a: $newStatus');
-                        },
-                        userData: userData, // Solo lo pasa si es UserData
-                        workerId: offer.workerId,
-                        workerDetails: workerDetails,
-                        offers: [],
-                        images: [], apiService: apiService, userId: userId,
-                      ),
-                    ),
-                  );
-                }
+                      );
+                    },
+                  ),
+                );
               } catch (e) {
+                // Mostrar error en consola o con SnackBar
                 print('Error al cargar los detalles del trabajador: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir los detalles del servicio.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: _buildOfferCard(service, offer, screenWidth, screenHeight),
@@ -96,83 +105,76 @@ class ServiceListBuilder {
     );
   }
 
-  // ignore: non_constant_identifier_names
-  static Widget in_progressList(
+  /// Lista de ofertas "En curso" (similar a buildOfferList)
+  static Widget inProgressList(
     List<ServiceRequest> services,
     List<Offer> offers,
     double screenWidth,
     double screenHeight,
     String userId,
-    final UserData userData,
-    final ApiService apiService,
+    UserData userData,
+    ApiService apiService,
   ) {
     final serviceDataFetcher = ServiceDataFetcher();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
         itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
             orElse: () => throw Exception(
-                'Servicio no encontrado para oferta ${offer.id}'),
+              'Servicio no encontrado para oferta ${offer.id}',
+            ),
           );
+
           return GestureDetector(
             onTap: () async {
               try {
                 final workerDetails =
                     await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
-                if (workerDetails == null) return;
-                if (userData is UserData) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ServiceFormWithTimeline(
-                        serviceRequest: ServiceRequest(
-                          id: offer.serviceId,
-                          serviceDateTime: '',
-                          devicesId: '',
-                          description: '',
-                          images: [],
-                          location: {},
-                          offeredPrice: offer.offeredPrice,
-                          serviceType: ServiceType(
-                              id: '',
-                              name: '',
-                              selectedDate: '',
-                              selectedTime: ''),
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return ChangeNotifierProvider<ServiceDetailsProvider>(
+                        create: (_) {
+                          final prov = ServiceDetailsProvider(
+                            serviceId: offer.serviceId,
+                            workerId: offer.workerId,
+                          );
+                          prov.init();
+                          return prov;
+                        },
+                        child: ServiceFormWithTimeline(
+                          serviceId: offer.serviceId,
+                          initialStatus: offer.status.id,
+                          onComplete: (status) {
+                            print('Estado completado: $status');
+                          },
+                          onStatusChanged: (newStatus) {
+                            print('Estado cambiado a: $newStatus');
+                          },
+                          userData: userData,
                           workerId: offer.workerId,
-                          isFavorite: false,
-                          acceptedTerms: false,
-                          expertises: offer.expertises,
-                          status: Status(id: '', name: ''),
-                          subcategoryName: service.subcategoryName,
-                          hasOffer: false,
-                          offers: [],
-                          workerDetails: workerDetails,
-                          userId: '',
-                          createdAt: DateTime.now(),
+                          apiService: apiService,
+                          userId: userId,
                         ),
-                        initialStatus: offer.status.id,
-                        onComplete: (status) {
-                          print('Estado completado: $status');
-                        },
-                        onStatusChanged: (newStatus) {
-                          print('Estado cambiado a: $newStatus');
-                        },
-                        userData: userData, // Solo lo pasa si es UserData
-                        workerId: offer.workerId,
-                        workerDetails: workerDetails,
-                        offers: [],
-                        images: [], apiService: apiService, userId: userId,
-                      ),
-                    ),
-                  );
-                }
+                      );
+                    },
+                  ),
+                );
               } catch (e) {
                 print('Error al cargar los detalles del trabajador: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir los detalles del servicio.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: _buildOfferCard(service, offer, screenWidth, screenHeight),
@@ -182,74 +184,69 @@ class ServiceListBuilder {
     );
   }
 
+  /// Lista de servicios disponibles sin ofertas
   static Widget buildServiceListAvailable(
     List<ServiceRequest> services,
     double screenWidth,
     double screenHeight,
     String userId,
-    dynamic userData,
-    final ApiService apiService,
+    UserData userData,
+    ApiService apiService,
   ) {
     final serviceDataFetcher = ServiceDataFetcher();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
         itemCount: services.length,
         itemBuilder: (context, index) {
           final service = services[index];
+
           return GestureDetector(
             onTap: () async {
               try {
                 final workerDetails = await serviceDataFetcher
                     .fetchWorkerDetails(service.workerId);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: '',
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: {},
-                        offeredPrice: service.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
-                        workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
-                        createdAt: DateTime.now(),
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
-                      userData: userData,
-                      workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
-                      apiService: apiService,
-                      userId: userId,
-                    ),
+                    builder: (context) {
+                      return ChangeNotifierProvider<ServiceDetailsProvider>(
+                        create: (_) {
+                          final prov = ServiceDetailsProvider(
+                            serviceId: service.id,
+                            workerId: service.workerId,
+                          );
+                          prov.init();
+                          return prov;
+                        },
+                        child: ServiceFormWithTimeline(
+                          serviceId: service.id,
+                          initialStatus: service.status.id,
+                          onComplete: (status) {
+                            print('Estado completado: $status');
+                          },
+                          onStatusChanged: (newStatus) {
+                            print('Estado cambiado a: $newStatus');
+                          },
+                          userData: userData,
+                          workerId: service.workerId,
+                          apiService: apiService,
+                          userId: userId,
+                        ),
+                      );
+                    },
                   ),
                 );
               } catch (e) {
                 print('Error al cargar los detalles del trabajador: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir los detalles del servicio.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: _buildServiceCard(service, screenWidth, screenHeight),
@@ -259,81 +256,76 @@ class ServiceListBuilder {
     );
   }
 
+  /// Lista de servicios completados (usa la lista de offers para enlazar al servicio)
   static Widget buildServiceListComplete(
     List<ServiceRequest> services,
     List<Offer> offers,
     double screenWidth,
     double screenHeight,
     String userId,
-    dynamic userData,
-    final ApiService apiService,
+    UserData userData,
+    ApiService apiService,
   ) {
     final serviceDataFetcher = ServiceDataFetcher();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
-        itemCount: services.length,
+        itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
             orElse: () => throw Exception(
-                'Servicio no encontrado para oferta ${offer.id}'),
+              'Servicio no encontrado para oferta ${offer.id}',
+            ),
           );
+
           return GestureDetector(
             onTap: () async {
               try {
                 final workerDetails =
                     await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: offer.serviceId,
-                        serviceDateTime: '',
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: service.location,
-                        offeredPrice: offer.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
-                        workerId: offer.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: offer.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: false,
-                        offers: [offer],
-                        workerDetails: workerDetails,
-                        userId: '',
-                        createdAt: DateTime.now(),
-                      ),
-                      initialStatus: offer.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
-                      userData: userData,
-                      workerId: offer.workerId,
-                      workerDetails: workerDetails,
-                      images: [],
-                      apiService: apiService,
-                      offers: [offer],
-                      userId: userId,
-                    ),
+                    builder: (context) {
+                      return ChangeNotifierProvider<ServiceDetailsProvider>(
+                        create: (_) {
+                          final prov = ServiceDetailsProvider(
+                            serviceId: offer.serviceId,
+                            workerId: offer.workerId,
+                          );
+                          prov.init();
+                          return prov;
+                        },
+                        child: ServiceFormWithTimeline(
+                          serviceId: offer.serviceId,
+                          initialStatus: offer.status.id,
+                          onComplete: (status) {
+                            print('Estado completado: $status');
+                          },
+                          onStatusChanged: (newStatus) {
+                            print('Estado cambiado a: $newStatus');
+                          },
+                          userData: userData,
+                          workerId: offer.workerId,
+                          apiService: apiService,
+                          userId: userId,
+                        ),
+                      );
+                    },
                   ),
                 );
               } catch (e) {
                 print('Error al cargar los detalles del trabajador: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir los detalles del servicio.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: _buildOfferCard(service, offer, screenWidth, screenHeight),
@@ -343,15 +335,17 @@ class ServiceListBuilder {
     );
   }
 
+  /// Lista de servicios cancelados
   static Widget buildServiceListCancelled(
-      List<ServiceRequest> services,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      dynamic userData,
-      final ApiService apiService,
-      ) {
+    List<ServiceRequest> services,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    UserData userData,
+    ApiService apiService,
+  ) {
     final serviceDataFetcher = ServiceDataFetcher();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
@@ -363,47 +357,46 @@ class ServiceListBuilder {
           return GestureDetector(
             onTap: () async {
               try {
-                final workerDetails = await serviceDataFetcher.fetchWorkerDetails(service.workerId);
+                final workerDetails = await serviceDataFetcher
+                    .fetchWorkerDetails(service.workerId);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: service.serviceDateTime,
-                        devicesId: service.devicesId,
-                        description: service.description,
-                        images: service.images,
-                        location: service.location,
-                        offeredPrice: service.offeredPrice,
-                        serviceType: service.serviceType,
-                        workerId: service.workerId,
-                        isFavorite: service.isFavorite,
-                        acceptedTerms: service.acceptedTerms,
-                        expertises: service.expertises,
-                        status: service.status,
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: offer != null,
-                        offers: offer != null ? [offer] : [],
-                        workerDetails: workerDetails,
-                        userId: service.userId,
-                        createdAt: service.createdAt,
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) => print('Estado completado: \$status'),
-                      onStatusChanged: (newStatus) => print('Estado cambiado a: \$newStatus'),
-                      userData: userData,
-                      workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: offer != null ? [offer] : [],
-                      images: service.images,
-                      apiService: apiService,
-                      userId: userId,
-                    ),
+                    builder: (context) {
+                      return ChangeNotifierProvider<ServiceDetailsProvider>(
+                        create: (_) {
+                          final prov = ServiceDetailsProvider(
+                            serviceId: service.id,
+                            workerId: service.workerId,
+                          );
+                          prov.init();
+                          return prov;
+                        },
+                        child: ServiceFormWithTimeline(
+                          serviceId: service.id,
+                          initialStatus: service.status.id,
+                          onComplete: (status) =>
+                              print('Estado completado: $status'),
+                          onStatusChanged: (newStatus) =>
+                              print('Estado cambiado a: $newStatus'),
+                          userData: userData,
+                          workerId: service.workerId,
+                          apiService: apiService,
+                          userId: userId,
+                        ),
+                      );
+                    },
                   ),
                 );
               } catch (e) {
-                print('Error al cargar los detalles del trabajador: \$e');
+                print('Error al cargar los detalles del trabajador: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir los detalles del servicio.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: _buildServiceCard(service, screenWidth, screenHeight),
@@ -413,28 +406,29 @@ class ServiceListBuilder {
     );
   }
 
-
+  /// Lista genérica de servicios/ofertas
   static Widget buildServiceList(
     List<ServiceRequest> services,
     List<Offer> offers,
     double screenWidth,
     double screenHeight,
     String userId,
-    dynamic userData,
-    final ApiService apiService,
+    UserData userData,
+    ApiService apiService,
   ) {
     final serviceDataFetcher = ServiceDataFetcher();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
-        itemCount: services.length,
+        itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
             orElse: () => throw Exception(
-                'Servicio no encontrado para oferta ${offer.id}'),
+              'Servicio no encontrado para oferta ${offer.id}',
+            ),
           );
 
           return GestureDetector(
@@ -442,54 +436,46 @@ class ServiceListBuilder {
               try {
                 final workerDetails = await serviceDataFetcher
                     .fetchWorkerDetails(service.workerId);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: '',
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: {},
-                        offeredPrice: offer.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
-                        workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: offer.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
-                        createdAt: DateTime.now(),
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
-                      userData: userData,
-                      workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
-                      apiService: apiService,
-                      userId: userId,
-                    ),
+                    builder: (context) {
+                      return ChangeNotifierProvider<ServiceDetailsProvider>(
+                        create: (_) {
+                          final prov = ServiceDetailsProvider(
+                            serviceId: service.id,
+                            workerId: service.workerId,
+                          );
+                          prov.init();
+                          return prov;
+                        },
+                        child: ServiceFormWithTimeline(
+                          serviceId: service.id,
+                          initialStatus: service.status.id,
+                          onComplete: (status) {
+                            print('Estado completado: $status');
+                          },
+                          onStatusChanged: (newStatus) {
+                            print('Estado cambiado a: $newStatus');
+                          },
+                          userData: userData,
+                          workerId: service.workerId,
+                          apiService: apiService,
+                          userId: userId,
+                        ),
+                      );
+                    },
                   ),
                 );
               } catch (e) {
                 print('Error al cargar los detalles del trabajador: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir los detalles del servicio.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: _buildOfferCard(service, offer, screenWidth, screenHeight),
@@ -499,8 +485,13 @@ class ServiceListBuilder {
     );
   }
 
-  static Widget _buildOfferCard(ServiceRequest service, Offer offer,
-      double screenWidth, double screenHeight) {
+  /// Misma tarjeta para ofertas que antes
+  static Widget _buildOfferCard(
+    ServiceRequest service,
+    Offer offer,
+    double screenWidth,
+    double screenHeight,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.02),
       width: screenWidth,
@@ -509,16 +500,21 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
-            service.subcategoryName,
-            service.expertises.map((e) => e.name).join(', '),
-            offer.offeredPrice,
-            screenHeight),
+          service.subcategoryName,
+          service.expertises.map((e) => e.name).join(', '),
+          offer.offeredPrice,
+          screenHeight,
+        ),
       ),
     );
   }
 
+  /// Misma tarjeta para servicios que antes
   static Widget _buildServiceCard(
-      ServiceRequest service, double screenWidth, double screenHeight) {
+    ServiceRequest service,
+    double screenWidth,
+    double screenHeight,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.02),
       width: screenWidth,
@@ -527,16 +523,21 @@ class ServiceListBuilder {
         size: Size(screenWidth, screenHeight * 0.35),
         painter: CustomTicketShapePainter(status: service.status),
         child: _buildCardContent(
-            service.subcategoryName,
-            service.expertises.map((e) => e.name).join(', '),
-            service.offeredPrice,
-            screenHeight),
+          service.subcategoryName,
+          service.expertises.map((e) => e.name).join(', '),
+          service.offeredPrice,
+          screenHeight,
+        ),
       ),
     );
   }
 
   static Widget _buildCardContent(
-      String category, String expertise, double price, double screenHeight) {
+    String category,
+    String expertise,
+    double price,
+    double screenHeight,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -546,23 +547,34 @@ class ServiceListBuilder {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 30),
-                Text('Categoría:', style: MyTextStyles.drawerButtonTextStyle7),
+                const SizedBox(height: 30),
+                Text(
+                  'Categoría:',
+                  style: MyTextStyles.drawerButtonTextStyle7,
+                ),
                 Text(category, style: MyTextStyles.serviceTextStyle),
                 SizedBox(height: screenHeight * 0.01),
-                Text('Servicio:', style: MyTextStyles.drawerButtonTextStyle7),
+                Text(
+                  'Servicio:',
+                  style: MyTextStyles.drawerButtonTextStyle7,
+                ),
                 Text(expertise, style: MyTextStyles.serviceTextStyle),
                 SizedBox(height: screenHeight * 0.01),
-                Text('Precio Ofertado: \Bs.${price.toStringAsFixed(2)}',
-                    style: MyTextStyles.drawerButtonTextStyle7),
+                Text(
+                  'Precio Ofertado: \Bs.${price.toStringAsFixed(2)}',
+                  style: MyTextStyles.drawerButtonTextStyle7,
+                ),
               ],
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Align(
             alignment: Alignment.bottomLeft,
-            child: Image.asset('assets/animations/manito.png',
-                width: 64, height: 64),
+            child: Image.asset(
+              'assets/animations/manito.png',
+              width: 64,
+              height: 64,
+            ),
           ),
         ],
       ),
