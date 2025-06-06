@@ -2,25 +2,23 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/constants/service_constants.dart';
 import 'package:manitoscliente_new/models/service_requestModels.dart';
 import 'package:manitoscliente_new/models/worker_detailsModels.dart';
 import 'package:manitoscliente_new/provider/serviceDetails_providers.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
 import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/request/dataprofile.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
+
+import 'package:manitoscliente_new/widgets/commentWdiget.dart';
+import 'package:manitoscliente_new/widgets/imagePreview.dart';
 
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-/// Widget idéntico a tu código original, solo que lee datos de [ServiceDetailsProvider]
-/// en lugar de manejar todo con setState interno. Los estilos, colores y estructura
-/// de UI se mantienen EXACTOS a tu versión.
-// lib/widgets/service_form_with_timeline.dart
 
 class ServiceFormWithTimeline extends StatelessWidget {
   final String serviceId;
@@ -51,6 +49,8 @@ class ServiceFormWithTimeline extends StatelessWidget {
         final prov = ServiceDetailsProvider(
           serviceId: serviceId,
           workerId: workerId,
+      
+          apiService2: ApiService2()
         );
         prov.init();
         return prov;
@@ -354,7 +354,8 @@ class ServiceFormWithTimeline extends StatelessWidget {
             children: [
               ElevatedButton.icon(
                 onPressed: () async {
-                  await prov.acceptProposal();
+                  await prov.acceptProposal(selectedWorkerId);
+
                   if (prov.errorMessage != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -604,185 +605,11 @@ class ServiceFormWithTimeline extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
-        return _CommentsBottomSheet(provider: provider);
+        return CommentsBottomSheet(provider: provider);
       },
     );
   }
 }
 
-/// Modal de comentarios, idéntico a tu versión anterior salvo que usa `provider.comments`.
-class _CommentsBottomSheet extends StatefulWidget {
-  final ServiceDetailsProvider provider;
-
-  const _CommentsBottomSheet({Key? key, required this.provider})
-      : super(key: key);
-
-  @override
-  State<_CommentsBottomSheet> createState() => _CommentsBottomSheetState();
-}
-
-class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
-  final TextEditingController _comentarioController = TextEditingController();
-  bool _isSending = false;
-
-  @override
-  void dispose() {
-    _comentarioController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = widget.provider;
-    final comentarios = provider.comments;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: DraggableScrollableSheet(
-        expand: false,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                Text(
-                  'Comentarios (${comentarios.length})',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Karla',
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.secondary,
-                  ),
-                ),
-                const Divider(),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: comentarios.length,
-                    itemBuilder: (ctx, i) {
-                      final c = comentarios[i];
-                      final isClient = c.rol == 'cliente';
-                      final alignment =
-                          isClient ? MainAxisAlignment.end : MainAxisAlignment.start;
-                      final color = isClient ? AppColors.secondary : AppColors.primary;
-                      final textAlign = isClient ? TextAlign.end : TextAlign.start;
-                      final nombre = isClient ? 'Cliente' : 'Trabajador';
-
-                      return ListTile(
-                        title: Row(
-                          mainAxisAlignment: alignment,
-                          children: [
-                            Text(
-                              nombre,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: color,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              c.hora,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          c.mensaje,
-                          textAlign: textAlign,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const Divider(),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _comentarioController,
-                          decoration: InputDecoration(
-                            hintText: 'Escribe un comentario...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _isSending
-                          ? const CircularProgressIndicator()
-                          : IconButton(
-                              icon: const Icon(Icons.send),
-                              onPressed: () async {
-                                final texto = _comentarioController.text.trim();
-                                if (texto.isEmpty) return;
-                                setState(() {
-                                  _isSending = true;
-                                });
-                                await provider.addComment(texto);
-                                if (provider.errorMessage != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(provider.errorMessage!),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                                _comentarioController.clear();
-                                setState(() {
-                                  _isSending = false;
-                                });
-                              },
-                            ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
 
 /// Simple full‐screen viewer de imágenes.
-class ImageViewer extends StatelessWidget {
-  final String imageUrl;
-
-  const ImageViewer({Key? key, required this.imageUrl}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-      ),
-      body: Center(
-        child: Hero(
-          tag: imageUrl,
-          child: CachedNetworkImage(
-            imageUrl: imageUrl,
-            fit: BoxFit.contain,
-            placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
-            errorWidget: (_, __, ___) => const Icon(Icons.error),
-          ),
-        ),
-      ),
-    );
-  }
-}

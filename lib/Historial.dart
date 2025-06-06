@@ -8,7 +8,9 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/constants/service_constants.dart';
 import 'package:manitoscliente_new/controller/historialProvider.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:provider/provider.dart';
 import '../request/ResponseGet.dart';
 import '../request/ResponsePost.dart';
@@ -462,16 +464,30 @@ class _ServiceListTabState extends State<_ServiceListTab>
           widget.apiService,
         );
       case 'in_progress':
-        final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.inProgressList(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
+      // 1) Expandir todas las ofertas de cada servicio, forzando el tipo a Offer
+      final List<Offer> listOffer = list
+        .expand((s) => (s.offers ?? <Offer>[]).cast<Offer>())
+        .toList();
+
+      // 2) FILTRAR sólo las que están realmente en "in_progress".
+      //    Aquí comparamos offer.status.id (que es un String como "in_progress")
+      //    con nuestro ServiceStatus.inProgress (también "in_progress").
+      final List<Offer> ofertasEnProgreso = listOffer
+        .where((offer) => offer.status.id == ServiceStatus.inProgress)
+        .toList();
+
+      // 3) Ahora sí, pasamos sólo esa sublista al builder
+      return ServiceListBuilder.inProgressList(
+        list,               // List<ServiceRequest>
+        ofertasEnProgreso,  // List<Offer> filtrada
+        w,                  // screenWidth
+        h,                  // screenHeight
+        widget.userId,
+        widget.userData,
+        widget.apiService,
+      );
+
+
       case 'completed':
         final offers = list.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceListComplete(

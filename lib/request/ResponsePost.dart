@@ -13,8 +13,75 @@ import 'resquest.dart';
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl; // URL base de la API
   String? getToken;
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final FirebaseStorage storage = FirebaseStorage.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  /// 1) Obtiene el token actual de Firebase Auth (para enviarlo en el header “Authorization”).
+  Future<String?> _getFirebaseToken() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return await user.getIdToken();
+  }
+   /// 2) Actualiza un servicio dado su [serviceId] con los campos que incluyas en [data].
+  ///    Llamará a PUT { baseUrl }/services/{serviceId}
+  Future<void> updateService({
+    required String serviceId,
+    required Map<String, dynamic> data,
+  }) async {
+    final token = await _getFirebaseToken();
+    if (token == null) {
+      throw Exception('Usuario no autenticado (no hay token disponible)');
+    }
+
+    final uri = Uri.parse('$baseUrl/services/$serviceId');
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+          'Error ${response.statusCode} al actualizar servicio: ${response.body}');
+    }
+  }
+
+  /// 3) Actualiza una oferta dada su [offerId] con los campos que incluyas en [data].
+  ///    Llamará a PUT { baseUrl }/offers/{offerId}
+    /// PATCH /offers/{offerId}
+  Future<void> updateOffer({
+    required String offerId,
+    required Map<String, dynamic> data,
+  }) async {
+    final token = await _getFirebaseToken();
+    if (token == null) {
+      throw Exception('Usuario no autenticado (no hay token disponible)');
+    }
+
+    final urlString = '$baseUrl/offers/$offerId';
+    print('🤖→ PATCH a oferta: $urlString');
+    print('    body: ${jsonEncode(data)}');
+    final uri = Uri.parse(urlString);
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    print('🤖← Oferta → statusCode: ${response.statusCode}, body: ${response.body}');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Error ${response.statusCode} al actualizar oferta: ${response.body}'
+      );
+    }
+  }
     Future<bool> deleteWorker(String userId, String authToken) async {
   try {
     final url = Uri.parse('$baseUrl/workers/$userId');
@@ -126,7 +193,7 @@ class ApiService {
   // Método para obtener el token de autenticación desde Firebase
   Future<String?> _getAuthToken() async {
     try {
-      final User? user = auth.currentUser;
+      final User? user = _auth.currentUser;
       if (user == null) {
         print('Usuario no autenticado. Por favor, inicia sesión.');
         return null;
@@ -147,7 +214,7 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getServices(
       String? userId, String status, String? token, String deviceId) async {
     // Obtener userId y token si no se pasan como parámetros
-    userId ??= auth.currentUser?.uid;
+    userId ??= _auth.currentUser?.uid;
     token ??= await _getAuthToken();
 
     if (userId == null || userId.isEmpty) {
@@ -338,7 +405,7 @@ class ApiService {
       final String imagePath = '$userFolderPath$imageName';
 
       if (await image.exists()) {
-        Reference ref = storage.ref().child(imagePath);
+        Reference ref = _storage.ref().child(imagePath);
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {

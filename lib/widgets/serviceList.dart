@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:manitoscliente_new/provider/serviceDetails_providers.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
 import 'package:manitoscliente_new/request/ResponsePost.dart';
 
 import '../Styles/stilo.dart';
@@ -63,6 +64,7 @@ class ServiceListBuilder {
                           final prov = ServiceDetailsProvider(
                             serviceId: offer.serviceId,
                             workerId: offer.workerId,
+                            apiService2: ApiService2()
                           );
                           // Inicia la suscripción y carga inicial
                           prov.init();
@@ -107,82 +109,88 @@ class ServiceListBuilder {
 
   /// Lista de ofertas "En curso" (similar a buildOfferList)
   static Widget inProgressList(
-    List<ServiceRequest> services,
-    List<Offer> offers,
-    double screenWidth,
-    double screenHeight,
-    String userId,
-    UserData userData,
-    ApiService apiService,
-  ) {
-    final serviceDataFetcher = ServiceDataFetcher();
+  List<ServiceRequest> services,
+  List<Offer> offers,        // <-- ahora llega la lista filtrada correctamente
+  double screenWidth,
+  double screenHeight,
+  String userId,
+  UserData userData,
+  ApiService apiService,
+) {
+  final serviceDataFetcher = ServiceDataFetcher();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: offers.length,
-        itemBuilder: (context, index) {
-          final offer = offers[index];
-          final service = services.firstWhere(
-            (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception(
-              'Servicio no encontrado para oferta ${offer.id}',
-            ),
-          );
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    child: ListView.builder(
+      // ── Para que “no se encoja a altura cero” dentro de un Column/SingleChildScrollView:
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      // ───────────────────────────────────────────────────────────
+      itemCount: offers.length,
+      itemBuilder: (context, index) {
+        final offer = offers[index];
+        final service = services.firstWhere(
+          (s) => s.id == offer.serviceId,
+          orElse: () => throw Exception(
+            'Servicio no encontrado para oferta ${offer.id}',
+          ),
+        );
 
-          return GestureDetector(
-            onTap: () async {
-              try {
-                final workerDetails =
-                    await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+        return GestureDetector(
+          onTap: () async {
+            try {
+              final workerDetails =
+                await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return ChangeNotifierProvider<ServiceDetailsProvider>(
-                        create: (_) {
-                          final prov = ServiceDetailsProvider(
-                            serviceId: offer.serviceId,
-                            workerId: offer.workerId,
-                          );
-                          prov.init();
-                          return prov;
-                        },
-                        child: ServiceFormWithTimeline(
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ChangeNotifierProvider<ServiceDetailsProvider>(
+                      create: (_) {
+                        final prov = ServiceDetailsProvider(
                           serviceId: offer.serviceId,
-                          initialStatus: offer.status.id,
-                          onComplete: (status) {
-                            print('Estado completado: $status');
-                          },
-                          onStatusChanged: (newStatus) {
-                            print('Estado cambiado a: $newStatus');
-                          },
-                          userData: userData,
                           workerId: offer.workerId,
-                          apiService: apiService,
-                          userId: userId,
-                        ),
-                      );
-                    },
-                  ),
-                );
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('No se pudo abrir los detalles del servicio.'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
-          );
-        },
-      ),
-    );
-  }
+                          apiService2: ApiService2(),
+                        );
+                        prov.init();
+                        return prov;
+                      },
+                      child: ServiceFormWithTimeline(
+                        serviceId: offer.serviceId,
+                        initialStatus: offer.status.id,
+                        onComplete: (status) {
+                          print('Estado completado: $status');
+                        },
+                        onStatusChanged: (newStatus) {
+                          print('Estado cambiado a: $newStatus');
+                        },
+                        userData: userData,
+                        workerId: offer.workerId,
+                        apiService: apiService,
+                        userId: userId,
+                      ),
+                    );
+                  },
+                ),
+              );
+            } catch (e) {
+              print('Error al cargar los detalles del trabajador: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('No se pudo abrir los detalles del servicio.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: _buildOfferCard(service, offer, screenWidth, screenHeight),
+        );
+      },
+    ),
+  );
+}
+
 
   /// Lista de servicios disponibles sin ofertas
   static Widget buildServiceListAvailable(
@@ -217,6 +225,7 @@ class ServiceListBuilder {
                           final prov = ServiceDetailsProvider(
                             serviceId: service.id,
                             workerId: service.workerId,
+                            apiService2: ApiService2()
                           );
                           prov.init();
                           return prov;
@@ -296,6 +305,7 @@ class ServiceListBuilder {
                           final prov = ServiceDetailsProvider(
                             serviceId: offer.serviceId,
                             workerId: offer.workerId,
+                            apiService2: ApiService2()
                           );
                           prov.init();
                           return prov;
@@ -369,6 +379,7 @@ class ServiceListBuilder {
                           final prov = ServiceDetailsProvider(
                             serviceId: service.id,
                             workerId: service.workerId,
+                            apiService2: ApiService2()
                           );
                           prov.init();
                           return prov;
@@ -446,6 +457,7 @@ class ServiceListBuilder {
                           final prov = ServiceDetailsProvider(
                             serviceId: service.id,
                             workerId: service.workerId,
+                            apiService2: ApiService2()
                           );
                           prov.init();
                           return prov;
