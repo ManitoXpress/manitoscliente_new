@@ -110,7 +110,7 @@ class ServiceListBuilder {
   /// Lista de ofertas "En curso" (similar a buildOfferList)
   static Widget inProgressList(
   List<ServiceRequest> services,
-  List<Offer> offers,        // <-- ahora llega la lista filtrada correctamente
+  List<Offer> offers,
   double screenWidth,
   double screenHeight,
   String userId,
@@ -122,10 +122,9 @@ class ServiceListBuilder {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
     child: ListView.builder(
-      // ── Para que “no se encoja a altura cero” dentro de un Column/SingleChildScrollView:
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      // ───────────────────────────────────────────────────────────
+      // physics: const NeverScrollableScrollPhysics(),  // quítalo o cámbialo
+      physics: const BouncingScrollPhysics(),          // por ejemplo
       itemCount: offers.length,
       itemBuilder: (context, index) {
         final offer = offers[index];
@@ -139,8 +138,8 @@ class ServiceListBuilder {
         return GestureDetector(
           onTap: () async {
             try {
-              final workerDetails =
-                await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+              final workerDetails = await serviceDataFetcher
+                .fetchWorkerDetails(offer.workerId);
 
               Navigator.push(
                 context,
@@ -190,6 +189,7 @@ class ServiceListBuilder {
     ),
   );
 }
+
 
 
   /// Lista de servicios disponibles sin ofertas
