@@ -19,12 +19,13 @@ class LocationAndFavoritesWizard extends StatefulWidget {
   final Function(bool isFavorite) onFavoritesSelected;
   final Function onNextStep;
 
-  LocationAndFavoritesWizard({
+  const LocationAndFavoritesWizard({
     required this.location,
     required this.onLocationSelected,
     required this.onFavoritesSelected,
     required this.onNextStep,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   _LocationAndFavoritesWizardState createState() =>
@@ -35,12 +36,14 @@ class _LocationAndFavoritesWizardState
     extends State<LocationAndFavoritesWizard> {
   LatLng? selectedLocation;
   bool isFavorite = false;
-  late GoogleMapController mapController;
+  GoogleMapController? mapController;
   Set<Marker> markers = {};
-  TextEditingController writtenLocationController = TextEditingController();
-  Uint8List? mapSnapshot;
-  TextEditingController additionalInfoController = TextEditingController();
-  Completer<GoogleMapController> _controller = Completer();
+  final TextEditingController writtenLocationController =
+  TextEditingController();
+  final TextEditingController additionalInfoController =
+  TextEditingController();
+  final Completer<GoogleMapController> _controller = Completer();
+
   final LatLng santaCruzDefaultLocation = LatLng(-17.7833, -63.1821);
   final LatLng _initialPosition = LatLng(-17.7833, -63.1833);
 
@@ -77,14 +80,14 @@ class _LocationAndFavoritesWizardState
       final data = await loc.getLocation();
       final curr = LatLng(data.latitude!, data.longitude!);
       _updateSelectedLocation(curr);
-      mapController.animateCamera(
+      (await _controller.future).animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: curr, zoom: 14),
         ),
       );
     } catch (_) {
       _updateSelectedLocation(santaCruzDefaultLocation);
-      mapController.animateCamera(
+      (await _controller.future).animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: santaCruzDefaultLocation, zoom: 14),
         ),
@@ -92,7 +95,7 @@ class _LocationAndFavoritesWizardState
     }
   }
 
-  void _updateSelectedLocation(LatLng loc) async {
+  Future<void> _updateSelectedLocation(LatLng loc) async {
     widget.onLocationSelected(loc);
     final address = await _getAddressFromLatLng(loc);
     setState(() {
@@ -106,10 +109,8 @@ class _LocationAndFavoritesWizardState
       };
       writtenLocationController.text = address;
     });
-
-    // Centra el mapa en la ubicación seleccionada
     if (mapController != null) {
-      mapController.animateCamera(
+      mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: loc, zoom: 14),
         ),
@@ -120,136 +121,191 @@ class _LocationAndFavoritesWizardState
   Future<String> _getAddressFromLatLng(LatLng latLng) async {
     try {
       List<Placemark> placemarks =
-          await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
+      await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
       if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
+        final place = placemarks.first;
         return "${place.street}, ${place.locality}, ${place.country}";
       }
     } catch (_) {}
     return "Ubicación desconocida";
   }
 
-  Future<void> _showMapScreen() async {
-    LatLng? tempSelected = selectedLocation;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(
-            iconTheme: IconThemeData(color: Colors.white),
-            title: Text(
-              'Seleccionar Ubicación',
-              style: MyTextStyles.buttonTextStyle,
-            ),
-          ),
-          body: StatefulBuilder(
-            builder: (context, setStateDialog) {
-              return Column(
-                children: [
-                  Expanded(
-                    child: GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: tempSelected ?? _initialPosition,
-                        zoom: 14,
-                      ),
-                      onMapCreated: (controller) {
-                        mapController = controller;
-                      },
-                      onTap: (loc) {
-                        setStateDialog(() {
-                          tempSelected = loc;
-                        });
-                      },
-                      markers: tempSelected != null
-                          ? {
-                              Marker(
-                                markerId: MarkerId(tempSelected.toString()),
-                                position: tempSelected!,
-                              )
-                            }
-                          : {},
+ Future<void> _showMapScreen() async {
+  LatLng? tempSelected = selectedLocation;
+  GoogleMapController? localMapController;
+
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: Text('Seleccionar Ubicación',
+              style: MyTextStyles.buttonTextStyle),
+          backgroundColor: const Color(0xFF1A819A),
+        ),
+        body: StatefulBuilder(
+          builder: (context, setStateDialog) {
+            Future<void> _centerToCurrentLocation() async {
+              try {
+                final loc = loc_pkg.Location();
+                if (!await loc.serviceEnabled() &&
+                    !(await loc.requestService())) return;
+
+                var perm = await loc.hasPermission();
+                if (perm == loc_pkg.PermissionStatus.denied &&
+                    await loc.requestPermission() !=
+                        loc_pkg.PermissionStatus.granted) return;
+
+                final data = await loc.getLocation();
+                final current = LatLng(data.latitude!, data.longitude!);
+
+                setStateDialog(() {
+                  tempSelected = current;
+                });
+
+                if (localMapController != null) {
+                  localMapController?.animateCamera(
+                    CameraUpdate.newCameraPosition(
+                      CameraPosition(target: current, zoom: 14),
                     ),
+                  );
+                }
+              } catch (_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No se pudo obtener la ubicación actual.'),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Volver',
-                            style: MyTextStyles.tabTextStyle1,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A819A),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (tempSelected != null) {
-                            if (isFavorite) {
-                              await _persistFavorite(tempSelected!);
-                            }
-                            _updateSelectedLocation(tempSelected!);
-                            Navigator.pop(context);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      'Por favor, selecciona una ubicación.')),
-                            );
+                );
+              }
+            }
+
+            return Column(
+              children: [
+                Expanded(
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: tempSelected ?? _initialPosition,
+                      zoom: 14,
+                    ),
+                    onMapCreated: (controller) {
+                      localMapController = controller;
+                    },
+                    onTap: (loc) {
+                      setStateDialog(() {
+                        tempSelected = loc;
+                      });
+                    },
+                    markers: tempSelected != null
+                        ? {
+                            Marker(
+                              markerId: MarkerId(tempSelected.toString()),
+                              position: tempSelected!,
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                  BitmapDescriptor.hueBlue),
+                            )
                           }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Seleccionar',
-                            style: MyTextStyles.tabTextStyle1,
+                        : {},
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 10.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _centerToCurrentLocation,
+                          icon: const Icon(Icons.my_location,
+                              color: Colors.white),
+                          label: const Text(
+                            'Usar mi ubicación actual',
+                            style: TextStyle(color: Colors.white),
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A819A),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1A819A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ],
-              );
-            },
-          ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('Volver',
+                            style: MyTextStyles.tabTextStyle1),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A819A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (tempSelected != null) {
+                          if (isFavorite) {
+                            await _persistFavorite(tempSelected!);
+                          }
+                          await _updateSelectedLocation(tempSelected!);
+                          Navigator.pop(context);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('Por favor, selecciona una ubicación.'),
+                            ),
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('Seleccionar',
+                            style: MyTextStyles.tabTextStyle1),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A819A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
+          padding: const EdgeInsets.only(bottom: 10.0, left: 20.0),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              'Coloque su ubicación en el mapa',
-              style: MyTextStyles.formServiceTextStyle2,
-              textAlign: TextAlign.left,
-            ),
+            child: Text('Coloque su ubicación en el mapa',
+                style: MyTextStyles.formServiceTextStyle2),
           ),
         ),
         Card(
           elevation: 5.0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
           margin: const EdgeInsets.all(8.0),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -261,23 +317,20 @@ class _LocationAndFavoritesWizardState
                   child: ElevatedButton(
                     onPressed: _showMapScreen,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF1A819A),
+                      backgroundColor: const Color(0xFF1A819A),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                     ),
                     child: Center(
-                      // Centrar el texto
                       child: Text(
                         'Click para seleccionar ubicación',
                         style: MyTextStyles.buttonTextStyle,
-                        textAlign: TextAlign
-                            .center, // Esto también asegura que el texto esté centrado
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 TextField(
                   controller: writtenLocationController,
                   decoration: InputDecoration(
@@ -286,29 +339,26 @@ class _LocationAndFavoritesWizardState
                       borderRadius: BorderRadius.circular(20.0),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey),
+                      borderSide: const BorderSide(color: Colors.grey),
                       borderRadius: BorderRadius.circular(20.0),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF9E9E9E)),
+                      borderSide:
+                      const BorderSide(color: Color(0xFF9E9E9E)),
                       borderRadius: BorderRadius.circular(20.0),
                     ),
-                    labelStyle: TextStyle(
-                        color: Colors
-                            .grey), // Color del label cuando no está enfocado
-                    floatingLabelStyle: TextStyle(color: Color(0xFF9E9E9E)),
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    floatingLabelStyle:
+                    const TextStyle(color: Color(0xFF9E9E9E)),
                   ),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 2.0),
         SwitchListTile(
-          title: Text(
-            'Marcar ubicación como favorita',
-            style: MyTextStyles.drawerButtonTextStyle,
-          ),
+          title: Text('Marcar ubicación como favorita',
+              style: MyTextStyles.drawerButtonTextStyle),
           value: isFavorite,
           onChanged: (val) async {
             setState(() => isFavorite = val);
@@ -316,8 +366,8 @@ class _LocationAndFavoritesWizardState
               await _persistFavorite(selectedLocation!);
             }
           },
-          activeColor: Color(0xFF1A819A), // Color cuando está activado
-          inactiveTrackColor: Colors.grey, // Color cuando está desactivado
+          activeColor: const Color(0xFF1A819A),
+          inactiveTrackColor: Colors.grey,
           inactiveThumbColor: const Color.fromRGBO(0, 0, 0, 1),
         ),
         ElevatedButton.icon(
@@ -327,26 +377,23 @@ class _LocationAndFavoritesWizardState
               MaterialPageRoute(builder: (_) => FavoriteLocationsScreen()),
             );
             if (fav != null) {
-              _updateSelectedLocation(fav);
+              await _updateSelectedLocation(fav);
             }
           },
-          icon: Icon(Icons.star, color: Color(0xFF1A819A)),
+          icon: const Icon(Icons.star, color: Color(0xFF1A819A)),
           label: Align(
             alignment: Alignment.centerLeft,
             child: Text("Ubicaciones Favoritas",
                 style: MyTextStyles.linkTextStyle),
           ),
         ),
-        SizedBox(height: 3.h),
+        SizedBox(height: 15),
         Padding(
-          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
+          padding: const EdgeInsets.only(bottom: 10.0, left: 20.0),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              'Añadir información adicional',
-              style: MyTextStyles.formServiceTextStyle2,
-              textAlign: TextAlign.left,
-            ),
+            child: Text('Añadir información adicional',
+                style: MyTextStyles.formServiceTextStyle2),
           ),
         ),
         TextFormField(
@@ -358,21 +405,17 @@ class _LocationAndFavoritesWizardState
               borderRadius: BorderRadius.circular(20.0),
             ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey),
+              borderSide: const BorderSide(color: Colors.grey),
               borderRadius: BorderRadius.circular(20.0),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF9E9E9E)),
+              borderSide: const BorderSide(color: Color(0xFF9E9E9E)),
               borderRadius: BorderRadius.circular(20.0),
             ),
-            // Cambiar el color del label cuando el campo está enfocado
-            labelStyle: TextStyle(
-                color: Colors.grey), // Color del label cuando no está enfocado
-            floatingLabelStyle: TextStyle(
-                color:
-                    Color(0xFF9E9E9E)), // Color del label cuando está enfocado
+            labelStyle: const TextStyle(color: Colors.grey),
+            floatingLabelStyle:
+            const TextStyle(color: Color(0xFF9E9E9E)),
           ),
-          onChanged: (value) {},
         )
       ],
     );

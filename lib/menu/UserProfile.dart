@@ -7,7 +7,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:manitoscliente_new/provider/userProvider.dart';
 import 'package:manitoscliente_new/utils/deleteAccount.dart';
+import 'package:provider/provider.dart';
 
 import '../request/ResponseGet.dart';
 import '../request/dataprofile.dart';
@@ -159,20 +162,41 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _signOut() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (context) => LoginScreen(
-                deviceId: '',
-                onLoginSuccess: () {
-                  // Add your logic here for successful login
-                  _loadAndRefreshUserData();
-                },
-              )));
-    } catch (e) {
-      print('Error al cerrar sesión: $e');
+  try {
+    // 1. Cerrar sesión en Firebase Auth
+    await FirebaseAuth.instance.signOut();
+
+    // 2. Eliminar el flag de login persistente
+    const secureStorage = FlutterSecureStorage();
+    await secureStorage.delete(key: 'isLoggedIn');
+
+    // 3. (Opcional) Limpiar cualquier provider si lo usas
+    if (mounted) {
+      Provider.of<UserDataProvider>(context, listen: false).clearUser();
+      // Puedes limpiar otros providers si lo necesitas
     }
+
+    // 4. Reiniciar la navegación
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LoginScreen(
+            deviceId: "",
+            onLoginSuccess: () {
+              // Puedes refrescar el estado luego del nuevo login
+              _loadAndRefreshUserData();
+            },
+          ),
+        ),
+        (_) => false, // elimina todo el stack anterior
+      );
+    }
+  } catch (e) {
+    print('❌ Error al cerrar sesión: $e');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
