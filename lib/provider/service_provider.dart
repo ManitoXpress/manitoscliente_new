@@ -1,14 +1,11 @@
-// lib/providers/professional_services_provider.dart
-
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:manitoscliente_new/controller/auth_utils.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../request/ResponseGet.dart';
+import '../controller/auth_utils.dart';
 
 class ProfessionalServicesProvider extends ChangeNotifier {
   final ApiService2 _api = ApiService2();
@@ -71,7 +68,7 @@ class ProfessionalServicesProvider extends ChangeNotifier {
 
         // Guardar en caché
         final List<Map<String, dynamic>> serializable =
-            _allServices.map((s) => s.toMap()).toList();
+        _allServices.map((s) => s.toMap()).toList();
         await prefs.setString('cached_services', jsonEncode(serializable));
         await prefs.setInt('cache_timestamp', now);
       }
@@ -124,5 +121,5 @@ class ProfessionalServicesProvider extends ChangeNotifier {
   void clearSelection() {
     _selectedIndex = -1;
     notifyListeners();
-  }
+    }
 }

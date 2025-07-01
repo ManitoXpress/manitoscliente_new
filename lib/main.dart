@@ -14,18 +14,21 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:manitoscliente_new/Loading.dart';
 import 'package:manitoscliente_new/controller/RegisController.dart';
 import 'package:manitoscliente_new/controller/home_Provider.dart';
-import 'package:manitoscliente_new/controller/service_provider.dart';
+
 import 'package:manitoscliente_new/firebase_options.dart';
 import 'package:manitoscliente_new/home.dart';
 import 'package:manitoscliente_new/menu/Login.dart';
-import 'package:manitoscliente_new/provider/data_provider.dart';
-import 'package:manitoscliente_new/provider/userProvider.dart';
+import 'package:manitoscliente_new/provider/dataProvider.dart';
+import 'package:manitoscliente_new/provider/providerController.dart';
+import 'package:manitoscliente_new/provider/service_provider.dart';
+
 import 'package:manitoscliente_new/provider/workerProvider.dart';
 import 'package:manitoscliente_new/request/dataprofile.dart';
 import 'package:manitoscliente_new/utils/fcmToken.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -56,10 +59,25 @@ void main() async {
     );
   }
 
-  await FCMService().init();
+  try {
+    debugPrint('🔔 Iniciando FCM Service...');
+    await FCMService().init();
+
+    // Esperar un poco antes de ejecutar el diagnóstico
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Ejecutar diagnóstico después de la inicialización
+    await FCMService().diagnoseFCMStatus();
+  } catch (e) {
+    debugPrint('❌ Error inicializando FCM Service: $e');
+    // Continuar con la ejecución aunque FCM falle
+  }
 
   final deviceId = await obtenerDeviceId();
   print("📱 Device ID: $deviceId");
+
+  // Inicializa la localización para fechas en español
+  await initializeDateFormatting('es', null);
 
   runApp(
     MultiProvider(
@@ -122,58 +140,61 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool isLoading = true;
   bool isLoggedIn = false;
-  UserData? userData;
-  final _secureStorage = const FlutterSecureStorage();
+  late UserData userData;
+  RegistrationData? registrationData;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    // Inicializar userData con valores vacíos
+    userData = UserData.empty();
+    registrationData = userData.registrationData;
+
+    // Espera al primer render para no bloquear la UI:
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      requestNotificationPermissions();
+      requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
       _checkLoginStatus();
     });
   }
 
   Future<void> _checkLoginStatus() async {
-  final value = await _secureStorage.read(key: 'isLoggedIn');
-  final loggedIn = value == 'true';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-  final firebaseUser = FirebaseAuth.instance.currentUser;
-
-  if (loggedIn && firebaseUser != null) {
-    final fetchedUser = await fetchUserData(firebaseUser.uid);
-    userData = fetchedUser;
-    setState(() {
-      isLoggedIn = true;
-      isLoading = false;
-    });
-  } else {
-    // Corrige sesión inválida y limpia el flag guardado
-    await _secureStorage.delete(key: 'isLoggedIn');
-    setState(() {
-      isLoggedIn = false;
-      isLoading = false;
-    });
-  }
-}
-
-
-  Future<void> _onLoginSuccess() async {
-    await _secureStorage.write(key: 'isLoggedIn', value: 'true');
-    print('Guardado en secure storage');
-
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser != null) {
-      final fetchedUser = await fetchUserData(firebaseUser.uid);
-      setState(() {
-        userData = fetchedUser;
-        isLoggedIn = true;
-      });
+    if (loggedIn) {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          userData = await fetchUserData(user.uid);
+          registrationData = userData.registrationData;
+        } catch (e) {
+          print('Error obteniendo datos del usuario: $e');
+          // Si hay error, crear un UserData vacío pero válido
+          userData = UserData.empty();
+          registrationData = userData.registrationData;
+        }
+      } else {
+        // Si no hay usuario de Firebase pero está marcado como logueado, limpiar el estado
+        loggedIn = false;
+        await prefs.setBool('isLoggedIn', false);
+        userData = UserData.empty();
+        registrationData = userData.registrationData;
+      }
     } else {
-      print('⚠️ Login exitoso pero no se encontró usuario en FirebaseAuth');
+      // Si no está logueado, inicializar con valores vacíos
+      userData = UserData.empty();
+      registrationData = userData.registrationData;
     }
+
+    // Simula tiempo de carga si es necesario
+    await Future.delayed(const Duration(seconds: 5));
+
+    setState(() {
+      isLoggedIn = loggedIn;
+      isLoading = false;
+    });
   }
 
   @override
@@ -184,6 +205,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       print('App is in foreground');
     } else if (state == AppLifecycleState.paused) {
@@ -197,7 +219,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       title: 'Manitos Xpress',
       theme: ThemeData(
-        primarySwatch: _customPrimarySwatch(),
+        primarySwatch: MaterialColor(
+          0xFF1A819A,
+          <int, Color>{
+            50: Color(0xFF1A819A),
+            100: Color(0xFF1A819A),
+            200: Color(0xFF1A819A),
+            300: Color(0xFF1A819A),
+            400: Color(0xFF1A819A),
+            500: Color(0xFF1A819A),
+            600: Color(0xFF1A819A),
+            700: Color(0xFF1A819A),
+            800: Color(0xFF1A819A),
+            900: Color(0xFF1A819A),
+          },
+        ),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           secondary: Colors.grey,
           background: Colors.white,
@@ -210,42 +246,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       home: isLoading
           ? LoadingScreen()
           : isLoggedIn
-              ? (userData != null
-                  ? HomeScreen(userData: userData!)
-                  : LoadingScreen())
+              ? HomeScreen(
+                  userData: userData,
+                )
               : LoginScreen(
                   deviceId: widget.deviceId,
-                  onLoginSuccess: _onLoginSuccess,
+                  onLoginSuccess: () {},
                 ),
-      routes: {
-        '/home': (context) => userData != null
-            ? HomeScreen(userData: userData!)
-            : LoadingScreen(),
-      },
-    );
-  }
-
-  MaterialColor _customPrimarySwatch() {
-    return const MaterialColor(
-      0xFF1A819A,
-      <int, Color>{
-        50: Color(0xFFE1F5F7),
-        100: Color(0xFFB3E0E5),
-        200: Color(0xFF80CCD3),
-        300: Color(0xFF4DB8C1),
-        400: Color(0xFF26A7B1),
-        500: Color(0xFF1A819A),
-        600: Color(0xFF15788D),
-        700: Color(0xFF126F80),
-        800: Color(0xFF0E6573),
-        900: Color(0xFF084D59),
-      },
     );
   }
 }
 
 // Ejemplo de función para obtener los datos del usuario
 Future<UserData> fetchUserData(String userId) async {
+  // Aquí debes implementar la lógica para obtener los datos del usuario
+  // Por ejemplo, desde una base de datos o un servicio web
+  // Este es solo un ejemplo de retorno
   return UserData(
     userId: userId,
     displayName: '',

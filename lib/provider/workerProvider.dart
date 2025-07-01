@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/request/requestWoker.dart';
+import 'package:flutter/cupertino.dart';
 
+import '../request/requestWoker.dart';
 
 class WorkerProvider extends ChangeNotifier {
   WorkerDetails? _worker;
@@ -21,5 +21,5 @@ class WorkerProvider extends ChangeNotifier {
   void clear() {
     _worker = null;
     notifyListeners();
-  }
+    }
 }

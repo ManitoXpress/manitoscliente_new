@@ -3,6 +3,7 @@ import UIKit
 import GoogleMaps
 import FirebaseCore
 import FirebaseFirestore
+import FirebaseMessaging
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -16,6 +17,9 @@ import FirebaseFirestore
     // Inicializar Firebase
     FirebaseApp.configure()
     
+    // Configurar Firebase Messaging
+    Messaging.messaging().delegate = self
+    
     // Acceder a Firestore
     do {
       let firestore = Firestore.firestore()
@@ -28,5 +32,12 @@ import FirebaseFirestore
     GeneratedPluginRegistrant.register(with: self)
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}
+
+// MARK: - MessagingDelegate
+extension AppDelegate: MessagingDelegate {
+  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+    print("Firebase registration token: \(String(describing: fcmToken))")
   }
 }

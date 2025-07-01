@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:rive/rive.dart' hide Image;
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../controller/RegisController.dart';
+
 class userDataWizard extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
@@ -17,13 +17,11 @@ class userDataWizard extends StatefulWidget {
   bool isStep1Complete = false;
   String selectedWorkerType = 'Marque aqui';
   late String selectedCountryCode;
-  
 
   late _Step1FormState _step1FormState;
 
-  // Ahora siempre retorna true
   bool isStep1Valid() {
-    return true;
+    return _step1FormState.isStep1Valid();
   }
 
   userDataWizard({
@@ -41,12 +39,10 @@ class userDataWizard extends StatefulWidget {
 }
 
 class _Step1FormState extends State<userDataWizard> {
-  late TextEditingController fullNameController;
+  final TextEditingController fullNameController = TextEditingController();
   final TextEditingController idCardController = TextEditingController();
   final TextEditingController referralCodeController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  
-  // Variables para la animación (se mantienen igual)
   late String animationURL;
   Artboard? _teddyArtboard;
   SMITrigger? successTrigger, failTrigger;
@@ -56,46 +52,32 @@ class _Step1FormState extends State<userDataWizard> {
 
   String? verificationId;
   String errorText = '';
-  late bool _isNameEditable;
 
   @override
-void initState() {
-  super.initState();
-
-  final user = FirebaseAuth.instance.currentUser;
-  final providers = user?.providerData.map((p) => p.providerId).toList() ?? [];
-
-  if (providers.contains('google.com')) {
-    // Si vino por Google: mostramos su nombre y NO es editable
-    fullNameController = TextEditingController(text: user?.displayName ?? '');
-    _isNameEditable = false;
-  } else if (providers.contains('apple.com')) {
-    // Si vino por Apple/iCloud: ponemos “Private” y NO editable
-    fullNameController = TextEditingController(text: 'Private');
-    _isNameEditable = false;
-  } else {
-    // Si es otro flujo (registro manual, etc): sí permitimos editar
-    fullNameController = TextEditingController(text: widget.userData.displayName);
-    _isNameEditable = true;
+  void initState() {
+    super.initState();
   }
-}
 
-  // Ahora siempre retorna true
   bool isStep1Valid() {
-    return true;
+    return fullNameController.text.isNotEmpty;
   }
 
   Future<void> _verifyReferralCode(String referralCode) async {
     try {
       if (referralCode.isEmpty) {
-        // No hacemos nada si está vacío
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Por favor, ingrese un código de referido.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
 
       final workersCollection =
           FirebaseFirestore.instance.collection('users');
 
-      // Buscar si existe un trabajador con ese codeReferral
+      // Buscar si existe un trabajador con ese idCardNumber
       final querySnapshot = await workersCollection
           .where('codeReferral', isEqualTo: referralCode)
           .limit(1)
@@ -103,14 +85,18 @@ void initState() {
 
       if (querySnapshot.docs.isNotEmpty) {
         print('Código de referido válido.');
+        // Guardamos el ID del trabajador que refirió
         setState(() {
           widget.userData.referrerUserId = querySnapshot.docs.first.id;
           widget.userData.referralCode = referralCode;
+
+          // También actualizamos los datos de registro
           widget.registrationController.updateRegistrationData(
             referralCode: referralCode,
             paymentType: '',
           );
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Código de referido válido.'),
@@ -119,9 +105,12 @@ void initState() {
         );
       } else {
         print('Código de referido inválido.');
+        // Limpiamos el referrerWorkerId si el código es inválido
         setState(() {
           widget.userData.referrerUserId = '';
+          // Mantenemos el código ingresado por el usuario para que pueda corregirlo
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Código de referido inválido.'),
@@ -153,7 +142,7 @@ void initState() {
             style: MyTextStyles.drawerButtonTextStyle8,
           ),
           Image.asset(
-            'assets/animations/manito.png',
+            'assets/animations/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
             width: 125,
             height: 125,
           ),
@@ -162,38 +151,70 @@ void initState() {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Nombre completo editable
                 TextField(
                   controller: fullNameController,
-                  enabled: _isNameEditable,
+                  onTap: () {
+                    if (isStep1Valid()) {
+                      widget.onNextStep();
+                    } else {
+                      print(
+                          'Complete all required fields before moving to the next step.');
+                    }
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      widget.registrationController.updateRegistrationData(
+                        displayName: value,
+                        paymentType: '',
+                        referralCode: '',
+                      );
+                      widget.userData.displayName = value;
+                    });
+                  },
+                  keyboardType: TextInputType.text,
+                  style: MyTextStyles.inputTextStyle,
+                  cursorColor: const Color(0xFF1A819A),
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.person, color: Color(0xFF1A819A)),
-                    hintText: 'Nombre completo',
+                    hintText: "Nombre completo",
                     filled: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                    focusColor: Color(0xFF1A819A),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1A819A)),
-                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Color(0xFF1A819A),
+                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                   ),
-                  onChanged: _isNameEditable
-                      ? (value) {
-                          widget.userData.displayName = value;
-                          widget.registrationController.updateRegistrationData(
-                            displayName: value,
-                            paymentType: widget.userData.paymentType,
-                            referralCode: widget.userData.referralCode,
-                          );
-                        }
-                      : null,
                 ),
-
-
                 const SizedBox(height: 20),
-
-                // Número de teléfono
                 TextField(
                   controller: phoneController,
+                  onTap: () {},
+                  onChanged: (value) {
+                    setState(() {
+                      // Verifica si el prefijo +591 está presente, si no, lo agrega automáticamente
+                      if (!value.startsWith('+591')) {
+                        value = '+591$value';
+                        phoneController.text =
+                            value; // Actualiza el valor del controlador para reflejar el prefijo
+                        phoneController.selection = TextSelection.fromPosition(
+                          TextPosition(
+                              offset: value
+                                  .length), // Posiciona el cursor al final del texto
+                        );
+                      }
+
+                      // Actualiza los datos de registro con el número modificado
+                      widget.registrationController.updateRegistrationData(
+                          phoneNumber: value,
+                          paymentType: '',
+                          referralCode: '');
+                      widget.userData.phoneNumber = value;
+                    });
+                  },
                   keyboardType: TextInputType.phone,
                   style: MyTextStyles.inputTextStyle,
                   cursorColor: const Color(0xFF1A819A),
@@ -203,36 +224,32 @@ void initState() {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
+                    focusColor: Color(0xFF1A819A),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1A819A)),
+                      borderSide: BorderSide(
+                        color: Color(0xFF1A819A),
+                      ),
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                   ),
-                  onChanged: (value) {
-                    if (!value.startsWith('+591')) {
-                      value = '+591$value';
-                      phoneController.text = value;
-                      phoneController.selection = TextSelection.fromPosition(
-                        TextPosition(offset: value.length),
-                      );
-                    }
-                    widget.registrationController.updateRegistrationData(
-                      phoneNumber: value,
-                      paymentType: '',
-                      referralCode: '',
-                    );
-                    widget.userData.phoneNumber = value;
-                  },
                 ),
-
                 const SizedBox(height: 20),
-
-                // Código de referido (opcional)
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: referralCodeController,
+                        onChanged: (value) {
+                          setState(() {
+                            // Actualiza los datos de registro con el código de referido
+                            widget.registrationController
+                                .updateRegistrationData(
+                              referralCode: value,
+                              paymentType: '',
+                            );
+                            widget.userData.referralCode = value;
+                          });
+                        },
                         keyboardType: TextInputType.text,
                         style: MyTextStyles.inputTextStyle,
                         cursorColor: const Color(0xFF1A819A),
@@ -240,31 +257,23 @@ void initState() {
                           hintText: "Código de Referido (opcional)",
                           filled: true,
                           border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10)),
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
+                          focusColor: Color(0xFF1A819A),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF1A819A)),
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10)),
+                            borderSide: BorderSide(
+                              color: Color(0xFF1A819A),
+                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
                         ),
-                        onChanged: (value) {
-                          widget.registrationController
-                              .updateRegistrationData(
-                                referralCode: value,
-                                paymentType: '',
-                              );
-                          widget.userData.referralCode = value;
-                        },
                       ),
                     ),
                     const SizedBox(width: 7),
                     ElevatedButton(
-                      onPressed: referralCodeController.text.isNotEmpty
-                          ? () => _verifyReferralCode(
-                              referralCodeController.text)
-                          : null,
+                      onPressed: () async {
+                        await _verifyReferralCode(referralCodeController.text);
+                      },
                       child: Text(
                         'Verificar',
                         style: MyTextStyles.drawerButtonLabelTextStyle,
@@ -278,56 +287,68 @@ void initState() {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
-                // Selección para pagos con QR
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '¿Realizará pagos con QR?',
-                      style: MyTextStyles.inputTextStyle.copyWith(
-                        color: const Color(0xFF1A819A),
+                Container(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¿Realizará pagos con QR?',
+                        style: MyTextStyles.inputTextStyle.copyWith(
+                          color: const Color(0xFF1A819A),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 5),
-                    Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: DropdownButton<String>(
-                        value: widget.selectedWorkerType,
-                        onChanged: (value) {
-                          setState(() {
-                            widget.selectedWorkerType = value!;
-                            widget.registrationController
-                                .updateRegistrationData(
-                                  paymentType: value,
-                                  referralCode: '',
-                                );
-                            widget.userData.paymentType = value;
-                          });
-                        },
-                        items: ['Marque aqui', 'SI', 'NO']
-                            .map((String value) => DropdownMenuItem<String>(
+                      const SizedBox(height: 5),
+                      SizedBox(
+                        height: 60,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 0, 0, 0),
+                            ),
+                          ),
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 10.0),
+                            child: DropdownButton<String>(
+                              value: widget.selectedWorkerType,
+                              onChanged: (value) {
+                                setState(() {
+                                  widget.selectedWorkerType = value!;
+                                  widget.registrationController
+                                      .updateRegistrationData(
+                                    paymentType: value,
+                                    referralCode: '',
+                                  );
+                                  widget.userData.paymentType = value;
+                                });
+                              },
+                              items: ['Marque aqui', 'SI', 'NO']
+                                  .map((String value) {
+                                return DropdownMenuItem<String>(
                                   value: value,
                                   child: Text(value),
-                                ))
-                            .toList(),
-                        style: MyTextStyles.inputTextStyle,
-                        underline: SizedBox(),
-                        isExpanded: true,
+                                );
+                              }).toList(),
+                              style: MyTextStyles.inputTextStyle,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-
                 const SizedBox(height: 10),
-                // Aviso eliminado: no hay validación visible
+                if (!isStep1Valid())
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      'Completa todos los campos obligatorios.',
+                      style: TextStyle(color: Color(0xFF1A819A)),
+                    ),
+                  ),
               ],
             ),
           ),

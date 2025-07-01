@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
-import 'package:manitoscliente_new/controller/service_provider.dart';
-import 'package:manitoscliente_new/provider/userProvider.dart';
+import 'package:manitoscliente_new/provider/dataProvider.dart';
+import 'package:manitoscliente_new/provider/service_provider.dart';
+
 import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:provider/provider.dart';

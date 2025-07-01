@@ -8,7 +8,8 @@ import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:manitoscliente_new/provider/userProvider.dart';
+import 'package:manitoscliente_new/provider/dataProvider.dart';
+
 import 'package:manitoscliente_new/utils/deleteAccount.dart';
 import 'package:provider/provider.dart';
 
@@ -162,41 +163,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _signOut() async {
-  try {
-    // 1. Cerrar sesión en Firebase Auth
-    await FirebaseAuth.instance.signOut();
-
-    // 2. Eliminar el flag de login persistente
-    const secureStorage = FlutterSecureStorage();
-    await secureStorage.delete(key: 'isLoggedIn');
-
-    // 3. (Opcional) Limpiar cualquier provider si lo usas
-    if (mounted) {
-      Provider.of<UserDataProvider>(context, listen: false).clearUser();
-      // Puedes limpiar otros providers si lo necesitas
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => LoginScreen(
+                deviceId: '', onLoginSuccess: () {  },
+              )));
+    } catch (e) {
+      print('Error al cerrar sesión: $e');
     }
-
-    // 4. Reiniciar la navegación
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LoginScreen(
-            deviceId: "",
-            onLoginSuccess: () {
-              // Puedes refrescar el estado luego del nuevo login
-              _loadAndRefreshUserData();
-            },
-          ),
-        ),
-        (_) => false, // elimina todo el stack anterior
-      );
-    }
-  } catch (e) {
-    print('❌ Error al cerrar sesión: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -282,49 +258,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: customColor,
                 ),
               ),
-              
             ],
           ),
           const SizedBox(height: 20),
-          const SizedBox(height: 20),
-              ElevatedButton(
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        final authToken = await user.getIdToken();
-                        showDialog(
-                          context: context,
-                          builder: (_) => DeleteAccountByIdDialog(
-                            userId: user.uid,
-                            authToken: authToken!,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 3,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.delete_forever, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Eliminar Cuenta',
-                          style: MyTextStyles.buttonTextStyle.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
           Container(
             width: double.infinity,
             decoration: BoxDecoration(

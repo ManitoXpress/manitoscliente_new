@@ -2,18 +2,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:manitoscliente_new/controller/home_Provider.dart';
-import 'package:manitoscliente_new/provider/userProvider.dart';
+import 'package:manitoscliente_new/provider/dataProvider.dart';
+
 import '../request/resquest.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import '../Styles/stilo.dart';
-import '../controller/auth_utils.dart';
-import '../controller/home_screen_functions.dart';
-import '../request/ResponseGet.dart';
-import '../request/requestExpertise.dart';
-import '../request/requestServiceType.dart';
+
 import '../utils/status.dart';
 import 'Service_DetailsScreen.dart';
 // home_services_screen.dart

@@ -1,8 +1,9 @@
+// service_data_provider.dart
 import 'dart:io';
+import 'package:flutter/material.dart';
 
-import 'package:flutter/foundation.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
+import '../request/requestServiceType.dart';
+import '../request/resquest.dart';
 
 class ServiceDataProvider extends ChangeNotifier {
   String description = '';

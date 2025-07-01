@@ -18,6 +18,7 @@ import 'menu/UserProfile.dart';
 import 'menu/help.dart';
 import 'controller/RegisController.dart';
 import 'utils/fcmToken.dart';
+
 class HomeScreen extends StatefulWidget {
   final int initialPageIndex;
   final UserData userData;
@@ -40,7 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      FCMService().registerTokenForUser(widget.userData.userId);
+      try {
+        FCMService().registerTokenForUser(widget.userData.userId);
+      } catch (e) {
+        print('❌ Error registrando token FCM: $e');
+      }
     });
 
     _currentIndex =

@@ -41,7 +41,7 @@
 	<key>GMSApiKey</key>
 	<string>AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
+	<true/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>google</string>

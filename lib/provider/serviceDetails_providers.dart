@@ -1,28 +1,17 @@
-// lib/providers/service_details_provider.dart
+
 
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/models/comment_models.dart';
-import 'package:manitoscliente_new/models/service_requestModels.dart';
-import 'package:manitoscliente_new/models/worker_detailsModels.dart';
-import 'package:manitoscliente_new/constants/service_constants.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
 
-/// Provider que gestiona estado, lecturas y escrituras para un ServiceRequest.
-/// - Se suscribe a Firestore para actualizaciones en tiempo real.
-/// - Expone datos listos para la UI.
-/// - Maneja operaciones: aceptar propuesta, cancelar servicio, agregar comentario.
-// lib/providers/service_details_provider.dart
-/// Provider que maneja toda la lógica de Firestore para ServiceRequest:
-/// - Se suscribe a "services/{serviceId}".
-/// - Expone ServiceRequestModel y WorkerDetailsModel.
-/// - Maneja aceptar propuesta, cancelar servicio, agregar comentario, etc.
-// service_details_provider.dart
-
+import '../constants/service_constants.dart';
+import '../models/comment_models.dart';
+import '../models/service_requestModels.dart';
+import '../models/worker_detailsModels.dart';
+import '../request/ResponseGet.dart';
 
 class ServiceDetailsProvider extends ChangeNotifier {
   final String serviceId;
@@ -62,7 +51,7 @@ class ServiceDetailsProvider extends ChangeNotifier {
     // 1) Suscribirse al documento en Firestore
     final docRef = FirebaseFirestore.instance.collection('services').doc(serviceId);
     _serviceSub = docRef.snapshots().listen(
-      (docSnap) {
+          (docSnap) {
         if (!docSnap.exists) {
           _setError('El servicio no existe.');
           return;
@@ -170,61 +159,61 @@ class ServiceDetailsProvider extends ChangeNotifier {
   ///    - PATCH /services/{serviceId} vía API REST
   ///    - UPDATE solo en Firestore la oferta que coincida con serviceId + selectedWorkerId
   Future<void> acceptProposal(String selectedWorkerId) async {
-  if (_service == null) {
-    _setError('Servicio no cargado.');
-    return;
-  }
-
-  try {
-    // 1) Primero, PATCH al documento de servicio vía API
-    await apiService2.updateService(serviceId, {
-      'status': 'in_progress',
-      'hasOffer': false,
-      'workerId': selectedWorkerId,
-    });
-    print(
-      '✅ Servicio ($serviceId) actualizado a in_progress con workerId=$selectedWorkerId'
-    );
-
-    // 2) A continuación, buscamos TODAS las ofertas activas (hasOffer == true)
-    //    de este mismo serviceId:
-    final snapshotTodas = await FirebaseFirestore.instance
-        .collection('offers')
-        .where('serviceId', isEqualTo: serviceId)
-        .where('hasOffer', isEqualTo: true)
-        .get();
-
-    // 3) Recorremos cada documento: si coincide con el worker elegido, lo ponemos "in_progress";
-    //    si NO coincide, lo marcamos como "cancelled" (o simplemente hasOffer = false).
-    for (final doc in snapshotTodas.docs) {
-      final data = doc.data();
-      final workerDeEstaOferta = data['workerId'] as String;
-      final ref = doc.reference;
-
-      if (workerDeEstaOferta == selectedWorkerId) {
-        // 3.a) Esta es la oferta que aceptaste: la ponemos en progreso
-        await ref.update({
-          'status': ServiceStatus.inProgress,
-          'hasOffer': false,
-        });
-        print('✅ Oferta (${doc.id}) marcada como in_progress.');
-      } else {
-        // 3.b) Esta es cualquier otra oferta que NO elegimos: la cancelamos
-        await ref.update({
-          'status': ServiceStatus.cancelled,
-          'hasOffer': false,
-        });
-        print('— Oferta (${doc.id}) cancelada (no fue elegida).');
-      }
+    if (_service == null) {
+      _setError('Servicio no cargado.');
+      return;
     }
-  } catch (e) {
-    _setError('Error al aceptar propuesta: $e');
-  }
 
-  // 4) Por último, recalculamos ambas banderas para refrescar la UI:
-  await _computeHasOffer();
-  await _computeHasInProgressOffer();
-}
+    try {
+      // 1) Primero, PATCH al documento de servicio vía API
+      await apiService2.updateService(serviceId, {
+        'status': 'in_progress',
+        'hasOffer': false,
+        'workerId': selectedWorkerId,
+      });
+      print(
+          '✅ Servicio ($serviceId) actualizado a in_progress con workerId=$selectedWorkerId'
+      );
+
+      // 2) A continuación, buscamos TODAS las ofertas activas (hasOffer == true)
+      //    de este mismo serviceId:
+      final snapshotTodas = await FirebaseFirestore.instance
+          .collection('offers')
+          .where('serviceId', isEqualTo: serviceId)
+          .where('hasOffer', isEqualTo: true)
+          .get();
+
+      // 3) Recorremos cada documento: si coincide con el worker elegido, lo ponemos "in_progress";
+      //    si NO coincide, lo marcamos como "cancelled" (o simplemente hasOffer = false).
+      for (final doc in snapshotTodas.docs) {
+        final data = doc.data();
+        final workerDeEstaOferta = data['workerId'] as String;
+        final ref = doc.reference;
+
+        if (workerDeEstaOferta == selectedWorkerId) {
+          // 3.a) Esta es la oferta que aceptaste: la ponemos en progreso
+          await ref.update({
+            'status': ServiceStatus.inProgress,
+            'hasOffer': false,
+          });
+          print('✅ Oferta (${doc.id}) marcada como in_progress.');
+        } else {
+          // 3.b) Esta es cualquier otra oferta que NO elegimos: la cancelamos
+          await ref.update({
+            'status': ServiceStatus.cancelled,
+            'hasOffer': false,
+          });
+          print('— Oferta (${doc.id}) cancelada (no fue elegida).');
+        }
+      }
+    } catch (e) {
+      _setError('Error al aceptar propuesta: $e');
+    }
+
+    // 4) Por último, recalculamos ambas banderas para refrescar la UI:
+    await _computeHasOffer();
+    await _computeHasInProgressOffer();
+  }
 
   /// 2) Cancelar el servicio y sus ofertas:
   ///    - PATCH /services/{serviceId} vía API REST
@@ -313,7 +302,7 @@ class ServiceDetailsProvider extends ChangeNotifier {
 
       _comments.add(nuevoComentario);
       final commentsMapList =
-          _comments.map((c) => c.toMap()).toList(growable: false);
+      _comments.map((c) => c.toMap()).toList(growable: false);
 
       // Actualizar directamente el array “comments” en Firestore
       await FirebaseFirestore.instance
@@ -352,5 +341,5 @@ class ServiceDetailsProvider extends ChangeNotifier {
     _disposed = true;
     _serviceSub?.cancel();
     super.dispose();
-  }
+    }
 }

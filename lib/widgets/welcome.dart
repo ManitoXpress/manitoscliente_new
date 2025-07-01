@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/request/dataprofile.dart';
 
 import '../request/ResponseGet.dart';
 import '../Styles/stilo.dart';
 import '../controller/RegisController.dart';
+import '../request/dataprofile.dart';
 import '../utils/validation.dart';
 class FirstTimeLoginScreen extends StatelessWidget {
   final RegistrationController registrationController;

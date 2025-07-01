@@ -2,14 +2,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/provider/data_provider.dart';
-
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../Styles/stilo.dart';
+import '../provider/providerController.dart';
 import '../request/ResponsePost.dart';
 import '../request/requestServiceType.dart';
 import '../request/resquest.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:provider/provider.dart';
+
 class ServiceDataWizard extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final Function(File?) onImageSelected;
@@ -34,86 +41,416 @@ class ServiceDataWizard extends StatefulWidget {
   _ServiceDataWizardState createState() => _ServiceDataWizardState();
 }
 
-class _ServiceDataWizardState extends State<ServiceDataWizard> {
+class _ServiceDataWizardState extends State<ServiceDataWizard>
+    with TickerProviderStateMixin {
   TextEditingController detailController = TextEditingController();
   TextEditingController priceController = TextEditingController();
-  ApiService apiService = ApiService();
+  final ImagePicker _picker = ImagePicker();
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // Inicializa el Provider con los datos del serviceRequest
+    // Configurar animaciones
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<ServiceDataProvider>(context, listen: false);
-      provider.loadFromServiceRequest(widget.serviceRequest, widget.selectedServiceTitle);
+      provider.loadFromServiceRequest(
+          widget.serviceRequest, widget.selectedServiceTitle);
 
-      // Inicializa los controladores con los datos del provider
       detailController.text = provider.description;
       if (provider.offeredPrice != null) {
         priceController.text = provider.offeredPrice.toString();
       }
+
+      _animationController.forward();
     });
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose();
+    detailController.dispose();
+    priceController.dispose();
+    super.dispose();
+  }
+
+  Future<bool> _requestPermissions() async {
+    if (Platform.isIOS) {
+      // Verifica el estado actual
+      PermissionStatus cameraStatus = await Permission.camera.status;
+      PermissionStatus photosStatus = await Permission.photos.status;
+
+      // Si están denegados permanentemente, abre configuración
+      if (cameraStatus.isPermanentlyDenied ||
+          photosStatus.isPermanentlyDenied) {
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Permisos requeridos'),
+            content: Text(
+                'Debes habilitar los permisos de cámara y fotos en Configuración para poder adjuntar imágenes.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Cancelar'),
+              ),
+            ],
+          ),
+        );
+        return false;
+      }
+
+      // Si no están concedidos, solicítalos
+      if (!cameraStatus.isGranted)
+        cameraStatus = await Permission.camera.request();
+      if (!photosStatus.isGranted)
+        photosStatus = await Permission.photos.request();
+
+      return cameraStatus.isGranted && photosStatus.isGranted;
+    } else {
+      // Android
+      final statuses = await [
+        Permission.camera,
+        Permission.storage,
+      ].request();
+      return statuses.values.every((status) => status.isGranted);
+    }
+  }
+
   Future<void> _pickImage() async {
-    // Guarda el estado actual antes de abrir el selector de imágenes
+    // Verificar si el widget está montado
+    if (!mounted) return;
+
+    // Guardamos estado antes de abrir diálogo
     final currentState = {
       'description': detailController.text,
       'price': priceController.text,
     };
 
-    final ImagePicker _picker = ImagePicker();
+    try {
+      // Solicitamos permisos
+     
 
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            'Selecciona la fuente de la imagen',
-            style: MyTextStyles.linkTextStyle,
+      if (!mounted) return;
+
+      await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Selecciona la fuente de la imagen',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A819A),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildImageSourceButton(
+                        icon: Icons.photo_library,
+                        label: 'Galería',
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          await _selectImageFromGallery(currentState);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildImageSourceButton(
+                        icon: Icons.camera_alt,
+                        label: 'Cámara',
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          await _selectImageFromCamera(currentState);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  try {
-                    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                    _processImage(image);
-                  } catch (e) {
-                    print("Error al seleccionar imagen: $e");
-                    // Restaurar estado si hay error
-                    _restoreState(currentState);
-                  }
-                },
-                child: Text(
-                  'Seleccionar desde Galería',
-                  style: MyTextStyles.ButtonTextStyle,
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  try {
-                    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-                    _processImage(image);
-                  } catch (e) {
-                    print("Error al tomar foto: $e");
-                    // Restaurar estado si hay error
-                    _restoreState(currentState);
-                  }
-                },
-                child: Text(
-                  'Tomar Foto',
-                  style: MyTextStyles.ButtonTextStyle,
-                ),
-              ),
-            ],
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Error en _pickImage: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al abrir selector de imágenes: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            behavior: SnackBarBehavior.floating,
           ),
         );
-      },
+      }
+    }
+  }
+
+  Future<void> _selectImageFromGallery(Map<String, String> currentState) async {
+    try {
+      if (!mounted) return;
+
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (!mounted) return;
+
+      if (image != null) {
+        await _processImageSafely(image);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al seleccionar imagen de galería: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al seleccionar imagen: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _restoreState(currentState);
+      }
+    }
+  }
+
+  Future<void> _selectImageFromCamera(Map<String, String> currentState) async {
+    try {
+      if (!mounted) return;
+
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (!mounted) return;
+
+      if (image != null) {
+        await _processImageSafely(image);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al tomar foto: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al tomar foto: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _restoreState(currentState);
+      }
+    }
+  }
+
+  Future<void> _processImageSafely(XFile image) async {
+    try {
+      if (!mounted) return;
+
+      // Verificar que el archivo existe
+      final File imageFile = File(image.path);
+      if (!await imageFile.exists()) {
+        throw Exception('El archivo de imagen no existe');
+      }
+
+      // Verificar el tamaño del archivo (máximo 10MB)
+      final int fileSize = await imageFile.length();
+      if (fileSize > 10 * 1024 * 1024) {
+        // 10MB
+        throw Exception('La imagen es demasiado grande. Máximo 10MB');
+      }
+
+      // Verificar que el provider está disponible
+      if (!mounted) return;
+      final provider = Provider.of<ServiceDataProvider>(context, listen: false);
+
+      // Verificar si hay espacio disponible
+      bool spaceFound = false;
+      for (int i = 0; i < provider.images.length; i++) {
+        if (provider.images[i] == null) {
+          spaceFound = true;
+          break;
+        }
+      }
+
+      if (!spaceFound) {
+        throw Exception('Ya has alcanzado el límite de imágenes');
+      }
+
+      // Procesar la imagen
+      _processImage(image);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Imagen agregada correctamente',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF4CAF50),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al procesar imagen: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al procesar imagen: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _processImage(XFile? image) {
+    if (image == null || !mounted) return;
+
+    try {
+      final provider = Provider.of<ServiceDataProvider>(context, listen: false);
+      final File imageFile = File(image.path);
+
+      // Buscar espacio disponible
+      for (int i = 0; i < provider.images.length; i++) {
+        if (provider.images[i] == null) {
+          provider.updateImage(i, imageFile);
+          provider.updateServiceRequest(widget.serviceRequest);
+          widget.onImageSelected(imageFile);
+          break;
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error en _processImage: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al agregar imagen: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildImageSourceButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1A819A).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.white, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -126,180 +463,592 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
     }
   }
 
-  void _processImage(XFile? image) {
-    if (image != null) {
+  Future<void> _showImagePreview(int index) async {
+    try {
+      if (!mounted) return;
+
       final provider = Provider.of<ServiceDataProvider>(context, listen: false);
-      final File imageFile = File(image.path);
+      if (provider.images[index] == null) return;
 
-      // Encuentra el primer espacio disponible
-      for (int i = 0; i < provider.images.length; i++) {
-        if (provider.images[i] == null) {
-          provider.updateImage(i, imageFile);
+      // Verificar que el archivo existe
+      final File imageFile = provider.images[index]!;
+      if (!await imageFile.exists()) {
+        throw Exception('La imagen ya no existe en el dispositivo');
+      }
 
-          // Actualiza el ServiceRequest con los nuevos datos
-          provider.updateServiceRequest(widget.serviceRequest);
+      if (!mounted) return;
 
-          // Llama a la función onImageSelected si es necesario
-          widget.onImageSelected(imageFile);
+      await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    imageFile,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Error al cargar imagen',
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Precio Ofrecido: \$${provider.offeredPrice?.toStringAsFixed(2) ?? "No definido"}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A819A),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      try {
+                        provider.removeImage(index);
+                        provider.updateServiceRequest(widget.serviceRequest);
+                        Navigator.of(context).pop();
 
-          break;
-        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.delete, color: Colors.white),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'Imagen eliminada',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: const Color(0xFFF44336),
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('Error al eliminar imagen: $e');
+                        Navigator.of(context).pop();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Error al eliminar imagen: $e',
+                                style: GoogleFonts.poppins(),
+                              ),
+                              backgroundColor: const Color(0xFFF44336),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    label: Text(
+                      "Eliminar imagen",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF44336),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Error en _showImagePreview: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al mostrar imagen: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFF44336),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
 
-  Future<void> _showImagePreview(int index) async {
-    final provider = Provider.of<ServiceDataProvider>(context, listen: false);
-    if (provider.images[index] == null) return;
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.file(provider.images[index]!),
-              SizedBox(height: 10),
-              Text(
-                'Precio Ofrecido: ${provider.offeredPrice?.toStringAsFixed(2) ?? "No definido"}',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  provider.removeImage(index);
-                  provider.updateServiceRequest(widget.serviceRequest);
-                  Navigator.pop(context);
-                },
-                child: Text("Eliminar imagen"),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer<ServiceDataProvider>(
-      builder: (context, provider, child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              provider.selectedServiceTitle,
-              style: MyTextStyles.formServiceTextStyle,
-            ),
-            const SizedBox(height: 0.5),
-
-            Center(
-              child: Image.asset(
-                'assets/animations/manito.png',
-                width: 160,
-                height: 160,
-              ),
-            ),
-            const SizedBox(height: 2.0),
-
-            Text(
-              "Escribe tu problema",
-              style: MyTextStyles.formServiceTextStyle2,
-            ),
-            const SizedBox(height: 2.0),
-
-            TextFormField(
-              controller: detailController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Detalles del servicio',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20.0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: const Color(0xFF9E9E9E)),
-                  borderRadius: BorderRadius.circular(20.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF9E9E9E)),
-                  borderRadius: BorderRadius.circular(20.0),
-                ),
-                labelStyle: TextStyle(color: Colors.grey),
-                floatingLabelStyle: TextStyle(color: Color(0xFF9E9E9E)),
-              ),
-              onChanged: (value) {
-                provider.updateDescription(value);
-                provider.updateServiceRequest(widget.serviceRequest);
-              },
-            ),
-            const SizedBox(height: 4.0),
-
-            Text(
-              "Carga una foto de tu problema",
-              style: MyTextStyles.formServiceTextStyle2,
-            ),
-            const SizedBox(height: 4.0),
-
-            GestureDetector(
-              onTap: () => _pickImage(),
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(0xA3C9D2D2)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Stack(
-                  children: [
-                    if (provider.images.every((image) => image == null))
-                      Center(
-                        child: Icon(
-                          Icons.cloud_upload,
-                          size: 48,
-                          color: Color(0xA3C9D2D2),
-                        ),
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: Consumer<ServiceDataProvider>(
+          builder: (context, provider, child) => SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header con título y descripción
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1A819A).withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
                       ),
-                    ...provider.images.asMap().entries.map((entry) {
-                      int idx = entry.key;
-                      File? imageFile = entry.value;
-                      double imageWidth = 200 / widget.maxImageCount;
-                      return Positioned(
-                        left: imageWidth * idx,
-                        child: GestureDetector(
-                          onTap: () {
-                            if (imageFile != null) {
-                              _showImagePreview(idx);
-                            }
-                          },
-                          child: imageFile != null
-                              ? Image.file(
-                            imageFile,
-                            width: imageWidth,
-                            height: 200,
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(40),
+                          child: Image.asset(
+                            'assets/animations/manito.png',
+                            width: 80,
+                            height: 80,
                             fit: BoxFit.cover,
-                          )
-                              : Container(
-                            width: imageWidth,
-                            height: 200,
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        provider.selectedServiceTitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Describe tu problema y adjunta imágenes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 4.0),
-          ],
-        );
-      },
-    );
-  }
 
-  @override
-  void dispose() {
-    detailController.dispose();
-    priceController.dispose();
-    super.dispose();
+                const SizedBox(height: 32),
+
+                // Campo de descripción
+                Text(
+                  "Describe tu problema",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A819A),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextFormField(
+                    controller: detailController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      hintText: 'Explica detalladamente qué necesitas...',
+                      hintStyle: GoogleFonts.poppins(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[800],
+                    ),
+                    onChanged: (value) {
+                      provider.updateDescription(value);
+                      provider.updateServiceRequest(widget.serviceRequest);
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Sección de imágenes
+                Text(
+                  "Adjunta fotos de tu problema",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A819A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Puedes agregar hasta ${widget.maxImageCount} imágenes",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Contenedor de imágenes
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey[300]!,
+                      width: 2,
+                      style: BorderStyle.solid,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      if (provider.images.every((image) => image == null))
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xFF1A819A).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: const Icon(
+                                  Icons.cloud_upload,
+                                  size: 30,
+                                  color: Color(0xFF1A819A),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Toca para agregar imágenes',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: const Color(0xFF1A819A),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ...provider.images.asMap().entries.map((entry) {
+                        int idx = entry.key;
+                        File? imageFile = entry.value;
+                        double imageWidth = 200 / widget.maxImageCount;
+                        return Positioned(
+                          left: imageWidth * idx,
+                          child: GestureDetector(
+                            onTap: () {
+                              if (imageFile != null) {
+                                _showImagePreview(idx);
+                              } else {
+                                _pickImage();
+                              }
+                            },
+                            child: Container(
+                              width: imageWidth,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey[300]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: imageFile != null
+                                  ? Stack(
+                                      children: [
+                                        Image.file(
+                                          imageFile,
+                                          width: imageWidth,
+                                          height: 200,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            debugPrint(
+                                                'Error al cargar imagen $idx: $error');
+                                            return Container(
+                                              width: imageWidth,
+                                              height: 200,
+                                              color: Colors.grey[200],
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.broken_image,
+                                                    size: 24,
+                                                    color: Colors.grey[400],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Error',
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.grey[600],
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                          frameBuilder: (context, child, frame,
+                                              wasSynchronouslyLoaded) {
+                                            if (wasSynchronouslyLoaded)
+                                              return child;
+                                            return AnimatedOpacity(
+                                              opacity: frame == null ? 0 : 1,
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              child: child,
+                                            );
+                                          },
+                                        ),
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.black.withOpacity(0.6),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: const Icon(
+                                              Icons.remove_red_eye,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        ),
+                                        // Botón de eliminar
+                                        Positioned(
+                                          top: 4,
+                                          left: 4,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              try {
+                                                provider.removeImage(idx);
+                                                provider.updateServiceRequest(
+                                                    widget.serviceRequest);
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                      content: Row(
+                                                        children: [
+                                                          const Icon(
+                                                              Icons.delete,
+                                                              color:
+                                                                  Colors.white),
+                                                          const SizedBox(
+                                                              width: 12),
+                                                          const Expanded(
+                                                            child: Text(
+                                                              'Imagen eliminada',
+                                                              style: TextStyle(
+                                                                  fontSize: 14),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xFFF44336),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      duration: const Duration(
+                                                          seconds: 2),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                debugPrint(
+                                                    'Error al eliminar imagen: $e');
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Error al eliminar imagen: $e',
+                                                        style: GoogleFonts
+                                                            .poppins(),
+                                                      ),
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xFFF44336),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFF44336),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: const Icon(
+                                                Icons.close,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Container(
+                                      color: Colors.grey[100],
+                                      child: const Icon(
+                                        Icons.add_photo_alternate,
+                                        color: Color(0xFF1A819A),
+                                        size: 32,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Información adicional
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A819A).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF1A819A).withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: const Color(0xFF1A819A),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Las imágenes ayudan a los profesionales a entender mejor tu problema y ofrecer una solución más precisa.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: const Color(0xFF1A819A),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
