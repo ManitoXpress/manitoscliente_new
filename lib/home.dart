@@ -19,6 +19,8 @@ import 'menu/help.dart';
 import 'controller/RegisController.dart';
 import 'utils/fcmToken.dart';
 
+final GlobalKey<_HomeScreenState> homeScreenKey = GlobalKey<_HomeScreenState>();
+
 class HomeScreen extends StatefulWidget {
   final int initialPageIndex;
   final UserData userData;
@@ -26,15 +28,15 @@ class HomeScreen extends StatefulWidget {
   HomeScreen({
     this.initialPageIndex = 0,
     required this.userData,
-    // ← lo hacemos requerido
-  });
+    Key? key,
+  }) : super(key: key ?? homeScreenKey);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late int _currentIndex;
+  int _currentIndex = 0;
   late PageController _pageController;
   late final UserData userData;
   @override
@@ -333,5 +335,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _refreshHistorial() {
     // Aquí puedes actualizar el historial desde tu backend
+  }
+
+  void goToHistorialTab() {
+    setState(() {
+      _currentIndex = 2;
+    });
+    _pageController.jumpToPage(2);
   }
 }

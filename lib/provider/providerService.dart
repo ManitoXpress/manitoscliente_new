@@ -16,6 +16,7 @@ import '../utils/serviceCancelled.dart';
 import '../utils/serviceComplete.dart';
 import '../utils/serviceFetcher.dart';
 import '../utils/serviceInProgress.dart';
+
 class HistorialProvider extends ChangeNotifier {
   // Repositorios
   final ServiceRepository _repoAvailable;

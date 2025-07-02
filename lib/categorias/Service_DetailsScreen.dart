@@ -73,7 +73,6 @@ class _ServiceFormPageState extends State<ServiceFormPage>
   TimeOfDay? pickedTime;
 
   String? token;
-  String? fcmToken;
   bool isSubmitting = false;
 
   /// Flag to indicate whether we have finished all of the async initialization.
@@ -172,15 +171,11 @@ class _ServiceFormPageState extends State<ServiceFormPage>
 
   Future<void> _loadAsyncData() async {
     try {
-      // Load the "token" and FCM token:
+      // Solo obtener el token, no el fcmToken
       final t = await AuthUtils.getToken();
-      final fcm = await FirebaseMessaging.instance.getToken();
-
-      // Store them into state:
       if (mounted) {
         setState(() {
           token = t;
-          fcmToken = fcm;
         });
       }
     } catch (e) {
@@ -308,7 +303,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
       final devicesId = await AuthUtils.getDeviceId();
       final authToken = await AuthUtils.getToken();
 
-      // Enviar datos al backend
+      // Enviar datos al backend (elimina fcmToken del envío)
       final response = await ApiService().sendDataToBackend(
         widget.serviceRequest,
         authToken!,
@@ -320,9 +315,9 @@ class _ServiceFormPageState extends State<ServiceFormPage>
         widget.expertiseName,
         imageUrls,
         devicesId,
-        fcmToken,
-        dateOnly,
-        timeOnly,
+        null, // fcmToken eliminado, se pasa null
+        DateFormat('yyyy-MM-dd').format(pickedDate!),
+        pickedTime!.format(context),
       );
 
       Navigator.of(context).pop(); // Cerrar diálogo de progreso
@@ -403,16 +398,10 @@ class _ServiceFormPageState extends State<ServiceFormPage>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => HomeScreen(
-                        initialPageIndex: 2,
-                        userData: userData,
-                      ),
-                    ),
-                    (_) => false,
-                  ),
+                  onPressed: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    homeScreenKey.currentState?.goToHistorialTab();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A819A),
                     foregroundColor: Colors.white,
@@ -439,8 +428,85 @@ class _ServiceFormPageState extends State<ServiceFormPage>
   }
 
   void _showError(String msg) {
-    // No hacer nada, no mostrar ninguna alerta de error
-    return;
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF44336),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFF44336),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                msg,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A819A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Cerrar',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildStepIndicator() {

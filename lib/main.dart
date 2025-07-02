@@ -30,6 +30,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'provider/providerService.dart';
+
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
@@ -87,6 +90,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ProfessionalServicesProvider()),
         ChangeNotifierProvider(create: (_) => WorkerProvider()),
         ChangeNotifierProvider(create: (_) => UserDataProvider()),
+        ChangeNotifierProvider(create: (_) => HistorialProvider()),
       ],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),
@@ -130,9 +134,7 @@ Future<String> obtenerDeviceId() async {
 
 class MyApp extends StatefulWidget {
   final String deviceId;
-
   const MyApp({required this.deviceId});
-
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -147,14 +149,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    // Inicializar userData con valores vacíos
     userData = UserData.empty();
     registrationData = userData.registrationData;
-
-    // Espera al primer render para no bloquear la UI:
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
+      requestNotificationPermissions();
       _checkLoginStatus();
     });
   }
@@ -162,7 +160,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
-
     if (loggedIn) {
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -170,27 +167,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           userData = await fetchUserData(user.uid);
           registrationData = userData.registrationData;
         } catch (e) {
-          print('Error obteniendo datos del usuario: $e');
-          // Si hay error, crear un UserData vacío pero válido
           userData = UserData.empty();
           registrationData = userData.registrationData;
         }
       } else {
-        // Si no hay usuario de Firebase pero está marcado como logueado, limpiar el estado
         loggedIn = false;
         await prefs.setBool('isLoggedIn', false);
         userData = UserData.empty();
         registrationData = userData.registrationData;
       }
     } else {
-      // Si no está logueado, inicializar con valores vacíos
       userData = UserData.empty();
       registrationData = userData.registrationData;
     }
-
-    // Simula tiempo de carga si es necesario
-    await Future.delayed(const Duration(seconds: 5));
-
+    await Future.delayed(const Duration(seconds: 1));
     setState(() {
       isLoggedIn = loggedIn;
       isLoading = false;
@@ -206,15 +196,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      print('App is in foreground');
-    } else if (state == AppLifecycleState.paused) {
-      print('App is in background');
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Solo un MaterialApp en la raíz
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Manitos Xpress',
@@ -248,6 +234,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           : isLoggedIn
               ? HomeScreen(
                   userData: userData,
+                  key: homeScreenKey,
                 )
               : LoginScreen(
                   deviceId: widget.deviceId,
