@@ -2,12 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
+import 'package:manitoscliente_new/controller/auth_utils.dart';
 import 'package:manitoscliente_new/provider/dataProvider.dart';
 import 'package:manitoscliente_new/provider/service_provider.dart';
 
 import 'package:manitoscliente_new/request/resquest.dart';
 import 'package:manitoscliente_new/utils/status.dart';
 import 'package:provider/provider.dart';
+
+final Map<String, IconData> serviceIcons = {
+  'cocina y catering': Icons.restaurant_menu,
+  'arquitectura y diseño': Icons.architecture,
+  'carpintería': Icons.handyman,
+  'mudanza': Icons.local_shipping,
+  'vidriero': Icons.window,
+  'canaletas': Icons.water_damage,
+  // ... puedes agregar más
+};
+
+IconData _iconForService(String name) {
+  return serviceIcons.entries
+      .firstWhere((e) => name.toLowerCase().contains(e.key), orElse: () => MapEntry('', Icons.work_outline))
+      .value;
+}
+
 class ProfessionalServicesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -139,40 +157,177 @@ class _ServiceGrid extends StatelessWidget {
           itemBuilder: (_, i) {
             final svc = prov.displayedServices[i];
             return GestureDetector(
-              onTap: () => prov.selectIndex(i),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1A819A).withOpacity(0.15),
-                      spreadRadius: 0.5,
-                      blurRadius: 2,
-                      offset: const Offset(0, 3),
-                    )
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              onTap: () {
+                // Verificar si el servicio está bloqueado
+                if (prov.isServiceBlocked(svc)) {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.info_outline, color: Color(0xFF20819A)),
+                            SizedBox(height: 8),
+                            Text(
+                              'Servicio no disponible',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        content: Text(
+                          'Este servicio estará disponible muy pronto. ¡Gracias por tu paciencia!',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'Entendido',
+                              style: TextStyle(
+                                color: Color(0xFF20819A),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      );
+                    },
+                  );
+                } else {
+                  prov.selectIndex(i);
+                }
+              },
+              child: SizedBox(
+                height: 170,
+                width: double.infinity,
+                child: Stack(
                   children: [
-                    CachedNetworkImage(
-                      imageUrl: svc.image,
-                      height: 80,
-                      width: 80,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => const CircularProgressIndicator(),
-                      errorWidget: (_, __, ___) => const Icon(Icons.error),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1A819A).withOpacity(0.15),
+                            spreadRadius: 0.5,
+                            blurRadius: 2,
+                            offset: const Offset(0, 3),
+                          )
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: CachedNetworkImage(
+                                imageUrl: svc.image,
+                                height: 70,
+                                width: 70,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => const CircularProgressIndicator(),
+                                errorWidget: (_, __, ___) => const Icon(Icons.error),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            svc.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: prov.isServiceBlocked(svc)
+                                ? MyTextStyles.drawerButtonTextStyle1.copyWith(color: Colors.white.withOpacity(0.5))
+                                : MyTextStyles.drawerButtonTextStyle1,
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      svc.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: MyTextStyles.drawerButtonTextStyle1,
-                    ),
+                    // Overlay para servicios bloqueados
+                    if (prov.isServiceBlocked(svc))
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900]?.withOpacity(0.92),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Center(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final maxHeight = constraints.maxHeight;
+                                final iconSize = maxHeight * 0.18 > 40 ? 40.0 : maxHeight * 0.18;
+                                final profIconSize = maxHeight * 0.16 > 38 ? 38.0 : maxHeight * 0.16;
+                                return SingleChildScrollView(
+                                  physics: const BouncingScrollPhysics(),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: 0,
+                                      maxHeight: maxHeight,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        TweenAnimationBuilder<double>(
+                                          tween: Tween(begin: 1.0, end: 1.15),
+                                          duration: const Duration(seconds: 1),
+                                          curve: Curves.easeInOut,
+                                          builder: (context, scale, child) {
+                                            return Transform.scale(
+                                              scale: scale,
+                                              child: Icon(Icons.lock_outline, color: Colors.white, size: iconSize),
+                                            );
+                                          },
+                                          onEnd: () {},
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Próximamente',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: maxHeight * 0.09 > 17 ? 17 : maxHeight * 0.09,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.1,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        Icon(
+                                          _iconForService(svc.name),
+                                          color: Colors.white,
+                                          size: profIconSize,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          svc.name,
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.95),
+                                            fontSize: maxHeight * 0.08 > 15 ? 15 : maxHeight * 0.08,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -246,7 +401,7 @@ class _DetailsPanel extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // 4.a) Creamos un ServiceRequest base para enviar al formulario
                     final status = StatusUtils.getStatusById('');
                     final req = ServiceRequest(
@@ -273,6 +428,7 @@ class _DetailsPanel extends StatelessWidget {
                     );
 
                     // 4.b) Navegamos a ServiceFormPage, pasándole userData
+                    String? token = await AuthUtils.getToken();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -283,7 +439,7 @@ class _DetailsPanel extends StatelessWidget {
                           selectedDate: DateTime.now(),
                           selectedTime: type.selectedTime ?? '',
                           selectedServiceTitle: type.name,
-                          token: '', // ← si tienes un token válido, pásalo aquí
+                          token: token ?? '', // ← ahora pasamos el token real
                           categoryId: svc.parentId!,
                           expertiseId: svc.id,
                           expertiseName: svc.name,

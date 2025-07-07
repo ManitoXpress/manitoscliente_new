@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../request/ResponseGet.dart';
 import '../controller/auth_utils.dart';
 
+
 class HomeServicesProvider extends ChangeNotifier {
   final ApiService2 _api = ApiService2();
   Timer? _refreshTimer;
@@ -23,6 +24,18 @@ class HomeServicesProvider extends ChangeNotifier {
   bool _isSearching = false;
   String? _currentParentId;
 
+  // --- NUEVO: Lista de servicios bloqueados ---
+  static const List<String> _blockedServices = [
+    // Hogar
+    'canaletas',
+    'carpintería',
+    'mudanza',
+    'vidriero',
+    // Profesionales
+    'arquitectura y diseño',
+    'cocina y catering',
+  ];
+
   // --- Getters ---
   List<ServiceResponse> get displayedServices => _displayedServices;
   bool get isLoading => _isLoading;
@@ -32,6 +45,16 @@ class HomeServicesProvider extends ChangeNotifier {
   ServiceResponse? get selectedService =>
       hasSelection ? _displayedServices[_selectedIndex] : null;
   bool get isSearching => _isSearching;
+
+  /// Verifica si un servicio está bloqueado
+  bool isServiceBlocked(ServiceResponse service) {
+    final serviceName = service.name.toLowerCase();
+    return _blockedServices.any((blocked) => 
+        serviceName.contains(blocked.toLowerCase()));
+  }
+
+  /// Obtiene la lista de servicios bloqueados
+  List<String> get blockedServices => List.unmodifiable(_blockedServices);
 
   /// Carga servicios optimizada con múltiples estrategias
   Future<void> loadServices({required String parentId}) async {

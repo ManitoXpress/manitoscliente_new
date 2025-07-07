@@ -18,8 +18,6 @@ class Offer {
   List<Expertise> expertises;
   final String subcategoryName;
   WorkerDetails? workerDetails;
-  
-  
 
   Offer({
     required this.id,
@@ -49,7 +47,8 @@ class Offer {
       'status': status.toMap(),
       'hasOffer': hasOffer,
       'userToken': userToken,
-      'createdAt': createdAt.toIso8601String(),  // Usar toIso8601String para formato de fecha
+      'createdAt': createdAt
+          .toIso8601String(), // Usar toIso8601String para formato de fecha
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'subcategoryName': subcategoryName,
       'workerDetails': workerDetails?.toMap(),
@@ -80,12 +79,10 @@ class Offer {
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
           : null,
-      
-      
-      
     );
   }
 }
+
 class ServiceRequest {
   final DateTime createdAt;
   String serviceDateTime;
@@ -159,7 +156,8 @@ class ServiceRequest {
       subcategoryName: '',
       hasOffer: false,
       offers: [],
-      workerDetails: null, createdAt: DateTime.now(),
+      workerDetails: null,
+      createdAt: DateTime.now(),
     );
   }
 
@@ -195,6 +193,15 @@ class ServiceRequest {
   }
 
   factory ServiceRequest.fromSnapshot(Map<String, dynamic> map) {
+    // Compatibilidad: usar selectedDate/selectedTime si existen, si no usar date/time
+    String? selectedDate = map['selectedDate'];
+    String? selectedTime = map['selectedTime'];
+    if ((selectedDate == null || selectedDate.isEmpty) && map['date'] != null) {
+      selectedDate = map['date'];
+    }
+    if ((selectedTime == null || selectedTime.isEmpty) && map['time'] != null) {
+      selectedTime = map['time'];
+    }
     return ServiceRequest(
       serviceDateTime: map['serviceDateTime'] ?? '',
       id: map['serviceId'] ?? '',
@@ -207,8 +214,8 @@ class ServiceRequest {
       userId: map['userId'] ?? '',
       workerId: map['workerId'] ?? '',
       isFavorite: map['isFavorite'] ?? false,
-      selectedDate: map['selectedDate'],
-      selectedTime: map['selectedTime'],
+      selectedDate: selectedDate,
+      selectedTime: selectedTime,
       acceptedTerms: map['acceptedTerms'] ?? false,
       expertises: map['expertises'] != null
           ? List<Expertise>.from(
@@ -226,7 +233,7 @@ class ServiceRequest {
           : [],
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
-          : null, 
+          : null,
       createdAt: _parseDateTime(map['createdAt'] ?? DateTime.now().toString()),
     );
   }
@@ -247,6 +254,7 @@ class ServiceRequest {
     }
     return 0.0;
   }
+
   static DateTime _parseDateTime(dynamic value) {
     if (value is DateTime) return value;
     if (value is String) {

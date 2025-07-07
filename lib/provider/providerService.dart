@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:manitoscliente_new/constants/service_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 import '../controller/serviceFetcher.dart';
 import '../request/ResponseGet.dart';
@@ -36,9 +38,9 @@ class HistorialProvider extends ChangeNotifier {
 
   HistorialProvider()
       : _repoAvailable = ServiceRepository(
-    apiService: ApiService(),
-    firestore: FirebaseFirestore.instance,
-  ),
+          apiService: ApiService(),
+          firestore: FirebaseFirestore.instance,
+        ),
         _repoOffer = OfferRepository(
           apiService2: ApiService2(),
           serviceDataFetcher: ServiceDataFetcher(),
@@ -79,9 +81,11 @@ class HistorialProvider extends ChangeNotifier {
   int get inProgressCount {
     final count = list('in_progress').length;
     print('🔍 Debug - inProgressCount: $count');
-    print('🔍 Debug - Lista in_progress: ${list('in_progress').map((s) => '${s.id}(${s.status.id})').join(', ')}');
+    print(
+        '🔍 Debug - Lista in_progress: ${list('in_progress').map((s) => '${s.id}(${s.status.id})').join(', ')}');
     return count;
   }
+
   int get completedCount => list('completed').length;
   int get cancelledCount => list('cancelled').length;
 
@@ -93,11 +97,11 @@ class HistorialProvider extends ChangeNotifier {
   }) async {
     print('🔍 Debug - loadAll iniciado para userId: $userId');
     _currentUserId = userId;
-    
+
     // 1. Cargar desde caché local inmediatamente
     print('🔍 Debug - Cargando desde caché...');
     await _loadFromCache(userId);
-    
+
     // 2. Si no hay datos en caché o están muy viejos, cargar desde servidor
     if (_shouldRefreshFromServer(userId)) {
       print('🔍 Debug - Refrescando desde servidor...');
@@ -105,10 +109,10 @@ class HistorialProvider extends ChangeNotifier {
     } else {
       print('🔍 Debug - Usando datos del caché');
     }
-    
+
     // 3. Configurar actualización automática
     _setupAutoRefresh(userId, token, deviceId);
-    
+
     print('🔍 Debug - loadAll completado');
   }
 
@@ -119,7 +123,7 @@ class HistorialProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final cacheKey = 'historial_cache_$userId';
       final tsKey = 'historial_timestamp_$userId';
-      
+
       final cachedJson = prefs.getString(cacheKey);
       final ts = prefs.getInt(tsKey) ?? 0;
       final nowMs = DateTime.now().millisecondsSinceEpoch;
@@ -133,19 +137,21 @@ class HistorialProvider extends ChangeNotifier {
       if (cachedJson != null && nowMs - ts < 900000) {
         print('🔍 Debug - Usando caché válido');
         final Map<String, dynamic> decoded = jsonDecode(cachedJson);
-        
+
         for (final entry in decoded.entries) {
           final status = entry.key;
           final servicesJson = entry.value as List<dynamic>;
-          
+
           _byStatus[status] = servicesJson
-              .map((s) => ServiceRequest.fromSnapshot(s as Map<String, dynamic>))
+              .map(
+                  (s) => ServiceRequest.fromSnapshot(s as Map<String, dynamic>))
               .toList();
           _lastUpdate[status] = DateTime.fromMillisecondsSinceEpoch(ts);
-          
-          print('🔍 Debug - Caché cargado para $status: ${_byStatus[status]?.length ?? 0} elementos');
+
+          print(
+              '🔍 Debug - Caché cargado para $status: ${_byStatus[status]?.length ?? 0} elementos');
         }
-        
+
         notifyListeners();
       } else {
         print('🔍 Debug - Caché no válido o no encontrado');
@@ -160,12 +166,12 @@ class HistorialProvider extends ChangeNotifier {
   bool _shouldRefreshFromServer(String userId) {
     print('🔍 Debug - _shouldRefreshFromServer evaluando...');
     print('🔍 Debug - _byStatus.isEmpty: ${_byStatus.isEmpty}');
-    
+
     if (_byStatus.isEmpty) {
       print('🔍 Debug - Debe refrescar: _byStatus está vacío');
       return true;
     }
-    
+
     final now = DateTime.now();
     for (final lastUpdate in _lastUpdate.values) {
       final difference = now.difference(lastUpdate).inMinutes;
@@ -175,15 +181,15 @@ class HistorialProvider extends ChangeNotifier {
         return true;
       }
     }
-    
+
     print('🔍 Debug - No debe refrescar: datos recientes');
     return false;
   }
 
   /// Carga desde servidor
-  Future<void> _loadFromServer(String userId, String token, String deviceId) async {
+  Future<void> _loadFromServer(
+      String userId, String token, String deviceId) async {
     if (isRefreshing) return;
-    
     isRefreshing = true;
     notifyListeners();
 
@@ -204,11 +210,15 @@ class HistorialProvider extends ChangeNotifier {
       _byStatus['cancelled'] = _ordenarPorFecha(results[4]);
 
       print('🔍 Debug - _loadFromServer - Servicios guardados:');
-      print('🔍 Debug - available: ${_byStatus['available']?.length ?? 0}');
-      print('🔍 Debug - offer: ${_byStatus['offer']?.length ?? 0}');
-      print('🔍 Debug - in_progress: ${_byStatus['in_progress']?.length ?? 0}');
-      print('🔍 Debug - completed: ${_byStatus['completed']?.length ?? 0}');
-      print('🔍 Debug - cancelled: ${_byStatus['cancelled']?.length ?? 0}');
+      print(
+          '🔍 Debug - available:  [32m${_byStatus['available']?.length ?? 0} [0m');
+      print('🔍 Debug - offer:  [32m${_byStatus['offer']?.length ?? 0} [0m');
+      print(
+          '🔍 Debug - in_progress:  [32m${_byStatus['in_progress']?.length ?? 0} [0m');
+      print(
+          '🔍 Debug - completed:  [32m${_byStatus['completed']?.length ?? 0} [0m');
+      print(
+          '🔍 Debug - cancelled:  [32m${_byStatus['cancelled']?.length ?? 0} [0m');
 
       // Actualizar timestamps
       final now = DateTime.now();
@@ -218,7 +228,6 @@ class HistorialProvider extends ChangeNotifier {
 
       // Guardar en caché
       await _saveToCache(userId);
-      
       errorMessage = null;
     } catch (e) {
       errorMessage = 'Error cargando historial: $e';
@@ -230,12 +239,14 @@ class HistorialProvider extends ChangeNotifier {
   }
 
   /// Carga servicios disponibles
-  Future<List<ServiceRequest>> _loadAvailableServices(String userId, String token) async {
+  Future<List<ServiceRequest>> _loadAvailableServices(
+      String userId, String token) async {
     try {
       print('🔍 Debug - _loadAvailableServices iniciado para userId: $userId');
-      final result = await _repoAvailable.fetchServicesByStatus(
-        'available', 'status', userId, token, []);
-      print('🔍 Debug - _loadAvailableServices completado: ${result.length} elementos');
+      final result = await _repoAvailable
+          .fetchServicesByStatus('available', 'status', userId, token, []);
+      print(
+          '🔍 Debug - _loadAvailableServices completado: ${result.length} elementos');
       return result;
     } catch (e) {
       print('🔍 Debug - Error en _loadAvailableServices: $e');
@@ -244,8 +255,16 @@ class HistorialProvider extends ChangeNotifier {
     }
   }
 
+  void iniciarTemporizadorCancelacion(String userId, String token) {
+    Timer.periodic(const Duration(minutes: 1), (_) async {
+      final servicios = await _loadAvailableServices(userId, token);
+      await _cancelarServiciosVencidos(servicios);
+    });
+  }
+
   /// Carga servicios ofertados
-  Future<List<ServiceRequest>> _loadOfferServices(String userId, String token, String deviceId) async {
+  Future<List<ServiceRequest>> _loadOfferServices(
+      String userId, String token, String deviceId) async {
     try {
       print('🔍 Debug - _loadOfferServices iniciado para userId: $userId');
       final result = await _repoOffer.fetchOffersForUser(
@@ -259,7 +278,8 @@ class HistorialProvider extends ChangeNotifier {
           images: [],
           location: {},
           offeredPrice: 0.0,
-          serviceType: ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
+          serviceType:
+              ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
           userId: userId,
           workerId: '',
           isFavorite: false,
@@ -276,7 +296,8 @@ class HistorialProvider extends ChangeNotifier {
         ),
         deviceId,
       );
-      print('🔍 Debug - _loadOfferServices completado: ${result.length} elementos');
+      print(
+          '🔍 Debug - _loadOfferServices completado: ${result.length} elementos');
       return result;
     } catch (e) {
       print('🔍 Debug - Error en _loadOfferServices: $e');
@@ -286,20 +307,25 @@ class HistorialProvider extends ChangeNotifier {
   }
 
   /// Carga servicios en progreso
-  Future<List<ServiceRequest>> _loadInProgressServices(String userId, String token) async {
+  Future<List<ServiceRequest>> _loadInProgressServices(
+      String userId, String token) async {
     try {
-      print('🔍 Debug - Iniciando carga de servicios en progreso para userId: $userId');
-      
+      print(
+          '🔍 Debug - Iniciando carga de servicios en progreso para userId: $userId');
+
       // Solo buscar servicios con estado in_progress para evitar duplicados
-      final result = await _repoInProgress.fetchServicesByInProgress('in_progress', userId, 'status', token);
-      
-      print('🔍 Debug - Total de servicios en progreso encontrados: ${result.length}');
-      
+      final result = await _repoInProgress.fetchServicesByInProgress(
+          'in_progress', userId, 'status', token);
+
+      print(
+          '🔍 Debug - Total de servicios en progreso encontrados: ${result.length}');
+
       for (int i = 0; i < result.length; i++) {
         final service = result[i];
-        print('🔍 Debug - Servicio $i: ID=${service.id}, Status=${service.status.id}, WorkerId=${service.workerId}, Offers=${service.offers.length}');
+        print(
+            '🔍 Debug - Servicio $i: ID=${service.id}, Status=${service.status.id}, WorkerId=${service.workerId}, Offers=${service.offers.length}');
       }
-      
+
       return result;
     } catch (e) {
       debugPrint('Error en in_progress: $e');
@@ -308,11 +334,14 @@ class HistorialProvider extends ChangeNotifier {
   }
 
   /// Carga servicios completados
-  Future<List<ServiceRequest>> _loadCompletedServices(String userId, String token) async {
+  Future<List<ServiceRequest>> _loadCompletedServices(
+      String userId, String token) async {
     try {
       print('🔍 Debug - _loadCompletedServices iniciado para userId: $userId');
-      final result = await _repoComplete.fetchServicesByComplete('completed', userId, 'status', token);
-      print('🔍 Debug - _loadCompletedServices completado: ${result.length} elementos');
+      final result = await _repoComplete.fetchServicesByComplete(
+          'completed', userId, 'status', token);
+      print(
+          '🔍 Debug - _loadCompletedServices completado: ${result.length} elementos');
       return result;
     } catch (e) {
       print('🔍 Debug - Error en _loadCompletedServices: $e');
@@ -322,9 +351,11 @@ class HistorialProvider extends ChangeNotifier {
   }
 
   /// Carga servicios cancelados
-  Future<List<ServiceRequest>> _loadCancelledServices(String userId, String token) async {
+  Future<List<ServiceRequest>> _loadCancelledServices(
+      String userId, String token) async {
     try {
-      return await _repoCancelled.fetchServicesByCancelled('cancelled', userId, 'status', token);
+      return await _repoCancelled.fetchServicesByCancelled(
+          'cancelled', userId, 'status', token);
     } catch (e) {
       debugPrint('Error en cancelled: $e');
       return <ServiceRequest>[];
@@ -338,13 +369,14 @@ class HistorialProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final cacheKey = 'historial_cache_$userId';
       final tsKey = 'historial_timestamp_$userId';
-      
+
       final Map<String, dynamic> cacheData = {};
       for (final entry in _byStatus.entries) {
         cacheData[entry.key] = entry.value.map((s) => s.toMap()).toList();
-        print('🔍 Debug - Guardando en caché para ${entry.key}: ${entry.value.length} elementos');
+        print(
+            '🔍 Debug - Guardando en caché para ${entry.key}: ${entry.value.length} elementos');
       }
-      
+
       await prefs.setString(cacheKey, jsonEncode(cacheData));
       await prefs.setInt(tsKey, DateTime.now().millisecondsSinceEpoch);
       print('🔍 Debug - Caché guardado exitosamente');
@@ -428,5 +460,70 @@ class HistorialProvider extends ChangeNotifier {
   void notifyListeners() {
     print('🔍 Debug - notifyListeners llamado');
     super.notifyListeners();
+  }
+
+  /// Cancela servicios automáticamente si la fecha y hora seleccionadas ya pasaron respecto a la hora actual de Bolivia
+  Future<void> _cancelarServiciosVencidos(
+      List<ServiceRequest> servicios) async {
+    final ahoraBolivia =
+        DateTime.now().toUtc().subtract(const Duration(hours: 4));
+    final api = ApiService();
+
+    for (final servicio in servicios) {
+      DateTime? fechaServicio;
+
+      try {
+        if ((servicio.selectedDate != null &&
+                servicio.selectedDate!.isNotEmpty) &&
+            (servicio.selectedTime != null &&
+                servicio.selectedTime!.isNotEmpty)) {
+          // Combinar fecha y hora seleccionadas
+          final datePart = servicio.selectedDate!.split('T').first;
+          final timePart = servicio.selectedTime!.split(':');
+          final hour = int.tryParse(timePart[0]) ?? 0;
+          final minute =
+              int.tryParse(timePart.length > 1 ? timePart[1] : '0') ?? 0;
+          fechaServicio = DateTime.parse(datePart)
+              .add(Duration(hours: hour, minutes: minute));
+          // Convertir a UTC y ajustar a Bolivia
+          fechaServicio =
+              fechaServicio.toUtc().subtract(const Duration(hours: 4));
+        } else {
+          fechaServicio =
+              servicio.createdAt?.toUtc()?.subtract(const Duration(hours: 4));
+        }
+      } catch (_) {
+        fechaServicio =
+            servicio.createdAt?.toUtc()?.subtract(const Duration(hours: 4));
+      }
+
+      // Si hay fecha y el servicio no está cancelado
+      if (fechaServicio != null && servicio.status.id != 'cancelled') {
+        if (fechaServicio.isBefore(ahoraBolivia)) {
+          try {
+            // 1. Cancelar servicio en el backend usando PATCH
+            await api.updateService(
+              serviceId: servicio.id,
+              data: {
+                'status': ServiceStatus.cancelled,
+                'hasOffer': false,
+              },
+            );
+
+            // 2. Actualizar status local
+            servicio.status = Status(id: 'cancelled', name: 'Cancelado');
+
+            debugPrint(
+                '✅ Servicio ${servicio.id} cancelado automáticamente porque la fecha y hora ya pasaron (PATCH backend).');
+          } catch (e) {
+            debugPrint(
+                '❌ Error al cancelar servicio automáticamente (PATCH): $e');
+          }
+        } else {
+          debugPrint(
+              '⏳ Servicio ${servicio.id} todavía no ha llegado la fecha/hora. No se cancela.');
+        }
+      }
+    }
   }
 }

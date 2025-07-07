@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/controller/home_Provider.dart';
+import 'package:manitoscliente_new/controller/auth_utils.dart';
+
 import 'package:manitoscliente_new/provider/dataProvider.dart';
+import 'package:manitoscliente_new/provider/home_provider.dart';
 
 import '../request/resquest.dart';
 
@@ -17,6 +19,22 @@ import 'Service_DetailsScreen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+final Map<String, IconData> serviceIcons = {
+  'cocina y catering': Icons.restaurant_menu,
+  'arquitectura y diseño': Icons.architecture,
+  'carpintería': Icons.handyman,
+  'mudanza': Icons.local_shipping,
+  'vidriero': Icons.window,
+  'canaletas': Icons.water_damage,
+  // ... puedes agregar más
+};
+
+IconData _iconForService(String name) {
+  return serviceIcons.entries
+      .firstWhere((e) => name.toLowerCase().contains(e.key), orElse: () => MapEntry('', Icons.work_outline))
+      .value;
+}
 
 class HomeServicesScreen extends StatelessWidget {
   final String parentCategoryId;
@@ -70,9 +88,24 @@ class _HomeServicesView extends StatelessWidget {
             ),
           ),
         )
-            : const Text(
-          'Servicios Profesionales',
-          style: MyTextStyles.buttonTextStyle,
+            : Row(
+          children: [
+            Expanded(
+              child: const Text(
+                'Servicios Profesionales',
+                style: MyTextStyles.buttonTextStyle,
+              ),
+            ),
+            if (prov.isRefreshing)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+          ],
         ),
         actions: [
           IconButton(
@@ -81,6 +114,10 @@ class _HomeServicesView extends StatelessWidget {
               color: Colors.white,
             ),
             onPressed: prov.toggleSearchMode,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: prov.refresh,
           ),
         ],
       ),
@@ -110,20 +147,136 @@ class _ServiceGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<HomeServicesProvider>();
     if (prov.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                strokeWidth: 4,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Cargando servicios...',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
     }
     if (prov.errorMessage != null) {
-      return Center(child: Text('Error: ${prov.errorMessage}'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.white,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar servicios',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                prov.errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: prov.refresh,
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text(
+                'Reintentar',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A819A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
     if (prov.displayedServices.isEmpty) {
-      return const Center(
-        child: Text(
-          'No se encontraron servicios',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (prov.isRefreshing)
+              const Column(
+                children: [
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Actualizando servicios...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              )
+            else
+              const Column(
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    color: Colors.white,
+                    size: 64,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No se encontraron servicios',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Desliza hacia abajo para refrescar',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
       );
     }
@@ -136,41 +289,178 @@ class _ServiceGrid extends StatelessWidget {
       itemBuilder: (_, i) {
         final svc = prov.displayedServices[i];
         return GestureDetector(
-          onTap: () => prov.selectIndex(i),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF1A819A).withOpacity(0.15),
-                  spreadRadius: 0.5,
-                  blurRadius: 2,
-                  offset: const Offset(0, 3),
-                )
-              ],
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          onTap: () {
+            // Verificar si el servicio está bloqueado
+            if (prov.isServiceBlocked(svc)) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.info_outline, color: Color(0xFF20819A)),
+                        SizedBox(height: 8),
+                        Text(
+                          'Servicio no disponible',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                    content: Text(
+                      'Este servicio estará disponible muy pronto. ¡Gracias por tu paciencia!',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          'Entendido',
+                          style: TextStyle(
+                            color: Color(0xFF20819A),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  );
+                },
+              );
+            } else {
+              prov.selectIndex(i);
+            }
+          },
+          child: SizedBox(
+            height: 170,
+            width: double.infinity,
+            child: Stack(
               children: [
-                CachedNetworkImage(
-                  imageUrl: svc.image,
-                  height: 80,
-                  width: 80,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                  const CircularProgressIndicator(),
-                  errorWidget: (_, __, ___) => const Icon(Icons.error),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1A819A).withOpacity(0.15),
+                        spreadRadius: 0.5,
+                        blurRadius: 2,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: CachedNetworkImage(
+                            imageUrl: svc.image,
+                            height: 70,
+                            width: 70,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (_, __, ___) => const Icon(Icons.error),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        svc.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: prov.isServiceBlocked(svc)
+                            ? MyTextStyles.drawerButtonTextStyle1.copyWith(color: Colors.white.withOpacity(0.5))
+                            : MyTextStyles.drawerButtonTextStyle1,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  svc.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: MyTextStyles.drawerButtonTextStyle1,
-                ),
+                // Overlay para servicios bloqueados
+                if (prov.isServiceBlocked(svc))
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[900]?.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final maxHeight = constraints.maxHeight;
+                            final iconSize = maxHeight * 0.18 > 40 ? 40.0 : maxHeight * 0.18;
+                            final profIconSize = maxHeight * 0.16 > 38 ? 38.0 : maxHeight * 0.16;
+                            return SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: 0,
+                                  maxHeight: maxHeight,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    TweenAnimationBuilder<double>(
+                                      tween: Tween(begin: 1.0, end: 1.15),
+                                      duration: const Duration(seconds: 1),
+                                      curve: Curves.easeInOut,
+                                      builder: (context, scale, child) {
+                                        return Transform.scale(
+                                          scale: scale,
+                                          child: Icon(Icons.lock_outline, color: Colors.white, size: iconSize),
+                                        );
+                                      },
+                                      onEnd: () {},
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Próximamente',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: maxHeight * 0.09 > 17 ? 17 : maxHeight * 0.09,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Icon(
+                                      _iconForService(svc.name),
+                                      color: Colors.white,
+                                      size: profIconSize,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      svc.name,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.95),
+                                        fontSize: maxHeight * 0.08 > 15 ? 15 : maxHeight * 0.08,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -236,7 +526,7 @@ class _DetailsPanel extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final status = StatusUtils.getStatusById('');
                     final req = ServiceRequest(
                       serviceDateTime: nowIso,
@@ -259,6 +549,7 @@ class _DetailsPanel extends StatelessWidget {
                       offers: [],
                       subcategoryName: svc.name, createdAt: DateTime.now(),
                     );
+                    String? token = await AuthUtils.getToken();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -266,7 +557,7 @@ class _DetailsPanel extends StatelessWidget {
                           serviceRequest: req,
                           acceptTerms: true,
                           selectedDate: DateTime.now(),
-                          token: '',
+                          token: token ?? '',
                           selectedServiceTitle: type.name,
                           selectedTime: '',
                           serviceRequests: [],

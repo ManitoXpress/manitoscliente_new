@@ -75,7 +75,8 @@ class _HistorialScreenState extends State<HistorialScreen>
       });
 
       // Usar el provider del contexto
-      final historialProv = Provider.of<HistorialProvider>(context, listen: false);
+      final historialProv =
+          Provider.of<HistorialProvider>(context, listen: false);
       await historialProv.loadAll(
         userId: _userId,
         token: _token,
@@ -89,10 +90,16 @@ class _HistorialScreenState extends State<HistorialScreen>
         deviceId: _deviceId,
       );
 
+      // Iniciar temporizador de cancelación automática de servicios vencidos
+      historialProv.iniciarTemporizadorCancelacion(_userId, _token);
+
       // Iniciar refresco automático cada 1 minuto
       _autoRefreshTimer?.cancel();
       _autoRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        if (mounted && _userId.isNotEmpty && _token.isNotEmpty && _deviceId.isNotEmpty) {
+        if (mounted &&
+            _userId.isNotEmpty &&
+            _token.isNotEmpty &&
+            _deviceId.isNotEmpty) {
           Provider.of<HistorialProvider>(context, listen: false).refresh(
             userId: _userId,
             token: _token,
@@ -163,7 +170,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                             padding: EdgeInsets.only(bottom: 4),
                             child: Icon(Icons.task_alt, color: Colors.black),
                           ),
-                          if (Provider.of<HistorialProvider>(context).availableCount > 0)
+                          if (Provider.of<HistorialProvider>(context)
+                                  .availableCount >
+                              0)
                             Positioned(
                               top: -10,
                               right: -10,
@@ -178,7 +187,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   minHeight: 20,
                                 ),
                                 child: Text(
-                                  Provider.of<HistorialProvider>(context).availableCount.toString(),
+                                  Provider.of<HistorialProvider>(context)
+                                      .availableCount
+                                      .toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -205,7 +216,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                             padding: EdgeInsets.only(bottom: 4),
                             child: Icon(Icons.local_offer, color: Colors.black),
                           ),
-                          if (Provider.of<HistorialProvider>(context).offerServiceCount > 0)
+                          if (Provider.of<HistorialProvider>(context)
+                                  .offerServiceCount >
+                              0)
                             Positioned(
                               top: -10,
                               right: -10,
@@ -220,7 +233,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   minHeight: 20,
                                 ),
                                 child: Text(
-                                  Provider.of<HistorialProvider>(context).offerServiceCount.toString(),
+                                  Provider.of<HistorialProvider>(context)
+                                      .offerServiceCount
+                                      .toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -245,9 +260,12 @@ class _HistorialScreenState extends State<HistorialScreen>
                         children: [
                           const Padding(
                             padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.assignment_ind, color: Colors.black),
+                            child:
+                                Icon(Icons.assignment_ind, color: Colors.black),
                           ),
-                          if (Provider.of<HistorialProvider>(context).inProgressCount > 0)
+                          if (Provider.of<HistorialProvider>(context)
+                                  .inProgressCount >
+                              0)
                             Positioned(
                               top: -10,
                               right: -10,
@@ -262,7 +280,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   minHeight: 20,
                                 ),
                                 child: Text(
-                                  Provider.of<HistorialProvider>(context).inProgressCount.toString(),
+                                  Provider.of<HistorialProvider>(context)
+                                      .inProgressCount
+                                      .toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -287,9 +307,12 @@ class _HistorialScreenState extends State<HistorialScreen>
                         children: [
                           const Padding(
                             padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.check_circle, color: Colors.black),
+                            child:
+                                Icon(Icons.check_circle, color: Colors.black),
                           ),
-                          if (Provider.of<HistorialProvider>(context).completedCount > 0)
+                          if (Provider.of<HistorialProvider>(context)
+                                  .completedCount >
+                              0)
                             Positioned(
                               top: -10,
                               right: -10,
@@ -304,7 +327,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   minHeight: 20,
                                 ),
                                 child: Text(
-                                  Provider.of<HistorialProvider>(context).completedCount.toString(),
+                                  Provider.of<HistorialProvider>(context)
+                                      .completedCount
+                                      .toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -331,7 +356,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                             padding: EdgeInsets.only(bottom: 4),
                             child: Icon(Icons.cancel, color: Colors.black),
                           ),
-                          if (Provider.of<HistorialProvider>(context).cancelledCount > 0)
+                          if (Provider.of<HistorialProvider>(context)
+                                  .cancelledCount >
+                              0)
                             Positioned(
                               top: -10,
                               right: -10,
@@ -346,7 +373,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   minHeight: 20,
                                 ),
                                 child: Text(
-                                  Provider.of<HistorialProvider>(context).cancelledCount.toString(),
+                                  Provider.of<HistorialProvider>(context)
+                                      .cancelledCount
+                                      .toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -373,9 +402,11 @@ class _HistorialScreenState extends State<HistorialScreen>
             children: [
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 child: Center(
-                  child: Text('Historial', style: MyTextStyles.buttonTextStyle3),
+                  child:
+                      Text('Historial', style: MyTextStyles.buttonTextStyle3),
                 ),
               ),
               const Divider(height: 1),
@@ -389,8 +420,14 @@ class _HistorialScreenState extends State<HistorialScreen>
                       userData: widget.userData,
                       apiService: ApiService(),
                       apiService2: ApiService2(),
-                      onRefresh: () => Provider.of<HistorialProvider>(context, listen: false).refresh(userId: _userId, token: _token, deviceId: _deviceId),
-                      isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                      onRefresh: () =>
+                          Provider.of<HistorialProvider>(context, listen: false)
+                              .refresh(
+                                  userId: _userId,
+                                  token: _token,
+                                  deviceId: _deviceId),
+                      isLoading:
+                          Provider.of<HistorialProvider>(context).isLoading,
                     ),
                     _ServiceListTab(
                       status: 'offer',
@@ -398,8 +435,14 @@ class _HistorialScreenState extends State<HistorialScreen>
                       userData: widget.userData,
                       apiService: ApiService(),
                       apiService2: ApiService2(),
-                      onRefresh: () => Provider.of<HistorialProvider>(context, listen: false).refresh(userId: _userId, token: _token, deviceId: _deviceId),
-                      isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                      onRefresh: () =>
+                          Provider.of<HistorialProvider>(context, listen: false)
+                              .refresh(
+                                  userId: _userId,
+                                  token: _token,
+                                  deviceId: _deviceId),
+                      isLoading:
+                          Provider.of<HistorialProvider>(context).isLoading,
                     ),
                     _ServiceListTab(
                       status: 'in_progress',
@@ -407,8 +450,14 @@ class _HistorialScreenState extends State<HistorialScreen>
                       userData: widget.userData,
                       apiService: ApiService(),
                       apiService2: ApiService2(),
-                      onRefresh: () => Provider.of<HistorialProvider>(context, listen: false).refresh(userId: _userId, token: _token, deviceId: _deviceId),
-                      isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                      onRefresh: () =>
+                          Provider.of<HistorialProvider>(context, listen: false)
+                              .refresh(
+                                  userId: _userId,
+                                  token: _token,
+                                  deviceId: _deviceId),
+                      isLoading:
+                          Provider.of<HistorialProvider>(context).isLoading,
                     ),
                     _ServiceListTab(
                       status: 'completed',
@@ -416,8 +465,14 @@ class _HistorialScreenState extends State<HistorialScreen>
                       userData: widget.userData,
                       apiService: ApiService(),
                       apiService2: ApiService2(),
-                      onRefresh: () => Provider.of<HistorialProvider>(context, listen: false).refresh(userId: _userId, token: _token, deviceId: _deviceId),
-                      isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                      onRefresh: () =>
+                          Provider.of<HistorialProvider>(context, listen: false)
+                              .refresh(
+                                  userId: _userId,
+                                  token: _token,
+                                  deviceId: _deviceId),
+                      isLoading:
+                          Provider.of<HistorialProvider>(context).isLoading,
                     ),
                     _ServiceListTab(
                       status: 'cancelled',
@@ -425,8 +480,14 @@ class _HistorialScreenState extends State<HistorialScreen>
                       userData: widget.userData,
                       apiService: ApiService(),
                       apiService2: ApiService2(),
-                      onRefresh: () => Provider.of<HistorialProvider>(context, listen: false).refresh(userId: _userId, token: _token, deviceId: _deviceId),
-                      isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                      onRefresh: () =>
+                          Provider.of<HistorialProvider>(context, listen: false)
+                              .refresh(
+                                  userId: _userId,
+                                  token: _token,
+                                  deviceId: _deviceId),
+                      isLoading:
+                          Provider.of<HistorialProvider>(context).isLoading,
                     ),
                   ],
                 ),
@@ -446,14 +507,18 @@ class _HistorialScreenState extends State<HistorialScreen>
                         width: 60,
                         height: 60,
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A819A)),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF1A819A)),
                           strokeWidth: 6,
                         ),
                       ),
                       SizedBox(height: 24),
                       Text(
                         'Cargando servicios...',
-                        style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -464,10 +529,13 @@ class _HistorialScreenState extends State<HistorialScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: Provider.of<HistorialProvider>(context).isLoading ||
-                   _userId.isEmpty || _token.isEmpty || _deviceId.isEmpty
+                _userId.isEmpty ||
+                _token.isEmpty ||
+                _deviceId.isEmpty
             ? null
             : () {
-                print('Botón actualizar presionado: userId=[32m$_userId[0m, token=[32m$_token[0m, deviceId=[32m$_deviceId[0m');
+                print(
+                    'Botón actualizar presionado: userId=[32m$_userId[0m, token=[32m$_token[0m, deviceId=[32m$_deviceId[0m');
                 Provider.of<HistorialProvider>(context, listen: false).refresh(
                   userId: _userId,
                   token: _token,
@@ -527,7 +595,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
 
   void _onScroll() {
     final prov = Provider.of<HistorialProvider>(context, listen: false);
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       if (prov.hasMore(widget.status) && !prov.isLoadingMore(widget.status)) {
         prov.loadMore(
           status: widget.status,
@@ -543,7 +612,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
   bool get wantKeepAlive => true;
 
   /// Método helper para construir la lista de servicios
-  Widget _buildServiceList(String status, List<ServiceRequest> list, double w, double h) {
+  Widget _buildServiceList(
+      String status, List<ServiceRequest> list, double w, double h) {
     switch (status) {
       case 'available':
         final offers = list.expand((s) => s.offers).toList();
@@ -677,7 +747,7 @@ class _ServiceListTabState extends State<_ServiceListTab>
               ],
             );
           }
-          
+
           if (list.isEmpty && !widget.isLoading) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -723,7 +793,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
               controller: _scrollController,
               itemCount: 6,
               itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Container(
                   height: 120,
                   decoration: BoxDecoration(
@@ -792,7 +863,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
                     controller: _scrollController,
                     itemCount: 3,
                     itemBuilder: (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: Container(
                         height: 120,
                         decoration: BoxDecoration(
@@ -812,7 +884,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
                             ),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,17 +950,20 @@ class _ServiceListTabState extends State<_ServiceListTab>
               // Debug: Imprimir información de la lista
               print('🔍 Debug - Lista de servicios recibida: ${list.length}');
               for (int i = 0; i < list.length; i++) {
-                print('🔍 Debug - Servicio $i: ID=${list[i].id}, Status=${list[i].status.id}, Offers=${list[i].offers.length}');
+                print(
+                    '🔍 Debug - Servicio $i: ID=${list[i].id}, Status=${list[i].status.id}, Offers=${list[i].offers.length}');
               }
-              
+
               // 1) Expandir todas las ofertas de cada servicio, forzando el tipo a Offer
               final List<Offer> listOffer = list
                   .expand((s) => (s.offers ?? <Offer>[]).cast<Offer>())
                   .toList();
 
-              print('🔍 Debug - Total de ofertas expandidas: ${listOffer.length}');
+              print(
+                  '🔍 Debug - Total de ofertas expandidas: ${listOffer.length}');
               for (int i = 0; i < listOffer.length; i++) {
-                print('🔍 Debug - Oferta $i: ID=${listOffer[i].id}, Status=${listOffer[i].status.id}, ServiceId=${listOffer[i].serviceId}');
+                print(
+                    '🔍 Debug - Oferta $i: ID=${listOffer[i].id}, Status=${listOffer[i].status.id}, ServiceId=${listOffer[i].serviceId}');
               }
 
               // 2) FILTRAR sólo las que están realmente en "in_progress".
@@ -897,21 +973,29 @@ class _ServiceListTabState extends State<_ServiceListTab>
                   .where((offer) => offer.status.id == ServiceStatus.inProgress)
                   .toList();
 
-              print('🔍 Debug - Ofertas filtradas por in_progress: ${ofertasEnProgreso.length}');
-              print('🔍 Debug - ServiceStatus.inProgress = ${ServiceStatus.inProgress}');
-              
+              print(
+                  '🔍 Debug - Ofertas filtradas por in_progress: ${ofertasEnProgreso.length}');
+              print(
+                  '🔍 Debug - ServiceStatus.inProgress = ${ServiceStatus.inProgress}');
+
               // Si no hay ofertas en progreso, también mostrar servicios que tengan status in_progress directamente
               if (ofertasEnProgreso.isEmpty) {
-                print('🔍 Debug - No se encontraron ofertas en progreso, revisando servicios directamente...');
-                final serviciosEnProgreso = list.where((s) => s.status.id == ServiceStatus.inProgress).toList();
-                print('🔍 Debug - Servicios con status in_progress: ${serviciosEnProgreso.length}');
-                
+                print(
+                    '🔍 Debug - No se encontraron ofertas en progreso, revisando servicios directamente...');
+                final serviciosEnProgreso = list
+                    .where((s) => s.status.id == ServiceStatus.inProgress)
+                    .toList();
+                print(
+                    '🔍 Debug - Servicios con status in_progress: ${serviciosEnProgreso.length}');
+
                 if (serviciosEnProgreso.isNotEmpty) {
                   // Si hay servicios en progreso pero sin ofertas, crear ofertas dummy
                   final ofertasDummy = serviciosEnProgreso.map((service) {
                     return Offer(
                       id: service.id,
-                      workerId: service.workerId.isNotEmpty ? service.workerId : 'unknown',
+                      workerId: service.workerId.isNotEmpty
+                          ? service.workerId
+                          : 'unknown',
                       offeredPrice: service.offeredPrice,
                       hasOffer: true,
                       serviceId: service.id,
@@ -924,8 +1008,9 @@ class _ServiceListTabState extends State<_ServiceListTab>
                       subcategoryName: service.subcategoryName,
                     );
                   }).toList();
-                  
-                  print('🔍 Debug - Creando ofertas dummy para servicios en progreso: ${ofertasDummy.length}');
+
+                  print(
+                      '🔍 Debug - Creando ofertas dummy para servicios en progreso: ${ofertasDummy.length}');
                   listWidget = ServiceListBuilder.inProgressList(
                     list,
                     ofertasDummy,
@@ -950,10 +1035,10 @@ class _ServiceListTabState extends State<_ServiceListTab>
               } else {
                 // 3) Ahora sí, pasamos sólo esa sublista al builder
                 listWidget = ServiceListBuilder.inProgressList(
-                  list,               // List<ServiceRequest>
-                  ofertasEnProgreso,  // List<Offer> filtrada
-                  w,                  // screenWidth
-                  h,                  // screenHeight
+                  list, // List<ServiceRequest>
+                  ofertasEnProgreso, // List<Offer> filtrada
+                  w, // screenWidth
+                  h, // screenHeight
                   widget.userId,
                   widget.userData,
                   widget.apiService,
@@ -977,9 +1062,9 @@ class _ServiceListTabState extends State<_ServiceListTab>
               break;
             case 'cancelled':
               listWidget = ServiceListBuilder.buildServiceListCancelled(
-                list,        // tu lista de ServiceRequest (incluye offers internamente)
-                w,           // ancho
-                h,           // alto
+                list, // tu lista de ServiceRequest (incluye offers internamente)
+                w, // ancho
+                h, // alto
                 widget.userId,
                 widget.userData,
                 widget.apiService,
@@ -993,14 +1078,16 @@ class _ServiceListTabState extends State<_ServiceListTab>
             children: [
               NotificationListener<ScrollNotification>(
                 onNotification: (scrollInfo) {
-                  if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200 &&
+                  if (scrollInfo.metrics.pixels >=
+                          scrollInfo.metrics.maxScrollExtent - 200 &&
                       hasMore &&
                       !isLoadingMore) {
                     prov.loadMore(
                       status: widget.status,
                       userId: widget.userId,
                       token: '', // Puedes pasar el token real si lo necesitas
-                      deviceId: '', // Puedes pasar el deviceId real si lo necesitas
+                      deviceId:
+                          '', // Puedes pasar el deviceId real si lo necesitas
                     );
                   }
                   return false;
@@ -1023,12 +1110,14 @@ class _ServiceListTabState extends State<_ServiceListTab>
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A819A)),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF1A819A)),
                             ),
                           ),
                           SizedBox(width: 12),
-                          Text('Cargando más...', 
-                            style: TextStyle(fontSize: 14, color: Color(0xFF1A819A))),
+                          Text('Cargando más...',
+                              style: TextStyle(
+                                  fontSize: 14, color: Color(0xFF1A819A))),
                         ],
                       ),
                     ),

@@ -156,7 +156,6 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
 
     try {
       // Solicitamos permisos
-     
 
       if (!mounted) return;
 
@@ -775,241 +774,172 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
                 const SizedBox(height: 16),
 
                 // Contenedor de imágenes
-                Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey[300]!,
-                      width: 2,
-                      style: BorderStyle.solid,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      if (provider.images.every((image) => image == null))
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFF1A819A).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: const Icon(
-                                  Icons.cloud_upload,
-                                  size: 30,
-                                  color: Color(0xFF1A819A),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Toca para agregar imágenes',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: const Color(0xFF1A819A),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(3, (idx) {
+                    final imageFile = idx < provider.images.length
+                        ? provider.images[idx]
+                        : null;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (imageFile != null) {
+                            _showImagePreview(idx);
+                          } else {
+                            _pickImage();
+                          }
+                        },
+                        child: Container(
+                          margin: EdgeInsets.symmetric(horizontal: 4),
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            border: Border.all(
+                              color: Colors.grey[300]!,
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                      ...provider.images.asMap().entries.map((entry) {
-                        int idx = entry.key;
-                        File? imageFile = entry.value;
-                        double imageWidth = 200 / widget.maxImageCount;
-                        return Positioned(
-                          left: imageWidth * idx,
-                          child: GestureDetector(
-                            onTap: () {
-                              if (imageFile != null) {
-                                _showImagePreview(idx);
-                              } else {
-                                _pickImage();
-                              }
-                            },
-                            child: Container(
-                              width: imageWidth,
-                              height: 200,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.grey[300]!,
-                                  width: 1,
-                                ),
-                              ),
-                              child: imageFile != null
-                                  ? Stack(
-                                      children: [
-                                        Image.file(
-                                          imageFile,
-                                          width: imageWidth,
-                                          height: 200,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                            debugPrint(
-                                                'Error al cargar imagen $idx: $error');
-                                            return Container(
-                                              width: imageWidth,
-                                              height: 200,
-                                              color: Colors.grey[200],
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.broken_image,
-                                                    size: 24,
-                                                    color: Colors.grey[400],
+                          child: imageFile != null
+                              ? Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.file(
+                                        imageFile,
+                                        width: double.infinity,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.broken_image,
+                                                  size: 24,
+                                                  color: Colors.grey[400],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Error',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 10,
                                                   ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Error',
-                                                    style: GoogleFonts.poppins(
-                                                      color: Colors.grey[600],
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                          frameBuilder: (context, child, frame,
-                                              wasSynchronouslyLoaded) {
-                                            if (wasSynchronouslyLoaded)
-                                              return child;
-                                            return AnimatedOpacity(
-                                              opacity: frame == null ? 0 : 1,
-                                              duration: const Duration(
-                                                  milliseconds: 300),
-                                              child: child,
-                                            );
-                                          },
-                                        ),
-                                        Positioned(
-                                          top: 4,
-                                          right: 4,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  Colors.black.withOpacity(0.6),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                                ),
+                                              ],
                                             ),
-                                            child: const Icon(
-                                              Icons.remove_red_eye,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ),
-                                        ),
-                                        // Botón de eliminar
-                                        Positioned(
-                                          top: 4,
-                                          left: 4,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              try {
-                                                provider.removeImage(idx);
-                                                provider.updateServiceRequest(
-                                                    widget.serviceRequest);
-                                                if (mounted) {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Row(
-                                                        children: [
-                                                          const Icon(
-                                                              Icons.delete,
-                                                              color:
-                                                                  Colors.white),
-                                                          const SizedBox(
-                                                              width: 12),
-                                                          const Expanded(
-                                                            child: Text(
-                                                              'Imagen eliminada',
-                                                              style: TextStyle(
-                                                                  fontSize: 14),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xFFF44336),
-                                                      behavior: SnackBarBehavior
-                                                          .floating,
-                                                      duration: const Duration(
-                                                          seconds: 2),
-                                                    ),
-                                                  );
-                                                }
-                                              } catch (e) {
-                                                debugPrint(
-                                                    'Error al eliminar imagen: $e');
-                                                if (mounted) {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        'Error al eliminar imagen: $e',
-                                                        style: GoogleFonts
-                                                            .poppins(),
-                                                      ),
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xFFF44336),
-                                                      behavior: SnackBarBehavior
-                                                          .floating,
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFF44336),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: const Icon(
-                                                Icons.close,
-                                                color: Colors.white,
-                                                size: 16,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : Container(
-                                      color: Colors.grey[100],
-                                      child: const Icon(
-                                        Icons.add_photo_alternate,
-                                        color: Color(0xFF1A819A),
-                                        size: 32,
+                                          );
+                                        },
                                       ),
                                     ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ],
-                  ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.6),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                          Icons.remove_red_eye,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    // Botón de eliminar
+                                    Positioned(
+                                      top: 4,
+                                      left: 4,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          try {
+                                            provider.removeImage(idx);
+                                            provider.updateServiceRequest(
+                                                widget.serviceRequest);
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Row(
+                                                    children: [
+                                                      const Icon(Icons.delete,
+                                                          color: Colors.white),
+                                                      const SizedBox(width: 12),
+                                                      const Expanded(
+                                                        child: Text(
+                                                          'Imagen eliminada',
+                                                          style: TextStyle(
+                                                              fontSize: 14),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  backgroundColor:
+                                                      const Color(0xFFF44336),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  duration: const Duration(
+                                                      seconds: 2),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            debugPrint(
+                                                'Error al eliminar imagen: $e');
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Error al eliminar imagen: $e',
+                                                    style:
+                                                        GoogleFonts.poppins(),
+                                                  ),
+                                                  backgroundColor:
+                                                      const Color(0xFFF44336),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF44336),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Center(
+                                  child: Icon(
+                                    Icons.add_photo_alternate,
+                                    color: Color(0xFF1A819A),
+                                    size: 32,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
 
                 const SizedBox(height: 24),

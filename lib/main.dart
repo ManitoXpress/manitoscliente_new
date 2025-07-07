@@ -13,12 +13,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:manitoscliente_new/Loading.dart';
 import 'package:manitoscliente_new/controller/RegisController.dart';
-import 'package:manitoscliente_new/controller/home_Provider.dart';
 
 import 'package:manitoscliente_new/firebase_options.dart';
 import 'package:manitoscliente_new/home.dart';
 import 'package:manitoscliente_new/menu/Login.dart';
 import 'package:manitoscliente_new/provider/dataProvider.dart';
+import 'package:manitoscliente_new/provider/home_provider.dart';
 import 'package:manitoscliente_new/provider/providerController.dart';
 import 'package:manitoscliente_new/provider/service_provider.dart';
 
@@ -31,7 +31,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'provider/providerService.dart';
-
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);

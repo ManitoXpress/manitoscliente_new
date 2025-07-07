@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../request/ResponseGet.dart';
 import '../controller/auth_utils.dart';
 
+
 class ProfessionalServicesProvider extends ChangeNotifier {
   final ApiService2 _api = ApiService2();
 
@@ -21,6 +22,18 @@ class ProfessionalServicesProvider extends ChangeNotifier {
   bool _isSearching = false;
   bool get isSearching => _isSearching;
 
+  // --- NUEVO: Lista de servicios bloqueados ---
+  static const List<String> _blockedServices = [
+    // Hogar
+    'canaletas',
+    'carpintería',
+    'mudanza',
+    'vidriero',
+    // Profesionales
+    'arquitectura y diseño',
+    'cocina y catering',
+  ];
+
   // getters existentes
   List<ServiceResponse> get displayedServices => _displayedServices;
   bool get isLoading => _isLoading;
@@ -30,6 +43,16 @@ class ProfessionalServicesProvider extends ChangeNotifier {
           ? _displayedServices[_selectedIndex]
           : null;
   bool get hasSelection => _selectedIndex != -1;
+
+  /// Verifica si un servicio está bloqueado
+  bool isServiceBlocked(ServiceResponse service) {
+    final serviceName = service.name.toLowerCase();
+    return _blockedServices.any((blocked) => 
+        serviceName.contains(blocked.toLowerCase()));
+  }
+
+  /// Obtiene la lista de servicios bloqueados
+  List<String> get blockedServices => List.unmodifiable(_blockedServices);
 
   /// Alterna entre modo búsqueda y modo título en AppBar.
   void toggleSearchMode() {

@@ -10,6 +10,7 @@ import '../controller/RegisController.dart';
 import '../controller/baseurl.dart';
 import 'requestStatus.dart';
 import 'resquest.dart';
+
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl; // URL base de la API
   String? getToken;
@@ -22,7 +23,8 @@ class ApiService {
     if (user == null) return null;
     return await user.getIdToken();
   }
-   /// 2) Actualiza un servicio dado su [serviceId] con los campos que incluyas en [data].
+
+  /// 2) Actualiza un servicio dado su [serviceId] con los campos que incluyas en [data].
   ///    Llamará a PUT { baseUrl }/services/{serviceId}
   Future<void> updateService({
     required String serviceId,
@@ -43,7 +45,14 @@ class ApiService {
       body: jsonEncode(data),
     );
 
+    debugPrint('🔵 PATCH /services/$serviceId');
+    debugPrint('🔵 Body enviado: ' + jsonEncode(data));
+    debugPrint('🟢 StatusCode:  [32m${response.statusCode} [0m');
+    debugPrint('🟢 Response body: ${response.body}');
+
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      debugPrint(
+          '🔴 Error PATCH: statusCode=${response.statusCode}, body=${response.body}');
       throw Exception(
           'Error ${response.statusCode} al actualizar servicio: ${response.body}');
     }
@@ -51,7 +60,7 @@ class ApiService {
 
   /// 3) Actualiza una oferta dada su [offerId] con los campos que incluyas en [data].
   ///    Llamará a PUT { baseUrl }/offers/{offerId}
-    /// PATCH /offers/{offerId}
+  /// PATCH /offers/{offerId}
   Future<void> updateOffer({
     required String offerId,
     required Map<String, dynamic> data,
@@ -75,36 +84,39 @@ class ApiService {
       body: jsonEncode(data),
     );
 
-    print('🤖← Oferta → statusCode: ${response.statusCode}, body: ${response.body}');
+    print(
+        '🤖← Oferta → statusCode: ${response.statusCode}, body: ${response.body}');
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
-        'Error ${response.statusCode} al actualizar oferta: ${response.body}'
-      );
+          'Error ${response.statusCode} al actualizar oferta: ${response.body}');
     }
   }
-    Future<bool> deleteWorker(String userId, String authToken) async {
-  try {
-    final url = Uri.parse('$baseUrl/workers/$userId');
-    final response = await http.delete(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-    );
 
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      debugPrint('✅ Worker eliminado correctamente');
-      return true;
-    } else {
-      debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+  Future<bool> deleteWorker(String userId, String authToken) async {
+    try {
+      final url = Uri.parse('$baseUrl/workers/$userId');
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        debugPrint('✅ Worker eliminado correctamente');
+        return true;
+      } else {
+        debugPrint(
+            '❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Excepción al eliminar worker: $e');
       return false;
     }
-  } catch (e) {
-    debugPrint('❌ Excepción al eliminar worker: $e');
-    return false;
   }
-}
+
   Future<http.Response> addCommentToService({
     required String serviceId,
     required Map<String, String> comment,
@@ -400,7 +412,8 @@ class ApiService {
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
       final String extension = image.path.split('.').last;
-      final String imageName = 'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String imageName =
+          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final String userFolderPath = '$userId/';
       final String imagePath = '$userFolderPath$imageName';
 
@@ -436,8 +449,8 @@ class ApiService {
       List<String> imageUrls,
       String? devicesId,
       String? fcmToken,
-      String date,   // yyyy-MM-dd
-      String time    // HH:mm
+      String date, // yyyy-MM-dd
+      String time // HH:mm
       ) async {
     // Timestamp de creación en UTC
     final String createdAt = DateTime.now().toUtc().toIso8601String();
@@ -447,8 +460,8 @@ class ApiService {
 
     final formData = {
       'subcategoryName': subcategoryName,
-      'date': date,                   // tu date
-      'time': time,                   // tu time
+      'date': date, // tu date
+      'time': time, // tu time
       'createdAt': createdAt,
       // 'serviceDateTime': serviceRequest.serviceDateTime,  // <- quitas esta línea
       'description': serviceRequest.description,
