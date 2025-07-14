@@ -41,6 +41,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool formCompleted = false;
   String? fcmToken;
   LatLng? location;
+   // NUEVO: para sincronizar la ubicación seleccionada
   @override
   void initState() {
     super.initState();
@@ -87,6 +88,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         registrationController: registrationController,
         userData: userData,
       );
+      // Inicializa la ubicación seleccionada
     });
 
     step2Location = LocationAndFavoritesWizard(
@@ -97,6 +99,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               'lat': location.latitude,
               'lng': location.longitude,
             };
+          // Sincroniza la ubicación seleccionada
           }
         });
       },
@@ -111,7 +114,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           print('Selecciona una ubicación antes de pasar al siguiente paso.');
         }
       },
-      location: {},
+      location: {}, // Pasa la ubicación seleccionada como prop
     );
   }
 
@@ -321,7 +324,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         widget.completeRegistrationCallback();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen(userData: userData!,)),
+          MaterialPageRoute(
+              builder: (context) => HomeScreen(
+                    userData: userData!,
+                  )),
         );
       } else {
         print('Error en la respuesta del servidor: ${response.statusCode}');

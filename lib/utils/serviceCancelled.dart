@@ -12,6 +12,7 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import 'cacheLocal.dart';
+
 class ServiceRepositoryCancelled {
   final ApiService2 apiService;
   final FirebaseFirestore firestore;
@@ -23,12 +24,13 @@ class ServiceRepositoryCancelled {
   });
 
   Future<List<ServiceRequest>> fetchServicesByCancelled(
-      String status,
-      String userId,
-      String column,
-      String token,
-      ) async {
-    debugPrint('▶️ fetchServicesByCancelled iniciado con status=$status, userId=$userId');
+    String status,
+    String userId,
+    String column,
+    String token,
+  ) async {
+    debugPrint(
+        '▶️ fetchServicesByCancelled iniciado con status=$status, userId=$userId');
     // 1. Obtener estados válidos
     final validStatuses = await _getValidStatusesFromFirestore();
     debugPrint('   > estados válidos desde Firestore: $validStatuses');
@@ -45,7 +47,8 @@ class ServiceRepositoryCancelled {
       userId,
       token,
     );
-    debugPrint('◀️ fetchServicesByCancelled devuelve ${result.length} servicios cancelados');
+    debugPrint(
+        '◀️ fetchServicesByCancelled devuelve ${result.length} servicios cancelados');
     return result;
   }
 
@@ -70,11 +73,11 @@ class ServiceRepositoryCancelled {
   }
 
   Future<List<ServiceRequest>> _fetchServicesByStatus(
-      String status,
-      String column,
-      String userId,
-      String token,
-      ) async {
+    String status,
+    String column,
+    String userId,
+    String token,
+  ) async {
     try {
       // 1. Cache local
       final cached = await LocalCacheService.getCachedServiceRequest(userId);
@@ -85,73 +88,86 @@ class ServiceRepositoryCancelled {
 
       // 2. Llamada al backend
       await obtenerDeviceId();
-      debugPrint('   • Llamando getAllServices con status=$status, column=$column');
-      final response = await apiService.getAllServices(token, column, userId, status);
+      debugPrint(
+          '   • Llamando getAllServices con status=$status, column=$column');
+      final response =
+          await apiService.getAllServices(token, column, userId, status);
       if (response.statusCode != 200) {
         debugPrint('   ❌ getAllServices statusCode=${response.statusCode}');
         return [];
       }
 
-      final servicesData = List<Map<String, dynamic>>.from(json.decode(response.body));
+      final servicesData =
+          List<Map<String, dynamic>>.from(json.decode(response.body));
       debugPrint('   • getAllServices devolvió ${servicesData.length} items');
 
       // 3. Filtrar por status == 'cancelled' y creados por este usuario
       final filteredServices = servicesData.where((item) {
-        return (item['status'] as String? ?? '') == 'cancelled'
-            && (item['userId']?.toString() ?? '') == userId;
+        return (item['status'] as String? ?? '') == 'cancelled' &&
+            (item['userId']?.toString() ?? '') == userId;
       }).toList();
-      debugPrint('   • filteredServices (cancelados de $userId) = ${filteredServices.length}');
+      debugPrint(
+          '   • filteredServices (cancelados de $userId) = ${filteredServices.length}');
 
       // 4. Mapear a ServiceRequest
-      final serviceRequestsList = filteredServices.map((item) => ServiceRequest(
-        createdAt: DateTime.now(),
-        id: item['id']?.toString() ?? '',
-        serviceDateTime: item['serviceDateTime']?.toString() ?? '',
-        description: item['description']?.toString() ?? '',
-        images: (item['images'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
-        location: Map<String, double>.from(
-            (item['location'] as Map<String, dynamic>? ?? {}).map((k, v) => MapEntry(k, (v as num).toDouble()))
-        ),
-        offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-        serviceType: ServiceType(
-          id: item['serviceType']?['id']?.toString() ?? '',
-          name: item['serviceType']?['name']?.toString() ?? '',
-          selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
-          selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
-        ),
-        userId: userId,
-        devicesId: '',
-        workerId: '',
-        isFavorite: item['isFavorite'] as bool? ?? false,
-        acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-        expertises: _extractExpertises(item),
-        status: Status(id: 'cancelled', name: Status.getNameById('cancelled')),
-        subcategoryName: item['subcategoryName']?.toString() ?? '',
-        hasOffer: false,
-        offers: [],
-        workerDetails: null,
-      )).toList();
+      final serviceRequestsList = filteredServices
+          .map((item) => ServiceRequest(
+                createdAt: DateTime.now(),
+                id: item['id']?.toString() ?? '',
+                serviceDateTime: item['serviceDateTime']?.toString() ?? '',
+                description: item['description']?.toString() ?? '',
+                images: (item['images'] as List<dynamic>? ?? [])
+                    .map((e) => e.toString())
+                    .toList(),
+                location: Map<String, double>.from(
+                  (item['location'] as Map<String, dynamic>? ?? {})
+                      .map((k, v) => MapEntry(k, (v as num).toDouble())),
+                ),
+                offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                serviceType: ServiceType(
+                  id: item['serviceType']?['id']?.toString() ?? '',
+                  name: item['serviceType']?['name']?.toString() ?? '',
+                  selectedDate: item['date']?.toString() ?? '',
+                  selectedTime: item['time']?.toString() ?? '',
+                ),
+                userId: item['userId']?.toString() ?? '',
+                devicesId: '',
+                workerId: '',
+                isFavorite: item['isFavorite'] as bool? ?? false,
+                acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                expertises: _extractExpertises(item),
+                status: Status(
+                  id: 'cancelled',
+                  name: Status.getNameById('cancelled'),
+                ),
+                subcategoryName: item['subcategoryName']?.toString() ?? '',
+                hasOffer: false,
+                offers: [],
+                workerDetails: null,
+              ))
+          .toList();
 
       // 5. Obtener ofertas para cada servicio (pero incluir todos)
       final futures = serviceRequestsList.map((serviceReq) async {
         try {
-          final offerResponses = await apiService.getOffers(
-              'workerId', userId, 'offer', await obtenerDeviceId(), [serviceReq], 'offer'
-          );
-          final allOffers = offerResponses.map((svc) => Offer(
-            id: svc.id,
-            workerId: svc.workerId,
-            offeredPrice: svc.offeredPrice,
-            hasOffer: svc.hasOffer,
-            serviceId: serviceReq.id,
-            extraCosts: 0.0,
-            totalPrice: svc.offeredPrice,
-            status: svc.status,
-            userToken: '',
-            createdAt: DateTime.now(),
-            expertises: svc.expertises,
-            subcategoryName: svc.subcategoryName,
-          )).toList();
+          final offerResponses = await apiService.getOffers('workerId', userId,
+              'offer', await obtenerDeviceId(), [serviceReq], 'offer');
+          final allOffers = offerResponses
+              .map((svc) => Offer(
+                    id: svc.id,
+                    workerId: svc.workerId,
+                    offeredPrice: svc.offeredPrice,
+                    hasOffer: svc.hasOffer,
+                    serviceId: serviceReq.id,
+                    extraCosts: 0.0,
+                    totalPrice: svc.offeredPrice,
+                    status: svc.status,
+                    userToken: '',
+                    createdAt: DateTime.now(),
+                    expertises: svc.expertises,
+                    subcategoryName: svc.subcategoryName,
+                  ))
+              .toList();
 
           if (allOffers.isNotEmpty) {
             serviceReq.hasOffer = true;
@@ -165,7 +181,8 @@ class ServiceRepositoryCancelled {
 
       // 6. Cache y retorno de todos los cancelados
       serviceRequestsList.forEach(LocalCacheService.cacheServiceRequest);
-      debugPrint('   • Total cancelados retornados = ${serviceRequestsList.length}');
+      debugPrint(
+          '   • Total cancelados retornados = ${serviceRequestsList.length}');
       return serviceRequestsList;
     } catch (e) {
       debugPrint('❌ Error crítico en _fetchServicesByStatus: $e');
@@ -175,10 +192,12 @@ class ServiceRepositoryCancelled {
 
   List<Expertise> _extractExpertises(Map<String, dynamic> item) {
     final arr = item['expertises'] as List<dynamic>? ?? [];
-    return arr.map((e) => Expertise(
-      id: e['id']?.toString() ?? '',
-      name: e['name']?.toString() ?? '',
-    )).toList();
+    return arr
+        .map((e) => Expertise(
+              id: e['id']?.toString() ?? '',
+              name: e['name']?.toString() ?? '',
+            ))
+        .toList();
   }
 
   double _parseOfferedPrice(dynamic value) {

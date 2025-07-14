@@ -92,21 +92,6 @@ class _HistorialScreenState extends State<HistorialScreen>
 
       // Iniciar temporizador de cancelación automática de servicios vencidos
       historialProv.iniciarTemporizadorCancelacion(_userId, _token);
-
-      // Iniciar refresco automático cada 1 minuto
-      _autoRefreshTimer?.cancel();
-      _autoRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        if (mounted &&
-            _userId.isNotEmpty &&
-            _token.isNotEmpty &&
-            _deviceId.isNotEmpty) {
-          Provider.of<HistorialProvider>(context, listen: false).refresh(
-            userId: _userId,
-            token: _token,
-            deviceId: _deviceId,
-          );
-        }
-      });
     });
   }
 
@@ -143,11 +128,10 @@ class _HistorialScreenState extends State<HistorialScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(18),
-          child: Container(
+      body: Column(
+        children: [
+          // TabBar sobre fondo blanco, visible bajo el AppBar principal
+          Container(
             color: Colors.white,
             child: TabBar(
               controller: _tabController,
@@ -174,7 +158,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   .availableCount >
                               0)
                             Positioned(
-                              top: -10,
+                              top: 0,
                               right: -10,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
@@ -220,7 +204,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   .offerServiceCount >
                               0)
                             Positioned(
-                              top: -10,
+                              top: 0,
                               right: -10,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
@@ -267,7 +251,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   .inProgressCount >
                               0)
                             Positioned(
-                              top: -10,
+                              top: 0,
                               right: -10,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
@@ -314,7 +298,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   .completedCount >
                               0)
                             Positioned(
-                              top: -10,
+                              top: 0,
                               right: -10,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
@@ -360,7 +344,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                                   .cancelledCount >
                               0)
                             Positioned(
-                              top: -10,
+                              top: 0,
                               right: -10,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
@@ -394,137 +378,91 @@ class _HistorialScreenState extends State<HistorialScreen>
               ],
             ),
           ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Container(
-                color: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: Center(
-                  child:
-                      Text('Historial', style: MyTextStyles.buttonTextStyle3),
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _ServiceListTab(
-                      status: 'available',
-                      userId: _userId,
-                      userData: widget.userData,
-                      apiService: ApiService(),
-                      apiService2: ApiService2(),
-                      onRefresh: () =>
-                          Provider.of<HistorialProvider>(context, listen: false)
-                              .refresh(
-                                  userId: _userId,
-                                  token: _token,
-                                  deviceId: _deviceId),
-                      isLoading:
-                          Provider.of<HistorialProvider>(context).isLoading,
-                    ),
-                    _ServiceListTab(
-                      status: 'offer',
-                      userId: _userId,
-                      userData: widget.userData,
-                      apiService: ApiService(),
-                      apiService2: ApiService2(),
-                      onRefresh: () =>
-                          Provider.of<HistorialProvider>(context, listen: false)
-                              .refresh(
-                                  userId: _userId,
-                                  token: _token,
-                                  deviceId: _deviceId),
-                      isLoading:
-                          Provider.of<HistorialProvider>(context).isLoading,
-                    ),
-                    _ServiceListTab(
-                      status: 'in_progress',
-                      userId: _userId,
-                      userData: widget.userData,
-                      apiService: ApiService(),
-                      apiService2: ApiService2(),
-                      onRefresh: () =>
-                          Provider.of<HistorialProvider>(context, listen: false)
-                              .refresh(
-                                  userId: _userId,
-                                  token: _token,
-                                  deviceId: _deviceId),
-                      isLoading:
-                          Provider.of<HistorialProvider>(context).isLoading,
-                    ),
-                    _ServiceListTab(
-                      status: 'completed',
-                      userId: _userId,
-                      userData: widget.userData,
-                      apiService: ApiService(),
-                      apiService2: ApiService2(),
-                      onRefresh: () =>
-                          Provider.of<HistorialProvider>(context, listen: false)
-                              .refresh(
-                                  userId: _userId,
-                                  token: _token,
-                                  deviceId: _deviceId),
-                      isLoading:
-                          Provider.of<HistorialProvider>(context).isLoading,
-                    ),
-                    _ServiceListTab(
-                      status: 'cancelled',
-                      userId: _userId,
-                      userData: widget.userData,
-                      apiService: ApiService(),
-                      apiService2: ApiService2(),
-                      onRefresh: () =>
-                          Provider.of<HistorialProvider>(context, listen: false)
-                              .refresh(
-                                  userId: _userId,
-                                  token: _token,
-                                  deviceId: _deviceId),
-                      isLoading:
-                          Provider.of<HistorialProvider>(context).isLoading,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          // Loader mejorado: cubre toda la pantalla, incluyendo tabs y FAB
-          if (Provider.of<HistorialProvider>(context).isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.4),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 60,
-                        height: 60,
-                        child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Color(0xFF1A819A)),
-                          strokeWidth: 6,
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                      Text(
-                        'Cargando servicios...',
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Center(
+              child: Text('Historial', style: MyTextStyles.buttonTextStyle3),
             ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _ServiceListTab(
+                  status: 'available',
+                  userId: _userId,
+                  userData: widget.userData,
+                  apiService: ApiService(),
+                  apiService2: ApiService2(),
+                  onRefresh: () =>
+                      Provider.of<HistorialProvider>(context, listen: false)
+                          .refresh(
+                              userId: _userId,
+                              token: _token,
+                              deviceId: _deviceId),
+                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                ),
+                _ServiceListTab(
+                  status: 'offer',
+                  userId: _userId,
+                  userData: widget.userData,
+                  apiService: ApiService(),
+                  apiService2: ApiService2(),
+                  onRefresh: () =>
+                      Provider.of<HistorialProvider>(context, listen: false)
+                          .refresh(
+                              userId: _userId,
+                              token: _token,
+                              deviceId: _deviceId),
+                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                ),
+                _ServiceListTab(
+                  status: 'in_progress',
+                  userId: _userId,
+                  userData: widget.userData,
+                  apiService: ApiService(),
+                  apiService2: ApiService2(),
+                  onRefresh: () =>
+                      Provider.of<HistorialProvider>(context, listen: false)
+                          .refresh(
+                              userId: _userId,
+                              token: _token,
+                              deviceId: _deviceId),
+                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                ),
+                _ServiceListTab(
+                  status: 'completed',
+                  userId: _userId,
+                  userData: widget.userData,
+                  apiService: ApiService(),
+                  apiService2: ApiService2(),
+                  onRefresh: () =>
+                      Provider.of<HistorialProvider>(context, listen: false)
+                          .refresh(
+                              userId: _userId,
+                              token: _token,
+                              deviceId: _deviceId),
+                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                ),
+                _ServiceListTab(
+                  status: 'cancelled',
+                  userId: _userId,
+                  userData: widget.userData,
+                  apiService: ApiService(),
+                  apiService2: ApiService2(),
+                  onRefresh: () =>
+                      Provider.of<HistorialProvider>(context, listen: false)
+                          .refresh(
+                              userId: _userId,
+                              token: _token,
+                              deviceId: _deviceId),
+                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -535,7 +473,7 @@ class _HistorialScreenState extends State<HistorialScreen>
             ? null
             : () {
                 print(
-                    'Botón actualizar presionado: userId=[32m$_userId[0m, token=[32m$_token[0m, deviceId=[32m$_deviceId[0m');
+                    'Botón actualizar presionado: userId=\x1B[32m$_userId\x1B[0m, token=\x1B[32m$_token\x1B[0m, deviceId=\x1B[32m$_deviceId\x1B[0m');
                 Provider.of<HistorialProvider>(context, listen: false).refresh(
                   userId: _userId,
                   token: _token,

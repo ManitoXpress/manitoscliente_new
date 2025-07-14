@@ -2,13 +2,11 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,12 +19,14 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import 'cacheLocal.dart';
+
 class ServiceRepositoryInProgress {
   final ApiService2 apiService;
   final FirebaseFirestore firestore;
   final String baseUrl = ApiConfiguration.baseUrl;
 
-  ServiceRepositoryInProgress({required this.apiService, required this.firestore});
+  ServiceRepositoryInProgress(
+      {required this.apiService, required this.firestore});
 
   Future<List<ServiceRequest>> fetchServicesByInProgress(
     String status,
@@ -80,8 +80,12 @@ class ServiceRepositoryInProgress {
       }
 
       final deviceId = await obtenerDeviceId();
-      final response =
-          await apiService.getAllServices(token, column, userId, status, );
+      final response = await apiService.getAllServices(
+        token,
+        column,
+        userId,
+        status,
+      );
 
       if (response.statusCode != 200) {
         print('Error en la solicitud HTTP: ${response.statusCode}');
@@ -94,7 +98,8 @@ class ServiceRepositoryInProgress {
       // Filtrar servicios con estado in_progress o pending_confirmation y que pertenezcan al usuario autenticado
       final filteredServices = servicesData.where((item) {
         final itemStatus = item['status'] as String? ?? '';
-        return (itemStatus == 'in_progress' || itemStatus == 'pending_confirmation') &&
+        return (itemStatus == 'in_progress' ||
+                itemStatus == 'pending_confirmation') &&
             (item['userId']?.toString() ?? '') == userId;
       }).toList();
 
@@ -129,13 +134,14 @@ class ServiceRepositoryInProgress {
           serviceType: ServiceType(
             name: item['serviceType']?['name']?.toString() ?? '',
             id: item['serviceType']?['id']?.toString() ?? '',
-            selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
-            selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
+            selectedDate: item['date']?.toString() ?? '',
+            selectedTime: item['time']?.toString() ?? '',
           ),
           devicesId: item['devicesId']?.toString() ?? '',
           hasOffer: false,
           offers: [],
-          subcategoryName: item['subcategoryName']?.toString() ?? '', createdAt: DateTime.now(),
+          subcategoryName: item['subcategoryName']?.toString() ?? '',
+          createdAt: DateTime.now(),
         );
       }).toList();
 
@@ -145,9 +151,9 @@ class ServiceRepositoryInProgress {
       for (var service in serviceRequestsList) {
         // Aquí getOffers devuelve List<ServiceRequest>
         final List<ServiceRequest> offersResponse = await apiService.getOffers(
-          "userId",       // Columna por la que filtrar
-          userId,         // Valor del usuario autenticado
-          "in_progress",  // Tipo de filtro
+          "userId", // Columna por la que filtrar
+          userId, // Valor del usuario autenticado
+          "in_progress", // Tipo de filtro
           deviceId,
           [service],
           status,

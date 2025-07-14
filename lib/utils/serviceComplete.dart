@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-
 import '../main.dart';
 import '../controller/baseurl.dart';
 import '../request/ResponseGet.dart';
@@ -13,6 +12,7 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import 'cacheLocal.dart';
+
 class ServiceRepositoryComplete {
   final ApiService2 apiService;
   final FirebaseFirestore firestore;
@@ -140,10 +140,8 @@ class ServiceRepositoryComplete {
           serviceType: ServiceType(
             id: item['serviceType']?['id']?.toString() ?? '',
             name: item['serviceType']?['name']?.toString() ?? '',
-            selectedDate:
-                item['serviceType']?['selectedDate']?.toString() ?? '',
-            selectedTime:
-                item['serviceType']?['selectedTime']?.toString() ?? '',
+            selectedDate: item['date']?.toString() ?? '',
+            selectedTime: item['time']?.toString() ?? '',
           ),
           userId: item['userId']?.toString() ?? '',
           devicesId: '',

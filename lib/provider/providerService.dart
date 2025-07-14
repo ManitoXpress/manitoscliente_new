@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:manitoscliente_new/constants/service_constants.dart';
+import 'package:manitoscliente_new/models/expertise_models.dart';
+import 'package:manitoscliente_new/models/service_requestModels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -247,6 +249,18 @@ class HistorialProvider extends ChangeNotifier {
           .fetchServicesByStatus('available', 'status', userId, token, []);
       print(
           '🔍 Debug - _loadAvailableServices completado: ${result.length} elementos');
+
+      // Debug: verificar los datos raw de Firestore
+      for (int i = 0; i < result.length; i++) {
+        final service = result[i];
+        print('🔍 Debug - ServiceRequest $i raw data:');
+        print('  - ID: ${service.id}');
+        print('  - selectedDate: "${service.selectedDate}"');
+        print('  - selectedTime: "${service.selectedTime}"');
+        print('  - status: ${service.status.id}');
+        print('  - description: "${service.description}"');
+      }
+
       return result;
     } catch (e) {
       print('🔍 Debug - Error en _loadAvailableServices: $e');
@@ -256,9 +270,50 @@ class HistorialProvider extends ChangeNotifier {
   }
 
   void iniciarTemporizadorCancelacion(String userId, String token) {
-    Timer.periodic(const Duration(minutes: 1), (_) async {
+    Timer.periodic(const Duration(seconds: 30), (_) async {
       final servicios = await _loadAvailableServices(userId, token);
-      await _cancelarServiciosVencidos(servicios);
+
+      print(
+          '🔍 Debug - iniciarTemporizadorCancelacion - Servicios obtenidos: ${servicios.length}');
+      for (int i = 0; i < servicios.length; i++) {
+        final s = servicios[i];
+        print(
+            '🔍 Debug - Servicio $i: ID=${s.id}, selectedDate="${s.selectedDate}", selectedTime="${s.selectedTime}"');
+        print(
+            '🔍 Debug - Servicio $i: status=${s.status.id}, description="${s.description}"');
+      }
+
+      // Convertir ServiceRequest a ServiceRequestModel
+      final serviciosModel = servicios
+          .map((s) => ServiceRequestModel(
+                id: s.id,
+                date: s.selectedDate ?? '',
+                time: s.selectedTime ?? '',
+                status: s.status.id,
+                description: s.description,
+                location: s.location,
+                images: s.images,
+                expertises: s.expertises
+                    .map((e) => ExpertiseModel(
+                          id: e.id,
+                          name: e.name,
+                        ))
+                    .toList(),
+                rawOffers: s.offers.map((o) => o.toMap()).toList(),
+                rawComments: [], // Campo requerido pero no disponible en ServiceRequest
+                userId: s.userId,
+                workerId: s.workerId,
+              ))
+          .toList();
+
+      // Debug: verificar los datos mapeados
+      for (int i = 0; i < serviciosModel.length; i++) {
+        final sm = serviciosModel[i];
+        print(
+            '🔍 Debug - ServiceRequestModel $i: ID=${sm.id}, date="${sm.date}", time="${sm.time}"');
+      }
+
+      await _cancelarServiciosVencidos(serviciosModel);
     });
   }
 
@@ -462,68 +517,167 @@ class HistorialProvider extends ChangeNotifier {
     super.notifyListeners();
   }
 
-  /// Cancela servicios automáticamente si la fecha y hora seleccionadas ya pasaron respecto a la hora actual de Bolivia
+  /// Devuelve la hora actual en Bolivia (asume que el dispositivo está en UTC-4)
+  DateTime _nowBolivia() {
+    return DateTime.now();
+  }
+
   Future<void> _cancelarServiciosVencidos(
-      List<ServiceRequest> servicios) async {
-    final ahoraBolivia =
-        DateTime.now().toUtc().subtract(const Duration(hours: 4));
+      List<ServiceRequestModel> servicios) async {
+    final ahoraBolivia = _nowBolivia();
     final api = ApiService();
 
+    print(
+        '🔍 Debug - _cancelarServiciosVencidos iniciado con ${servicios.length} servicios');
+    print('🔍 Debug - Hora actual Bolivia: $ahoraBolivia');
+
     for (final servicio in servicios) {
+      // Solo procesar servicios en estado "available" o "offer"
+      if (servicio.status != 'available' && servicio.status != 'offer') {
+        print(
+            '🔍 Debug - Saltando servicio ${servicio.id}: estado=${servicio.status} (no es available/offer)');
+        continue;
+      }
+
+      print(
+          '🔍 Debug - Procesando servicio ${servicio.id}: date="${servicio.date}", time="${servicio.time}", status="${servicio.status}"');
+
       DateTime? fechaServicio;
 
       try {
-        if ((servicio.selectedDate != null &&
-                servicio.selectedDate!.isNotEmpty) &&
-            (servicio.selectedTime != null &&
-                servicio.selectedTime!.isNotEmpty)) {
-          // Combinar fecha y hora seleccionadas
-          final datePart = servicio.selectedDate!.split('T').first;
-          final timePart = servicio.selectedTime!.split(':');
-          final hour = int.tryParse(timePart[0]) ?? 0;
-          final minute =
-              int.tryParse(timePart.length > 1 ? timePart[1] : '0') ?? 0;
-          fechaServicio = DateTime.parse(datePart)
-              .add(Duration(hours: hour, minutes: minute));
-          // Convertir a UTC y ajustar a Bolivia
-          fechaServicio =
-              fechaServicio.toUtc().subtract(const Duration(hours: 4));
+        if (servicio.date.isNotEmpty && servicio.time.isNotEmpty) {
+          // Usar la función _parseFechaHoraBolivia que tiene logs detallados
+          fechaServicio = _parseFechaHoraBolivia(servicio.date, servicio.time);
+          print('🔍 Debug - Fecha servicio parseada: $fechaServicio');
         } else {
-          fechaServicio =
-              servicio.createdAt?.toUtc()?.subtract(const Duration(hours: 4));
+          print('🔍 Debug - Fecha o hora vacía, saltando servicio');
+          continue; // Saltar este servicio si no tiene fecha/hora
         }
-      } catch (_) {
-        fechaServicio =
-            servicio.createdAt?.toUtc()?.subtract(const Duration(hours: 4));
+      } catch (e) {
+        print(
+            '🔍 Debug - Error parseando fecha/hora del servicio ${servicio.id}: $e');
+        continue; // Saltar este servicio si hay error
       }
 
-      // Si hay fecha y el servicio no está cancelado
-      if (fechaServicio != null && servicio.status.id != 'cancelled') {
-        if (fechaServicio.isBefore(ahoraBolivia)) {
-          try {
-            // 1. Cancelar servicio en el backend usando PATCH
-            await api.updateService(
-              serviceId: servicio.id,
-              data: {
-                'status': ServiceStatus.cancelled,
-                'hasOffer': false,
-              },
-            );
+      if (fechaServicio != null && ahoraBolivia.isAfter(fechaServicio)) {
+        print(
+            '🔍 Debug - Servicio ${servicio.id} debe cancelarse (ya pasó la hora, estado: ${servicio.status})');
+        try {
+          await api.updateService(
+            serviceId: servicio.id,
+            data: {
+              'status': ServiceStatus.cancelled,
+              'hasOffer': false,
+            },
+          );
 
-            // 2. Actualizar status local
-            servicio.status = Status(id: 'cancelled', name: 'Cancelado');
+          final ofertasSnapshot = await FirebaseFirestore.instance
+              .collection('offers')
+              .where('serviceId', isEqualTo: servicio.id)
+              .get();
 
-            debugPrint(
-                '✅ Servicio ${servicio.id} cancelado automáticamente porque la fecha y hora ya pasaron (PATCH backend).');
-          } catch (e) {
-            debugPrint(
-                '❌ Error al cancelar servicio automáticamente (PATCH): $e');
+          for (final doc in ofertasSnapshot.docs) {
+            final offerId = doc.id;
+            await FirebaseFirestore.instance
+                .collection('offers')
+                .doc(offerId)
+                .update({
+              'status': ServiceStatus.cancelled,
+            });
           }
-        } else {
-          debugPrint(
-              '⏳ Servicio ${servicio.id} todavía no ha llegado la fecha/hora. No se cancela.');
+
+          print(
+              '✅ Servicio ${servicio.id} cancelado automáticamente (estado: ${servicio.status}, ya pasó la hora del servicio).');
+        } catch (e) {
+          debugPrint('❌ Error al cancelar servicio automáticamente: $e');
         }
+      } else {
+        print(
+            '🔍 Debug - Servicio ${servicio.id} no se cancela: estado=${servicio.status}, fechaServicio=$fechaServicio, ahoraBolivia=$ahoraBolivia');
+        debugPrint(
+            '⏳ Servicio ${servicio.id} (${servicio.status}) aún no pasó la hora del servicio. No se cancela.');
       }
+    }
+  }
+
+  /// Convierte una fecha y hora a DateTime en zona horaria de Bolivia
+  DateTime? _parseFechaHoraBolivia(String date, String time) {
+    try {
+      print('🔍 Debug - Parsing fecha/hora: date="$date", time="$time"');
+
+      // Parsear la fecha
+      final fechaBase = DateTime.parse(date);
+      print('🔍 Debug - Fecha base parseada: $fechaBase');
+
+      // Parsear la hora
+      String timeRaw = time.trim();
+      int hour = 0;
+      int minute = 0;
+
+      print('🔍 Debug - Time raw: "$timeRaw"');
+
+      // Detectar AM/PM con regex más robusto
+      final amPmMatch =
+          RegExp(r'(AM|PM)', caseSensitive: false).firstMatch(timeRaw);
+      if (amPmMatch != null) {
+        final isPm = amPmMatch.group(0)!.toUpperCase() == 'PM';
+        print('🔍 Debug - AM/PM detectado: ${amPmMatch.group(0)}, isPm: $isPm');
+
+        // Extraer solo números y dos puntos
+        timeRaw = timeRaw.replaceAll(RegExp(r'[^0-9:]'), '');
+        print('🔍 Debug - Time raw después de limpiar: "$timeRaw"');
+
+        final timeParts = timeRaw.split(':');
+        if (timeParts.length >= 2) {
+          hour = int.tryParse(timeParts[0]) ?? 0;
+          minute = int.tryParse(timeParts[1]) ?? 0;
+        } else {
+          print('🔍 Debug - Error: formato de hora inválido');
+          return null;
+        }
+
+        print('🔍 Debug - Hora antes de conversión: $hour:$minute');
+
+        // Convertir formato 12h a 24h
+        if (isPm && hour < 12) {
+          hour += 12;
+          print('🔍 Debug - Conversión PM: $hour:$minute');
+        }
+        if (!isPm && hour == 12) {
+          hour = 0;
+          print('🔍 Debug - Conversión AM 12: $hour:$minute');
+        }
+
+        print('🔍 Debug - Hora después de conversión: $hour:$minute');
+      } else {
+        // Formato 24h
+        print('🔍 Debug - Formato 24h detectado');
+        final timeParts = timeRaw.split(':');
+        if (timeParts.length >= 2) {
+          hour = int.tryParse(timeParts[0]) ?? 0;
+          minute = int.tryParse(timeParts[1]) ?? 0;
+        } else {
+          print('🔍 Debug - Error: formato de hora inválido');
+          return null;
+        }
+        print('🔍 Debug - Hora 24h: $hour:$minute');
+      }
+
+      // Crear DateTime local (Bolivia)
+      final fechaBolivia = DateTime(
+        fechaBase.year,
+        fechaBase.month,
+        fechaBase.day,
+        hour,
+        minute,
+      );
+      print('🔍 Debug - Fecha Bolivia local: $fechaBolivia');
+      print(
+          '🔍 Debug - Fecha Bolivia local (ISO): ${fechaBolivia.toIso8601String()}');
+      return fechaBolivia;
+    } catch (e) {
+      print('🔍 Debug - Error parseando fecha/hora: $e');
+      return null;
     }
   }
 }

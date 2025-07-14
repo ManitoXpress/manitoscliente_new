@@ -57,11 +57,13 @@ class OfferRepository {
       status: Status(id: status, name: Status.getNameById(status)),
       isFavorite: false,
       acceptedTerms: false,
-      serviceType: ServiceType(name: '', id: '', selectedDate: '', selectedTime: ''),
+      serviceType:
+          ServiceType(name: '', id: '', selectedDate: '', selectedTime: ''),
       devicesId: '',
       hasOffer: false,
       offers: [],
-      subcategoryName: '', createdAt: DateTime.now(),
+      subcategoryName: '',
+      createdAt: DateTime.now(),
     );
 
     // Se invoca la función que obtiene los servicios y sus ofertas filtrando por userId.
@@ -93,162 +95,169 @@ class OfferRepository {
 
   /// Método que obtiene los servicios y, para cada uno, sus ofertas filtradas por el userId.
   Future<List<ServiceRequest>> fetchOffersForUser(
-  String type,
-  String userId,
-  String token,
-  ServiceRequest service,
-  String deviceId,
-) async {
-  try {
-    // Verificar si hay datos en caché para este usuario.
-    final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-    if (cachedRequest != null) {
-      print('Datos del caché encontrados.');
-      return [cachedRequest];
-    } else {
-      print('Enviando solicitud a getAllServices para el servicio ID: ${service.id}');
+    String type,
+    String userId,
+    String token,
+    ServiceRequest service,
+    String deviceId,
+  ) async {
+    try {
+      // Verificar si hay datos en caché para este usuario.
+      final cachedRequest =
+          await LocalCacheService.getCachedServiceRequest(userId);
+      if (cachedRequest != null) {
+        print('Datos del caché encontrados.');
+        return [cachedRequest];
+      } else {
+        print(
+            'Enviando solicitud a getAllServices para el servicio ID: ${service.id}');
 
-      // Llamada a la API usando "userId" como columna de filtro.
-      final response = await apiService2.getAllServices(
-        token,
-        "userId", // Columna de filtro fija
-        userId,   // Valor del usuario autenticado
-        type,
-        
-      );
+        // Llamada a la API usando "userId" como columna de filtro.
+        final response = await apiService2.getAllServices(
+          token,
+          "userId", // Columna de filtro fija
+          userId, // Valor del usuario autenticado
+          type,
+        );
 
-      print('token=$token');
-      print('Filtrando por userId: $userId');
-      print('type=$type');
-      print('deviceId=$deviceId');
+        print('token=$token');
+        print('Filtrando por userId: $userId');
+        print('type=$type');
+        print('deviceId=$deviceId');
 
-      if (response.statusCode == 200) {
-        final List<Map<String, dynamic>> servicesData =
-            List<Map<String, dynamic>>.from(json.decode(response.body));
+        if (response.statusCode == 200) {
+          final List<Map<String, dynamic>> servicesData =
+              List<Map<String, dynamic>>.from(json.decode(response.body));
 
-        if (servicesData.isNotEmpty) {
-          try {
-            // Mapeo de la respuesta para crear una lista de ServiceRequest.
-            // Se filtran aquellos que tengan status 'available' y userId igual al autenticado.
-            final List<ServiceRequest> serviceRequestsList = servicesData
-                .map((item) {
-                  final statusName = item['status'] as String? ?? 'offer';
-                  final statusObject = Status(
-                    id: statusName,
-                    name: Status.getNameById(statusName),
-                  );
+          if (servicesData.isNotEmpty) {
+            try {
+              // Mapeo de la respuesta para crear una lista de ServiceRequest.
+              // Se filtran aquellos que tengan status 'available' y userId igual al autenticado.
+              final List<ServiceRequest> serviceRequestsList = servicesData
+                  .map((item) {
+                    final statusName = item['status'] as String? ?? 'offer';
+                    final statusObject = Status(
+                      id: statusName,
+                      name: Status.getNameById(statusName),
+                    );
 
-                  return ServiceRequest(
-                    createdAt: DateTime.now(),
-                    expertises: _extractExpertises(item),
-                    id: item['id'] ?? '',
-                    serviceDateTime: item['serviceDateTime'] ?? '',
-                    description: item['description'] ?? '',
-                    images: (item['images'] as List<dynamic>?)
-                            ?.map((image) => image as String? ?? '')
-                            .toList() ??
-                        [],
-                    location: Map<String, double>.from(
-                      (item['location'] as Map<String, dynamic>?)?.map((key, value) {
-                        return MapEntry(key, (value is int) ? value.toDouble() : value);
-                      }) ?? {},
-                    ),
-                    offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                    userId: item['userId'] ?? '',
-                    workerId: item['workerId'] ?? '',
-                    status: statusObject,
-                    isFavorite: item['isFavorite'] as bool? ?? false,
-                    acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                    serviceType: ServiceType(
-                      name: item['serviceType'] ?? '',
-                      id: '',
-                      selectedDate: '',
-                      selectedTime: '',
-                    ),
-                    devicesId: '',
-                    hasOffer: false,
-                    offers: [],
-                    subcategoryName: item['subcategoryName'] ?? '',
-                  );
-                })
-                .where((service) =>
-                    service.status.id == 'available' && service.userId == userId)
-                .toList();
+                    return ServiceRequest(
+                      createdAt: DateTime.now(),
+                      expertises: _extractExpertises(item),
+                      id: item['id'] ?? '',
+                      serviceDateTime: item['serviceDateTime'] ?? '',
+                      description: item['description'] ?? '',
+                      images: (item['images'] as List<dynamic>?)
+                              ?.map((image) => image as String? ?? '')
+                              .toList() ??
+                          [],
+                      location: Map<String, double>.from(
+                        (item['location'] as Map<String, dynamic>?)
+                                ?.map((key, value) {
+                              return MapEntry(key,
+                                  (value is int) ? value.toDouble() : value);
+                            }) ??
+                            {},
+                      ),
+                      offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                      userId: item['userId'] ?? '',
+                      workerId: item['workerId'] ?? '',
+                      status: statusObject,
+                      isFavorite: item['isFavorite'] as bool? ?? false,
+                      acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                      serviceType: ServiceType(
+                        name: item['serviceType'] ?? '',
+                        id: '',
+                        selectedDate: item['date'] ?? '',
+                        selectedTime: item['time'] ?? '',
+                      ),
+                      devicesId: '',
+                      hasOffer: false,
+                      offers: [],
+                      subcategoryName: item['subcategoryName'] ?? '',
+                    );
+                  })
+                  .where((service) =>
+                      service.status.id == 'available' &&
+                      service.userId == userId)
+                  .toList();
 
-            // Cacheamos las solicitudes de servicio para este usuario.
-            for (var request in serviceRequestsList) {
-              LocalCacheService.cacheServiceRequest(request);
-            }
-
-            // Para cada servicio, se solicitan las ofertas correspondientes filtradas por userId.
-            List<Future> offerRequests = serviceRequestsList.map((serviceRequest) async {
-              print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
-              try {
-                final offerResponses = await ApiService2().getOffers(
-                  "userId",   // Filtrar por la columna "userId"
-                  userId,     // Valor del usuario autenticado
-                  "offer",    // Tipo de filtro (ajusta según tu lógica)
-                  deviceId,
-                  [serviceRequest],
-                  "offer",
-                );
-
-                // Mapeo de las ofertas recibidas.
-                List<Offer> offers = offerResponses.map((serviceOffer) {
-                  final statusName = serviceOffer.status.id;
-                  final statusObject = Status(
-                    id: statusName,
-                    name: Status.getNameById(statusName),
-                  );
-
-                  return Offer(
-                    id: serviceOffer.id,
-                    workerId: serviceOffer.workerId,
-                    offeredPrice: serviceOffer.offeredPrice,
-                    hasOffer: serviceOffer.hasOffer,
-                    serviceId: serviceRequest.id,
-                    extraCosts: 0.0,
-                    totalPrice: serviceOffer.offeredPrice,
-                    status: statusObject,
-                    userToken: '',
-                    createdAt: DateTime.now(),
-                    expertises: serviceOffer.expertises,
-                    subcategoryName: serviceOffer.subcategoryName,
-                  );
-                }).toList();
-
-                // Se asignan las ofertas al servicio correspondiente.
-                serviceRequest.offers = offers;
-                print('Ofertas obtenidas para el servicio ${serviceRequest.id}: ${offers.length}');
-              } catch (e) {
-                print('Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
+              // Cacheamos las solicitudes de servicio para este usuario.
+              for (var request in serviceRequestsList) {
+                LocalCacheService.cacheServiceRequest(request);
               }
-            }).toList();
 
-            // Se espera a que todas las solicitudes de ofertas finalicen.
-            await Future.wait(offerRequests);
+              // Para cada servicio, se solicitan las ofertas correspondientes filtradas por userId.
+              List<Future> offerRequests =
+                  serviceRequestsList.map((serviceRequest) async {
+                print(
+                    'Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
+                try {
+                  final offerResponses = await ApiService2().getOffers(
+                    "userId", // Filtrar por la columna "userId"
+                    userId, // Valor del usuario autenticado
+                    "offer", // Tipo de filtro (ajusta según tu lógica)
+                    deviceId,
+                    [serviceRequest],
+                    "offer",
+                  );
 
-            return serviceRequestsList;
-          } catch (e) {
-            print('Error al procesar los datos del servicio: $e');
+                  // Mapeo de las ofertas recibidas.
+                  List<Offer> offers = offerResponses.map((serviceOffer) {
+                    final statusName = serviceOffer.status.id;
+                    final statusObject = Status(
+                      id: statusName,
+                      name: Status.getNameById(statusName),
+                    );
+
+                    return Offer(
+                      id: serviceOffer.id,
+                      workerId: serviceOffer.workerId,
+                      offeredPrice: serviceOffer.offeredPrice,
+                      hasOffer: serviceOffer.hasOffer,
+                      serviceId: serviceRequest.id,
+                      extraCosts: 0.0,
+                      totalPrice: serviceOffer.offeredPrice,
+                      status: statusObject,
+                      userToken: '',
+                      createdAt: DateTime.now(),
+                      expertises: serviceOffer.expertises,
+                      subcategoryName: serviceOffer.subcategoryName,
+                    );
+                  }).toList();
+
+                  // Se asignan las ofertas al servicio correspondiente.
+                  serviceRequest.offers = offers;
+                  print(
+                      'Ofertas obtenidas para el servicio ${serviceRequest.id}: ${offers.length}');
+                } catch (e) {
+                  print(
+                      'Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
+                }
+              }).toList();
+
+              // Se espera a que todas las solicitudes de ofertas finalicen.
+              await Future.wait(offerRequests);
+
+              return serviceRequestsList;
+            } catch (e) {
+              print('Error al procesar los datos del servicio: $e');
+              return [];
+            }
+          } else {
+            print('No se encontraron servicios disponibles.');
             return [];
           }
         } else {
-          print('No se encontraron servicios disponibles.');
+          print('Error en la solicitud HTTP: ${response.statusCode}');
           return [];
         }
-      } else {
-        print('Error en la solicitud HTTP: ${response.statusCode}');
-        return [];
       }
+    } catch (e) {
+      print('Error en la solicitud: $e');
+      return [];
     }
-  } catch (e) {
-    print('Error en la solicitud: $e');
-    return [];
   }
-}
-
-
 
   /// Extrae la lista de expertises a partir del mapa recibido.
   List<Expertise> _extractExpertises(Map<String, dynamic> item) {

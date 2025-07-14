@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 import 'dart:convert';
 
 import '../main.dart';
@@ -14,6 +13,7 @@ import '../request/requestServiceType.dart';
 import '../request/requestStatus.dart';
 import '../request/resquest.dart';
 import 'cacheLocal.dart';
+
 class ServiceRepository {
   final ApiService apiService;
   final FirebaseFirestore firestore;
@@ -39,7 +39,6 @@ class ServiceRepository {
 
     // Llamar al método privado para realizar la lógica principal
     return await _fetchServicesByStatus(status, column, userId, token, offers);
-   
   }
 
   // Método privado para obtener los estados válidos desde Firestore
@@ -76,18 +75,19 @@ class ServiceRepository {
     List<Offer> offers,
   ) async {
     try {
-      final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-    if (cachedRequest != null) {
-      // Verificar si el estado del servicio en caché es 'available'
-      if (cachedRequest.status.id == 'available') {
-        print('Datos del caché encontrados y filtrados por available...');
-        return [cachedRequest];
+      final cachedRequest =
+          await LocalCacheService.getCachedServiceRequest(userId);
+      if (cachedRequest != null) {
+        // Verificar si el estado del servicio en caché es 'available'
+        if (cachedRequest.status.id == 'available') {
+          print('Datos del caché encontrados y filtrados por available...');
+          return [cachedRequest];
+        } else {
+          print('Datos en caché no tienen estado available...');
+          return [];
+        }
       } else {
-        print('Datos en caché no tienen estado available...');
-        return [];
-      }
-    } else {
-      final deviceId = await obtenerDeviceId();
+        final deviceId = await obtenerDeviceId();
 
         print('Parámetro type: $type');
         print('Parámetro column: $column');
@@ -97,11 +97,9 @@ class ServiceRepository {
         final response = await ApiService2().getAllServices(
           token,
           "userId", // Aquí pasamos "userId" como columna de filtro
-          column,   // Aquí realmente está el userId, por lo que se pasa como valor
+          column, // Aquí realmente está el userId, por lo que se pasa como valor
           type,
-          
         );
-
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
@@ -112,62 +110,67 @@ class ServiceRepository {
           if (servicesData.isNotEmpty) {
             try {
               // Mapeamos los datos para crear una lista de ServiceRequest
-              final List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
-                final statusName = item['status'] as String? ?? 'available';
-                final statusObject = Status(
-                  id: statusName,
-                  name: Status.getNameById(statusName),
-                );
+              final List<ServiceRequest> serviceRequestsList = servicesData
+                  .map((item) {
+                    final statusName = item['status'] as String? ?? 'available';
+                    final statusObject = Status(
+                      id: statusName,
+                      name: Status.getNameById(statusName),
+                    );
 
-                final List<dynamic> expertisesArray =
-                    item['expertises'] as List<dynamic>? ?? [];
-                final Map<String, dynamic> expertiseItem =
-                    expertisesArray.isNotEmpty ? expertisesArray.first : {};
+                    final List<dynamic> expertisesArray =
+                        item['expertises'] as List<dynamic>? ?? [];
+                    final Map<String, dynamic> expertiseItem =
+                        expertisesArray.isNotEmpty ? expertisesArray.first : {};
 
-                return ServiceRequest(
-                  expertises: [
-                    Expertise(
-                      id: expertiseItem['id'] ?? '',
-                      name: expertiseItem['name'] ?? '',
-                    )
-                  ],
-                  id: item['id'] ?? '',
-                  createdAt: DateTime.now(),
-                  serviceDateTime: item['serviceDateTime'] ?? '',
-                  description: item['description'] ?? '',
-                  images: (item['images'] as List<dynamic>?)
-                          ?.map((image) => image as String? ?? '')
-                          .toList() ??
-                      [],
-                  location: Map<String, double>.from(
-                    (item['location'] as Map<String, dynamic>?)
-                            ?.map((key, value) {
-                          return MapEntry(
-                              key, (value is int) ? value.toDouble() : value);
-                        }) ??
-                        {},
-                  ),
-                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                  userId: item['userId'] ?? '',
-                  workerId: item['workerId'] ?? '',
-                  status: statusObject,
-                  isFavorite: item['isFavorite'] as bool? ?? false,
-                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                  serviceType: ServiceType(
-                    name: item['serviceType'] ?? '',
-                    id: '',
-                    selectedDate: '',
-                    selectedTime: '',
-                  ),
-                
-                  devicesId: '',
-                  hasOffer: false,
-                  offers: [], subcategoryName: item ['subcategoryName'] ?? '', // Lista vacía inicialmente
-                );
-              }).where((service) =>
-                  service.status.id == 'available' && service.userId == column) // Filtrar por userId
-              .toList();
-
+                    return ServiceRequest(
+                      createdAt: DateTime.now(),
+                      expertises: [
+                        Expertise(
+                          id: expertiseItem['id'] ?? '',
+                          name: expertiseItem['name'] ?? '',
+                        )
+                      ],
+                      id: item['id'] ?? '',
+                      serviceDateTime: item['serviceDateTime'] ?? '',
+                      description: item['description'] ?? '',
+                      images: (item['images'] as List<dynamic>?)
+                              ?.map((image) => image as String? ?? '')
+                              .toList() ??
+                          [],
+                      location: Map<String, double>.from(
+                        (item['location'] as Map<String, dynamic>?)
+                                ?.map((key, value) {
+                              return MapEntry(key,
+                                  (value is int) ? value.toDouble() : value);
+                            }) ??
+                            {},
+                      ),
+                      offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                      userId: item['userId'] ?? '',
+                      workerId: item['workerId'] ?? '',
+                      status: statusObject,
+                      isFavorite: item['isFavorite'] as bool? ?? false,
+                      acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                      serviceType: ServiceType(
+                        name: item['serviceType'] ?? '',
+                        id: '',
+                        selectedDate: item['date'] ?? '',
+                        selectedTime: item['time'] ?? '',
+                      ),
+                      selectedDate: item['date'] ?? '',
+                      selectedTime: item['time'] ?? '',
+                      devicesId: '',
+                      hasOffer: false,
+                      offers: [],
+                      subcategoryName: item['subcategoryName'] ??
+                          '', // Lista vacía inicialmente
+                    );
+                  })
+                  .where((service) =>
+                      service.status.id == 'available' &&
+                      service.userId == column) // Filtrar por userId
+                  .toList();
 
               // Cacheamos las solicitudes de servicio
               serviceRequestsList.forEach((request) {
