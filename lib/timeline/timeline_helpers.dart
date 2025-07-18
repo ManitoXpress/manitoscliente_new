@@ -7,7 +7,6 @@ import '../models/service_requestModels.dart';
 import '../provider/serviceDetails_providers.dart';
 import '../widgets/commentButtonWidget.dart';
 
-
 class TimelineHelpers {
   static Future<double?> getOfferedPrice(ServiceRequestModel serviceData, String workerId) async {
     double? workerOfferedPrice;

@@ -765,7 +765,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Puedes agregar hasta ${widget.maxImageCount} imágenes",
+                  "Puedes agregar hasta 3 imágenes",
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: Colors.grey[600],

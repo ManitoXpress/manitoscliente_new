@@ -23,6 +23,7 @@ class ApiService {
     if (user == null) return null;
     return await user.getIdToken();
   }
+  
 
   /// 2) Actualiza un servicio dado su [serviceId] con los campos que incluyas en [data].
   ///    Llamará a PUT { baseUrl }/services/{serviceId}
@@ -92,9 +93,9 @@ class ApiService {
     }
   }
 
-  Future<bool> deleteWorker(String userId, String authToken) async {
+  Future<bool> deleteUsers(String userId, String authToken) async {
     try {
-      final url = Uri.parse('$baseUrl/workers/$userId');
+      final url = Uri.parse('$baseUrl/users/$userId');
       final response = await http.delete(
         url,
         headers: {
@@ -107,8 +108,7 @@ class ApiService {
         debugPrint('✅ Worker eliminado correctamente');
         return true;
       } else {
-        debugPrint(
-            '❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+        debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
@@ -116,7 +116,6 @@ class ApiService {
       return false;
     }
   }
-
   Future<http.Response> addCommentToService({
     required String serviceId,
     required Map<String, String> comment,

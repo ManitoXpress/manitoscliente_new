@@ -255,28 +255,7 @@ Future<void> _signInAsGuest() async {
                             ),
                     ),
                     SizedBox(width: 10.w),
-                    // Invitado
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
-                        shape: const CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: _signInAsGuest,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 40.r,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.person_outline, color: Colors.black),
-                            SizedBox(height: 4),
-                            Text('Invitado', style: TextStyle(color: Colors.black)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
+            
             
                     // Apple
                     ElevatedButton(
@@ -311,27 +290,6 @@ Future<void> _signInAsGuest() async {
                   ],
                 ),
                SizedBox(height: 20.h),
-
-                // Botón Eliminar cuenta
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A819A),
-                    shape: const CircleBorder(),
-                    padding: EdgeInsets.all(3.w),
-                  ),
-                  onPressed: _launchDeleteAccountURL,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 40.r,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.delete, color: Colors.red),
-                        Text('Eliminar', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ),
 
                 // Botón Ingresar como Invitado (TextButton pequeño)
                 TextButton(

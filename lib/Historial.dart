@@ -8,18 +8,20 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
-
-import 'package:manitoscliente_new/constants/service_constants.dart';
-
-import 'package:manitoscliente_new/request/ResponseGet.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/request/dataprofile.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/widgets/serviceList.dart';
+
 import 'package:provider/provider.dart';
 
 import 'Styles/stilo.dart';
+
+import 'HistorialTabWidgets.dart';
+import 'constants/service_constants.dart';
 import 'provider/providerService.dart';
+import 'request/ResponseGet.dart';
+import 'request/ResponsePost.dart';
+import 'request/resquest.dart';
+import 'widgets/serviceList.dart';
+
 
 class HistorialScreen extends StatefulWidget {
   final UserData userData;
@@ -50,7 +52,7 @@ class _HistorialScreenState extends State<HistorialScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this, initialIndex: 0);
+    _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() {
@@ -133,249 +135,12 @@ class _HistorialScreenState extends State<HistorialScreen>
           // TabBar sobre fondo blanco, visible bajo el AppBar principal
           Container(
             color: Colors.white,
-            child: TabBar(
+            child: ModernTabBar(
               controller: _tabController,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-              labelStyle: MyTextStyles.tabTextStyle,
-              unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
-              indicator: const UnderlineTabIndicator(
-                borderSide: BorderSide(width: 3, color: Color(0xFF1A819A)),
-                insets: EdgeInsets.symmetric(horizontal: 20),
-              ),
-              tabs: [
-                Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.task_alt, color: Colors.black),
-                          ),
-                          if (Provider.of<HistorialProvider>(context)
-                                  .availableCount >
-                              0)
-                            Positioned(
-                              top: 0,
-                              right: -10,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1A819A),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  Provider.of<HistorialProvider>(context)
-                                      .availableCount
-                                      .toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Disponibles'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.local_offer, color: Colors.black),
-                          ),
-                          if (Provider.of<HistorialProvider>(context)
-                                  .offerServiceCount >
-                              0)
-                            Positioned(
-                              top: 0,
-                              right: -10,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1A819A),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  Provider.of<HistorialProvider>(context)
-                                      .offerServiceCount
-                                      .toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Cotizaciones'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child:
-                                Icon(Icons.assignment_ind, color: Colors.black),
-                          ),
-                          if (Provider.of<HistorialProvider>(context)
-                                  .inProgressCount >
-                              0)
-                            Positioned(
-                              top: 0,
-                              right: -10,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1A819A),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  Provider.of<HistorialProvider>(context)
-                                      .inProgressCount
-                                      .toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Asignados'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child:
-                                Icon(Icons.check_circle, color: Colors.black),
-                          ),
-                          if (Provider.of<HistorialProvider>(context)
-                                  .completedCount >
-                              0)
-                            Positioned(
-                              top: 0,
-                              right: -10,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1A819A),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  Provider.of<HistorialProvider>(context)
-                                      .completedCount
-                                      .toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Completados'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.cancel, color: Colors.black),
-                          ),
-                          if (Provider.of<HistorialProvider>(context)
-                                  .cancelledCount >
-                              0)
-                            Positioned(
-                              top: 0,
-                              right: -10,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1A819A),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  Provider.of<HistorialProvider>(context)
-                                      .cancelledCount
-                                      .toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Cancelados'),
-                    ],
-                  ),
-                ),
-              ],
+              availableCount: Provider.of<HistorialProvider>(context).availableCount,
+              offerServiceCount: Provider.of<HistorialProvider>(context).offerServiceCount,
+              inProgressCount: Provider.of<HistorialProvider>(context).inProgressCount,
+              completedCount: Provider.of<HistorialProvider>(context).completedCount,
             ),
           ),
           Container(
@@ -434,20 +199,6 @@ class _HistorialScreenState extends State<HistorialScreen>
                 ),
                 _ServiceListTab(
                   status: 'completed',
-                  userId: _userId,
-                  userData: widget.userData,
-                  apiService: ApiService(),
-                  apiService2: ApiService2(),
-                  onRefresh: () =>
-                      Provider.of<HistorialProvider>(context, listen: false)
-                          .refresh(
-                              userId: _userId,
-                              token: _token,
-                              deviceId: _deviceId),
-                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
-                ),
-                _ServiceListTab(
-                  status: 'cancelled',
                   userId: _userId,
                   userData: widget.userData,
                   apiService: ApiService(),

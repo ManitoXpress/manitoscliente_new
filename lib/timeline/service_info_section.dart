@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:manitoscliente_new/constants/service_constants.dart';
 
+import '../constants/service_constants.dart';
 import '../models/service_requestModels.dart';
 import '../widgets/imagePreview.dart';
 
@@ -21,18 +21,18 @@ class ServiceInfoSection extends StatelessWidget {
       children: [
         // Estado del servicio
         _buildStatusSection(),
-
+        
         // Fecha y Hora
         _buildDateTimeSection(),
-
+        
         // Descripción
         _buildDescriptionSection(),
-
+        
         // Carrusel de imágenes
         if (serviceData.images.isNotEmpty) _buildImageCarousel(),
-
+        
         const SizedBox(height: 16),
-
+        
         // Expertises
         if (serviceData.expertises.isNotEmpty) _buildExpertisesSection(),
       ],
@@ -409,7 +409,7 @@ class ServiceInfoSection extends StatelessWidget {
                             child: Stack(
                               children: [
                                 Hero(
-                                  tag: 'imageViewer_${url}',
+                                  tag: url,
                                   child: CachedNetworkImage(
                                     imageUrl: url,
                                     fit: BoxFit.cover,
@@ -426,8 +426,7 @@ class ServiceInfoSection extends StatelessWidget {
                                     errorWidget: (_, __, ___) => Container(
                                       color: Colors.grey[200],
                                       child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.error_outline,
@@ -452,8 +451,7 @@ class ServiceInfoSection extends StatelessWidget {
                                   top: 8,
                                   right: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.6),
                                       borderRadius: BorderRadius.circular(8),
@@ -475,8 +473,7 @@ class ServiceInfoSection extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF1A819A)
-                                          .withOpacity(0.9),
+                                      color: const Color(0xFF1A819A).withOpacity(0.9),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -552,8 +549,7 @@ class ServiceInfoSection extends StatelessWidget {
             runSpacing: 8,
             children: serviceData.expertises.map((e) {
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
@@ -582,4 +578,4 @@ class ServiceInfoSection extends StatelessWidget {
       ),
     );
   }
-}
+} 

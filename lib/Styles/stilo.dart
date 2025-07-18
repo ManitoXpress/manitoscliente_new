@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class MyTextStyles {
   static const TextStyle inputTextStyle = TextStyle(
     color: Color(0xFF000405),
@@ -329,4 +330,13 @@ class MyTextStyles {
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
   );
+}
+
+class MyColors {
+  static const Color main = Color(0xFF1A819A); // Color principal
+  static const Color accent = Color(0xFF841813); // Color secundario/acento
+  static const Color badge = Color(0xFF1A819A); // Badge principal (puedes ajustar)
+  static const Color badgeAccent = Color(0xFF841813); // Badge acento
+  static const Color tabSelectedBg = Color(0x1A1A819A); // Fondo tab seleccionado (10% opacity)
+  static const Color tabUnselected = Color(0xFF000405); // Texto tab no seleccionado
 }

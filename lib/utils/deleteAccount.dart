@@ -21,7 +21,7 @@ class _DeleteAccountByIdDialogState extends State<DeleteAccountByIdDialog> {
   setState(() { isDeleting = true; errorMessage = null; });
 
   try {
-    bool success = await ApiService().deleteWorker(widget.userId, widget.authToken);
+    bool success = await ApiService().deleteUsers(widget.userId, widget.authToken);
     if (!success) {
       setState(() {
         errorMessage = 'No se pudo eliminar tu cuenta en el servidor.';

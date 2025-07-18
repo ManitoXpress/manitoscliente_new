@@ -32,73 +32,24 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'provider/providerService.dart';
 
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("Handling a background message: ${message.messageId}");
+  print("Handling a background message:  [32m${message.messageId}");
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
+Future<void> requestTrackingPermission() async {
   if (Platform.isIOS) {
-    final status = await AppTrackingTransparency.requestTrackingAuthorization();
-    print("📊 Estado ATT inicial: $status");
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      final result =
+          await AppTrackingTransparency.requestTrackingAuthorization();
+      print("Estado de ATT: $result");
+    } else {
+      print("Estado de ATT actual: $status");
+    }
   }
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.playIntegrity,
-    appleProvider: AppleProvider.appAttest,
-  );
-
-  if (Platform.isIOS) {
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-    );
-  }
-
-  try {
-    debugPrint('🔔 Iniciando FCM Service...');
-    await FCMService().init();
-
-    // Esperar un poco antes de ejecutar el diagnóstico
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Ejecutar diagnóstico después de la inicialización
-    await FCMService().diagnoseFCMStatus();
-  } catch (e) {
-    debugPrint('❌ Error inicializando FCM Service: $e');
-    // Continuar con la ejecución aunque FCM falle
-  }
-
-  final deviceId = await obtenerDeviceId();
-  print("📱 Device ID: $deviceId");
-
-  // Inicializa la localización para fechas en español
-  await initializeDateFormatting('es', null);
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ServiceDataProvider()),
-        ChangeNotifierProvider(create: (_) => HomeServicesProvider()),
-        ChangeNotifierProvider(create: (_) => ProfessionalServicesProvider()),
-        ChangeNotifierProvider(create: (_) => WorkerProvider()),
-        ChangeNotifierProvider(create: (_) => UserDataProvider()),
-        ChangeNotifierProvider(create: (_) => HistorialProvider()),
-      ],
-      child: ScreenUtilInit(
-        designSize: const Size(375, 812),
-        minTextAdapt: true,
-        splitScreenMode: true,
-        builder: (_, __) => MyApp(deviceId: deviceId),
-      ),
-    ),
-  );
 }
 
 Future<void> requestNotificationPermissions() async {
@@ -131,6 +82,73 @@ Future<String> obtenerDeviceId() async {
   }
 }
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Inicializar Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // 2. Configurar handler de mensajes en segundo plano
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // 3. Inicializar AppCheck
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.playIntegrity,
+    appleProvider: AppleProvider.appAttest,
+  );
+
+  // 4. Pedir permiso de ATT solo si es necesario
+  if (Platform.isIOS) {
+    await requestTrackingPermission();
+  }
+
+  // 5. Configuración específica de Firestore para iOS
+  if (Platform.isIOS) {
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+    );
+  }
+
+  // 6. Inicializar FCM y diagnóstico
+  try {
+    debugPrint('🔔 Iniciando FCM Service...');
+    await FCMService().init();
+    await Future.delayed(const Duration(seconds: 2));
+    await FCMService().diagnoseFCMStatus();
+  } catch (e) {
+    debugPrint('❌ Error inicializando FCM Service: $e');
+  }
+
+  // 7. Obtener Device ID
+  final deviceId = await obtenerDeviceId();
+  print("📱 Device ID: $deviceId");
+
+  // 8. Inicializa la localización para fechas en español
+  await initializeDateFormatting('es', null);
+
+  // 9. Ejecutar la app
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ServiceDataProvider()),
+        ChangeNotifierProvider(create: (_) => HomeServicesProvider()),
+        ChangeNotifierProvider(create: (_) => ProfessionalServicesProvider()),
+        ChangeNotifierProvider(create: (_) => WorkerProvider()),
+        ChangeNotifierProvider(create: (_) => UserDataProvider()),
+        ChangeNotifierProvider(create: (_) => HistorialProvider()),
+      ],
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (_, __) => MyApp(deviceId: deviceId),
+      ),
+    ),
+  );
+}
+
 class MyApp extends StatefulWidget {
   final String deviceId;
   const MyApp({required this.deviceId});
@@ -159,8 +177,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+    User? user = FirebaseAuth.instance.currentUser;
+
+    String log = "[DIAGNÓSTICO] Usuario actual: ";
+    if (user != null) {
+      log += "\n  UID:  [32m${user.uid}";
+      log +=
+          "\n  Proveedores:  [32m${user.providerData.map((p) => p.providerId).toList()}";
+      log += "\n  Email:  [32m${user.email}";
+      log += "\n  DisplayName:  [32m${user.displayName}";
+    } else {
+      log += "\n  Usuario es NULL (no hay sesión activa en FirebaseAuth)";
+    }
+    await prefs.setString('diagnostico_login', log);
+    print(log);
+
     if (loggedIn) {
-      User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         try {
           userData = await fetchUserData(user.uid);

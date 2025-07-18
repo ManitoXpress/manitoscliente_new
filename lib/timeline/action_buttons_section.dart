@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:manitoscliente_new/constants/service_constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
+import '../constants/service_constants.dart';
 import '../models/service_requestModels.dart';
 import '../provider/serviceDetails_providers.dart';
 import 'timeline_helpers.dart';
-
 
 class ActionButtonsSection extends StatelessWidget {
   final BuildContext context;
@@ -96,9 +95,7 @@ class ActionButtonsSection extends StatelessWidget {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
-                    ),
+                    color: const Color(0xFF4CAF50),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -123,9 +120,10 @@ class ActionButtonsSection extends StatelessWidget {
                         onStatusChanged(ServiceStatus.inProgress);
                       }
                     },
-                    icon: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.check_circle_rounded,
+                        color: Colors.white, size: 20),
                     label: const Text(
-                      "Aceptar Propuesta",
+                      "Aceptar",
                       style: TextStyle(
                         fontFamily: 'Xpress Heavy',
                         color: Colors.white,
@@ -148,13 +146,11 @@ class ActionButtonsSection extends StatelessWidget {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF44336), Color(0xFFD32F2F)],
-                    ),
                     borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF84090D),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF44336).withOpacity(0.3),
+                        color: const Color(0xFF830A09).withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -172,7 +168,8 @@ class ActionButtonsSection extends StatelessWidget {
                         );
                       }
                     },
-                    icon: const Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.cancel_rounded,
+                        color: Colors.white, size: 20),
                     label: const Text(
                       "Cancelar",
                       style: TextStyle(
@@ -199,13 +196,11 @@ class ActionButtonsSection extends StatelessWidget {
             width: double.infinity,
             height: 48,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
-              ),
+              color: const Color(0xFF000000),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF1A819A).withOpacity(0.3),
+                  color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -213,7 +208,8 @@ class ActionButtonsSection extends StatelessWidget {
             ),
             child: ElevatedButton.icon(
               onPressed: () => TimelineHelpers.showCommentsModal(context, prov),
-              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+              icon: const Icon(Icons.chat_bubble_rounded,
+                  color: Colors.white, size: 20),
               label: Text(
                 'Comentarios ($commentCount)',
                 style: const TextStyle(
@@ -244,62 +240,11 @@ class ActionButtonsSection extends StatelessWidget {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF44336), Color(0xFFD32F2F)],
-                ),
+                color: const Color(0xFF25D366),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFF44336).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  await prov.cancelService();
-                  if (prov.errorMessage != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(prov.errorMessage!),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
-                label: const Text(
-                  "Cancelar Trabajo",
-                  style: TextStyle(
-                    fontFamily: 'Xpress Heavy',
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF25D366), Color(0xFF128C7E)],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF25D366).withOpacity(0.3),
+                    color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -311,7 +256,8 @@ class ActionButtonsSection extends StatelessWidget {
                   if (url != null) {
                     final uri = Uri.parse(url);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -328,7 +274,8 @@ class ActionButtonsSection extends StatelessWidget {
                     );
                   }
                 },
-                icon: const Icon(Icons.chat_rounded, color: Colors.white, size: 20),
+                icon: const Icon(Icons.chat_rounded,
+                    color: Colors.white, size: 20),
                 label: const Text(
                   "WhatsApp",
                   style: TextStyle(
@@ -360,13 +307,11 @@ class ActionButtonsSection extends StatelessWidget {
             width: double.infinity,
             height: 48,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF44336), Color(0xFFD32F2F)],
-              ),
+              color: const Color(0xFF84090D),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF44336).withOpacity(0.3),
+                  color: const Color(0xFF000000).withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -379,12 +324,13 @@ class ActionButtonsSection extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(prov.errorMessage!),
-                      backgroundColor: Colors.red,
+                      backgroundColor: const Color(0xFF84090D),
                     ),
                   );
                 }
               },
-              icon: const Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
+              icon: const Icon(Icons.cancel_rounded,
+                  color: Colors.white, size: 20),
               label: const Text(
                 "Cancelar Trabajo",
                 style: TextStyle(
@@ -408,13 +354,11 @@ class ActionButtonsSection extends StatelessWidget {
             width: double.infinity,
             height: 48,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
-              ),
+              color: const Color(0xFF000000),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF1A819A).withOpacity(0.3),
+                  color: const Color(0xFF000000).withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -422,7 +366,8 @@ class ActionButtonsSection extends StatelessWidget {
             ),
             child: ElevatedButton.icon(
               onPressed: () => TimelineHelpers.showCommentsModal(context, prov),
-              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+              icon: const Icon(Icons.chat_bubble_rounded,
+                  color: Colors.white, size: 20),
               label: Text(
                 'Comentarios ($commentCount)',
                 style: const TextStyle(
@@ -447,4 +392,4 @@ class ActionButtonsSection extends StatelessWidget {
 
     return const SizedBox.shrink();
   }
-} 
+}
