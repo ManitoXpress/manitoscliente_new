@@ -12,6 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 import '../controller/logincontroller.dart';
@@ -19,8 +20,7 @@ import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
 import '../home.dart';
 
-import '../request/resquest.dart';
-import '../widgets/welcome.dart';
+
 class LoginScreen extends StatefulWidget {
   final String deviceId;
   final VoidCallback onLoginSuccess;
@@ -57,6 +57,8 @@ class _LoginFormState extends State<LoginScreen> {
   bool isLoadingApple = false;
   bool isLoadingAnonymous = false;
 
+  // Log de diagnóstico persistente
+
   @override
   void initState() {
     super.initState();
@@ -68,8 +70,8 @@ class _LoginFormState extends State<LoginScreen> {
     rootBundle.load(animationURL).then((data) {
       final file = rive.RiveFile.import(data);
       final artboard = file.mainArtboard;
-      stateMachineController = rive.StateMachineController.fromArtboard(
-          artboard, "State Machine 1");
+      stateMachineController =
+          rive.StateMachineController.fromArtboard(artboard, "State Machine 1");
       if (stateMachineController != null) {
         artboard.addController(stateMachineController!);
         for (final input in stateMachineController!.inputs) {
@@ -105,8 +107,8 @@ class _LoginFormState extends State<LoginScreen> {
             style: MyTextStyles.inputTextStyle4,
           ),
           content: TextButton(
-            onPressed: () => launch(
-                'https://manitoxpress-cf855.web.app/#/PrivacyPage'),
+            onPressed: () =>
+                launch('https://manitoxpress-cf855.web.app/#/PrivacyPage'),
             child: Text(
               'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
               style: MyTextStyles.drawerButtonTextStyle6,
@@ -132,23 +134,22 @@ class _LoginFormState extends State<LoginScreen> {
     });
   }
 
-Future<void> _signInAsGuest() async {
-  setState(() => isLoadingAnonymous = true);
-  try {
-    // Llamas a tu controlador para manejo uniforme
-    await LoginScreenController.signInAnonymously(context);
-    // No hace falta llamar onLoginSuccess() porque dentro
-    // de signInAnonymously ya navega al siguiente screen.
-  } catch (e) {
-    print('Error al iniciar como invitado: $e');
-    // Quizás mostrar _showErrorDialog(context, '…');
-  } finally {
-    setState(() {
-      // Ocultar loader si tuviste uno
-    });
+  Future<void> _signInAsGuest() async {
+    setState(() => isLoadingAnonymous = true);
+    try {
+      // Llamas a tu controlador para manejo uniforme
+      await LoginScreenController.signInAnonymously(context);
+      // No hace falta llamar onLoginSuccess() porque dentro
+      // de signInAnonymously ya navega al siguiente screen.
+    } catch (e) {
+      print('Error al iniciar como invitado: $e');
+      // Quizás mostrar _showErrorDialog(context, '…');
+    } finally {
+      setState(() {
+        // Ocultar loader si tuviste uno
+      });
+    }
   }
-}
-
 
   /// Login con Google
   Future<void> signInWithGoogle() async {
@@ -219,10 +220,12 @@ Future<void> _signInAsGuest() async {
                   SizedBox(
                     width: 0.8.sw,
                     height: 0.38.sh,
-                    child: rive.Rive(artboard: _teddyArtboard!, fit: BoxFit.fitWidth),
+                    child: rive.Rive(
+                        artboard: _teddyArtboard!, fit: BoxFit.fitWidth),
                   ),
                 SizedBox(height: 10.h),
-                Text('Bienvenidos a Manitos Xpress', style: MyTextStyles.welcomeTotheJungle1),
+                Text('Bienvenidos a Manitos Xpress',
+                    style: MyTextStyles.welcomeTotheJungle1),
                 SizedBox(height: 10.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -249,8 +252,10 @@ Future<void> _signInAsGuest() async {
                                   child: const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                       Icon(FontAwesomeIcons.google, color: Color(0xFF1A819A)),
-                                      Text('Google', style: MyTextStyles.linkTextStyle),
+                                      Icon(FontAwesomeIcons.google,
+                                          color: Color(0xFF1A819A)),
+                                      Text('Google',
+                                          style: MyTextStyles.linkTextStyle),
                                     ],
                                   ),
                                 ),
@@ -258,8 +263,7 @@ Future<void> _signInAsGuest() async {
                             ),
                     ),
                     SizedBox(width: 10.w),
-            
-            
+
                     // Apple
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -282,8 +286,10 @@ Future<void> _signInAsGuest() async {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.apple, color: Color(0xFF1A819A)),
-                                      Text('Apple', style: MyTextStyles.linkTextStyle),
+                                      const Icon(Icons.apple,
+                                          color: Color(0xFF1A819A)),
+                                      Text('Apple',
+                                          style: MyTextStyles.linkTextStyle),
                                     ],
                                   ),
                                 ),
@@ -292,7 +298,7 @@ Future<void> _signInAsGuest() async {
                     ),
                   ],
                 ),
-               SizedBox(height: 20.h),
+                SizedBox(height: 20.h),
 
                 // Botón Ingresar como Invitado (TextButton pequeño)
                 TextButton(
@@ -306,7 +312,6 @@ Future<void> _signInAsGuest() async {
                     ),
                   ),
                 ),
-
               ],
             ),
           ),

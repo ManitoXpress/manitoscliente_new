@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../home.dart';
 import '../provider/providerService.dart';
@@ -13,6 +14,7 @@ import '../request/ResponsePost.dart';
 import '../request/dataprofile.dart';
 import '../widgets/welcome.dart';
 import 'RegisController.dart';
+
 class LoginScreenController {
   static final ApiService apiService = ApiService();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -41,84 +43,81 @@ class LoginScreenController {
 
   /// Navega al HomeScreen pasándole userData y onTabTapped
   static void _navigateToHomeScreen(
-      BuildContext context,
-      UserData userData,
-      VoidCallback onTabTapped,
-      ) {
+    BuildContext context,
+    UserData userData,
+    VoidCallback onTabTapped,
+  ) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          initialPageIndex: 0,userData: userData!
-
-        ),
+        builder: (_) => HomeScreen(initialPageIndex: 0, userData: userData!),
       ),
     );
   }
   // Inicio de sesión anónimo
 
   static Future<void> signInAnonymously(BuildContext context) async {
-  try {
-    final authResult = await FirebaseAuth.instance.signInAnonymously();
-    final user = authResult.user;
-    if (user == null) return;
+    try {
+      final authResult = await FirebaseAuth.instance.signInAnonymously();
+      final user = authResult.user;
+      if (user == null) return;
 
-    // (Opcional) Si quieres mantener hospedado un UserData mínimo, créalo aquí.
-    final userData = UserData(
-      userId: user.uid,
-      displayName: '',
-      email: '',
-      phoneNumber: '',
-      location: {},
-      paymentType: '',
-      selectedCountryCode: '',
-      registrationData: RegistrationData(
+      // (Opcional) Si quieres mantener hospedado un UserData mínimo, créalo aquí.
+      final userData = UserData(
         userId: user.uid,
         displayName: '',
-        devicesId: '',
-        fcmToken: '',
+        email: '',
         phoneNumber: '',
+        location: {},
         paymentType: '',
         selectedCountryCode: '',
-        email: '',
-        location: {},
+        registrationData: RegistrationData(
+          userId: user.uid,
+          displayName: '',
+          devicesId: '',
+          fcmToken: '',
+          phoneNumber: '',
+          paymentType: '',
+          selectedCountryCode: '',
+          email: '',
+          location: {},
+          points: 0,
+        ),
+        getToken: '',
+        referrerUserId: '',
+        referralCode: '',
         points: 0,
-      ),
-      getToken: '',
-      referrerUserId: '',
-      referralCode: '',
-      points: 0,
-    );
+      );
 
-    // Guarda en Firestore si lo necesitas
-    await storeUserData(user);
+      // Guarda en Firestore si lo necesitas
+      await storeUserData(user);
 
-    // Ahora indicamos que YA está “registrado”
-    _navigateToRegisterScreen(
-      context,
-      alreadyRegistered: true,    // ← aquí
-          // aunque no lo uses en HomeScreen
-    );
-  } catch (e) {
-    print('Error durante el inicio de sesión anónima: $e');
-    _showErrorDialog(context, 'No se pudo iniciar sesión como invitado.');
+      // Ahora indicamos que YA está “registrado”
+      _navigateToRegisterScreen(
+        context,
+        alreadyRegistered: true, // ← aquí
+        // aunque no lo uses en HomeScreen
+      );
+    } catch (e) {
+      print('Error durante el inicio de sesión anónima: $e');
+      _showErrorDialog(context, 'No se pudo iniciar sesión como invitado.');
+    }
   }
-}
 
   /// Decide si lleva a Home o a registro, inyectando userData y callback
   static Future<void> _navigateToRegisterScreen(
-      BuildContext context, {
-        required bool alreadyRegistered,
-      }) async {
+    BuildContext context, {
+    required bool alreadyRegistered,
+  }) async {
     if (alreadyRegistered) {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       final userData = await _fetchUserData(uid);
       VoidCallback onTabTapped = () {
         // Ejemplo: refrescar historial
         context.read<HistorialProvider>().refresh(
-          userId: userData.userId,
-          token: '',     // si lo guardas, recupera aquí
-          deviceId: '',  // idem
-        );
+              userId: userData.userId,
+              token: '', // si lo guardas, recupera aquí
+              deviceId: '', // idem
+            );
       };
       _navigateToHomeScreen(context, userData, onTabTapped);
     } else {
@@ -151,8 +150,8 @@ class LoginScreenController {
               referrerUserId: '',
               referralCode: '',
               points: 0,
-            ), onTabTapped: () {  },
-
+            ),
+            onTabTapped: () {},
           ),
         ),
       );
@@ -163,7 +162,10 @@ class LoginScreenController {
   static Future<void> signInWithApple(BuildContext context) async {
     try {
       final appleCred = await SignInWithApple.getAppleIDCredential(
-        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName
+        ],
       );
       final oAuth = OAuthProvider("apple.com").credential(
         idToken: appleCred.identityToken,
@@ -173,9 +175,19 @@ class LoginScreenController {
       final user = result.user!;
       final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
       await storeUserData(user);
-      await _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
+      // Guardar flag de sesión
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      // Guardar token FCM en Firestore
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'fcmToken': fcmToken,
+      }, SetOptions(merge: true));
+      await _navigateToRegisterScreen(context,
+          alreadyRegistered: alreadyRegistered);
     } catch (e) {
-      _showErrorDialog(context, 'No se pudo iniciar sesión con Apple. Inténtelo de nuevo.');
+      _showErrorDialog(
+          context, 'No se pudo iniciar sesión con Apple. Inténtelo de nuevo.');
     }
   }
 
@@ -189,24 +201,27 @@ class LoginScreenController {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final result = await FirebaseAuth.instance.signInWithCredential(credential);
+      final result =
+          await FirebaseAuth.instance.signInWithCredential(credential);
       final user = result.user!;
       final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
       await storeUserData(user);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
-      await _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
+      await _navigateToRegisterScreen(context,
+          alreadyRegistered: alreadyRegistered);
     } catch (e) {
-      _showErrorDialog(context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
+      _showErrorDialog(
+          context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
     }
   }
 
   /// Sign in with Email & Password
   Future<User?> login(
-      BuildContext context,
-      String email,
-      String password,
-      ) async {
+    BuildContext context,
+    String email,
+    String password,
+  ) async {
     try {
       final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
