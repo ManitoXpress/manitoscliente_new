@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
-import '../constants/service_constants.dart';
+import '../constant/serviceConstants.dart';
 import '../models/service_requestModels.dart';
 import '../widgets/imagePreview.dart';
 

@@ -6,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/constant/serviceConstants.dart';
 
-import '../constants/service_constants.dart';
-import '../models/comment_models.dart';
+import '../models/commentModdels.dart';
 import '../models/service_requestModels.dart';
 import '../models/worker_detailsModels.dart';
 import '../request/ResponseGet.dart';
@@ -155,9 +155,7 @@ class ServiceDetailsProvider extends ChangeNotifier {
     _notifyIfNeeded();
   }
 
-  /// 1) Aceptar la propuesta para el [selectedWorkerId]:
-  ///    - PATCH /services/{serviceId} vía API REST
-  ///    - UPDATE solo en Firestore la oferta que coincida con serviceId + selectedWorkerId
+
   Future<void> acceptProposal(String selectedWorkerId) async {
     if (_service == null) {
       _setError('Servicio no cargado.');
@@ -171,9 +169,7 @@ class ServiceDetailsProvider extends ChangeNotifier {
         'hasOffer': false,
         'workerId': selectedWorkerId,
       });
-      print(
-          '✅ Servicio ($serviceId) actualizado a in_progress con workerId=$selectedWorkerId'
-      );
+      null;
 
       // 2) A continuación, buscamos TODAS las ofertas activas (hasOffer == true)
       //    de este mismo serviceId:
@@ -196,14 +192,14 @@ class ServiceDetailsProvider extends ChangeNotifier {
             'status': ServiceStatus.inProgress,
             'hasOffer': false,
           });
-          print('✅ Oferta (${doc.id}) marcada como in_progress.');
+          null;
         } else {
           // 3.b) Esta es cualquier otra oferta que NO elegimos: la cancelamos
           await ref.update({
             'status': ServiceStatus.cancelled,
             'hasOffer': false,
           });
-          print('— Oferta (${doc.id}) cancelada (no fue elegida).');
+          null;
         }
       }
     } catch (e) {
@@ -230,7 +226,7 @@ class ServiceDetailsProvider extends ChangeNotifier {
         'status': ServiceStatus.cancelled,
         'hasOffer': false,
       });
-      print('✅ Servicio ($serviceId) patched a cancelled vía API');
+      null;
 
       // 2.b) Obtener todas las ofertas vinculadas y cancelarlas en Firestore
       final ofertasSnapshot = await FirebaseFirestore.instance
@@ -243,7 +239,7 @@ class ServiceDetailsProvider extends ChangeNotifier {
         await FirebaseFirestore.instance.collection('offers').doc(offerId).update({
           'status': ServiceStatus.cancelled,
         });
-        print('✅ Oferta ($offerId) cancelada en Firestore');
+        null;
       }
     } catch (e) {
       _setError('Error al cancelar servicio/ofertas: $e');

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../menu/validators.dart';
+import 'package:manitoscliente_new/menu/validators.dart';
 
 import '../request/ResponsePost.dart';
 
@@ -24,17 +24,17 @@ class RegisterScreen extends StatelessWidget {
       User? user = userCredential.user;
 
       if (user != null) {
-        print('User registered with UID: ${user.uid}');
+        null;
         // Enviar un correo de verificación
         await user.sendEmailVerification();
 
         String? token = await user.getIdToken();
-        print("User's ID Token: $token");
+        null;
 
         final response = await apiService.sendTokenToServer(token);
 
         if (response.statusCode != 200) {
-          print('Error en el servidor: ${response.body}');
+          null;
         }
 
         await user.updateDisplayName(_usernameController.text);
@@ -66,12 +66,12 @@ class RegisterScreen extends StatelessWidget {
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (userDoc.exists) {
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-        print('User data: $userData');
+        null;
       } else {
-        print('Usuario no existe!');
+        null;
       }
     } catch (e) {
-      print('Error getting user data: $e');
+      null;
     }
   }
 

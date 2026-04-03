@@ -61,7 +61,7 @@ class ReferralScreen extends StatelessWidget {
                 width: 250,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF841813),
+                  color: const Color(0xFF1A819A),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: Colors.white, width: 2),
                 ),

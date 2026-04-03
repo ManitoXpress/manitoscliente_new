@@ -1,59 +1,59 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class WhatsAppContactScreen extends StatefulWidget {
-  final String workerId;
+import '../Styles/stilo.dart';
 
-  WhatsAppContactScreen({required this.workerId});
+class WhatsAppUserContactScreen extends StatefulWidget {
+  final String userId;
+
+  WhatsAppUserContactScreen({required this.userId});
 
   @override
-  _WhatsAppContactScreenState createState() => _WhatsAppContactScreenState();
+  _WhatsAppUserContactScreenState createState() =>
+      _WhatsAppUserContactScreenState();
 }
 
-class _WhatsAppContactScreenState extends State<WhatsAppContactScreen> {
-  String? workerName;
+class _WhatsAppUserContactScreenState extends State<WhatsAppUserContactScreen> {
   String? phoneNumber;
+  String? displayName;
 
   @override
   void initState() {
     super.initState();
-    _fetchWorkerData();
+    _fetchUserInfo();
   }
 
-  Future<void> _fetchWorkerData() async {
+  Future<void> _fetchUserInfo() async {
     try {
       final workerDoc = await FirebaseFirestore.instance
-          .collection('workers')
-          .doc(widget.workerId)
+          .collection('users')
+          .doc(widget.userId)
           .get();
       if (workerDoc.exists) {
         setState(() {
-          workerName = workerDoc['displayName'];
+          displayName = workerDoc['displayName'];
           phoneNumber = workerDoc['phoneNumber'];
         });
       }
     } catch (e) {
-      print('Error al obtener datos del trabajador: $e');
+      null;
     }
   }
 
   void _openWhatsApp() async {
-    if (phoneNumber != null) {
-      final whatsappUrl = "https://wa.me/$phoneNumber?text=Hola $workerName, necesito comunicarme contigo desde la app.";
-      if (await canLaunch(whatsappUrl)) {
-        await launch(whatsappUrl);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("No se pudo abrir WhatsApp")),
-        );
-      }
+    if (phoneNumber == null) return;
+
+    final whatsappUrl = Uri.parse(
+        "https://wa.me/$phoneNumber?text=Hola $displayName, soy el cliente de tu trabajo asignado desde la app.");
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+      );
     }
   }
 
@@ -61,30 +61,18 @@ class _WhatsAppContactScreenState extends State<WhatsAppContactScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Contactar por WhatsApp'),
+        title: Text(displayName != null
+            ? 'Contactar a $displayName'
+            : 'Contacto por WhatsApp'),
       ),
       body: Center(
         child: phoneNumber == null
             ? CircularProgressIndicator()
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '¿Deseas contactar a $workerName por WhatsApp?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    icon: FaIcon(FontAwesomeIcons.whatsapp),
-                    onPressed: _openWhatsApp,
-                    label: Text('Abrir WhatsApp'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
+            : ElevatedButton.icon(
+                icon: FaIcon(FontAwesomeIcons.whatsapp),
+                label: Text('Chatear con $displayName'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: _openWhatsApp,
               ),
       ),
     );

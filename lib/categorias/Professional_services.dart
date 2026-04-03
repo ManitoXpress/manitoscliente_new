@@ -1,30 +1,23 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:manitoscliente_new/Styles/stilo.dart';
-import 'package:manitoscliente_new/categorias/Service_DetailsScreen.dart';
-import 'package:manitoscliente_new/controller/auth_utils.dart';
-import 'package:manitoscliente_new/provider/dataProvider.dart';
-import 'package:manitoscliente_new/provider/service_provider.dart';
-
-import 'package:manitoscliente_new/request/resquest.dart';
-import 'package:manitoscliente_new/utils/status.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-final Map<String, IconData> serviceIcons = {
-  'cocina y catering': Icons.restaurant_menu,
-  'arquitectura y diseño': Icons.architecture,
-  'carpintería': Icons.handyman,
-  'mudanza': Icons.local_shipping,
-  'vidriero': Icons.window,
-  'canaletas': Icons.water_damage,
-  // ... puedes agregar más
-};
+import 'package:searchbar_animation/searchbar_animation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-IconData _iconForService(String name) {
-  return serviceIcons.entries
-      .firstWhere((e) => name.toLowerCase().contains(e.key), orElse: () => MapEntry('', Icons.work_outline))
-      .value;
-}
+import '../Styles/stilo.dart';
+import '../controller/auth_utils.dart';
+import '../controller/home_screen_functions.dart';
+import '../provider/dataProvider.dart';
+import '../provider/service_provider.dart';
+import '../request/ResponseGet.dart';
+import '../request/requestExpertise.dart';
+import '../request/requestServiceType.dart';
+import '../request/resquest.dart';
+import '../utils/status.dart';
+import 'Service_DetailsScreen.dart';
 
 class ProfessionalServicesScreen extends StatelessWidget {
   @override
@@ -49,31 +42,32 @@ class _ProfessionalServicesView extends StatelessWidget {
         automaticallyImplyLeading: true,
         title: provider.isSearching
             ? Container(
-          width: double.infinity,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: TextField(
-            onChanged: provider.filter,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-              hintText: 'Buscar servicios...',
-              border: InputBorder.none,
-              suffixIcon: provider.displayedServices.isNotEmpty
-                  ? IconButton(
-                icon: const Icon(Icons.clear, color: Color(0xFF1A819A)),
-                onPressed: provider.clearFilter,
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: TextField(
+                  onChanged: provider.filter,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                    hintText: 'Buscar servicios...',
+                    border: InputBorder.none,
+                    suffixIcon: provider.displayedServices.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear,
+                                color: Color(0xFF1A819A)),
+                            onPressed: provider.clearFilter,
+                          )
+                        : null,
+                  ),
+                ),
               )
-                  : null,
-            ),
-          ),
-        )
             : const Text(
-          'Servicios de hogar',
-          style: MyTextStyles.buttonTextStyle,
-        ),
+                'Servicios de hogar',
+                style: MyTextStyles.buttonTextStyle,
+              ),
         actions: [
           IconButton(
             icon: Icon(
@@ -86,7 +80,8 @@ class _ProfessionalServicesView extends StatelessWidget {
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque, // << permite detectar taps fuera
-        onTap: () => context.read<ProfessionalServicesProvider>().clearSelection(),
+        onTap: () =>
+            context.read<ProfessionalServicesProvider>().clearSelection(),
         child: Container(
           color: const Color(0xFF6AB8D6),
           child: Column(
@@ -114,9 +109,9 @@ class _SearchField extends StatelessWidget {
             border: InputBorder.none,
             suffixIcon: prov.displayedServices.isNotEmpty
                 ? IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: prov.clearFilter,
-            )
+                    icon: const Icon(Icons.clear),
+                    onPressed: prov.clearFilter,
+                  )
                 : null,
           ),
           onChanged: prov.filter,
@@ -131,8 +126,10 @@ class _ServiceGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProfessionalServicesProvider>(
       builder: (ctx, prov, _) {
-        if (prov.isLoading) return const Center(child: CircularProgressIndicator());
-        if (prov.errorMessage != null) return Center(child: Text('Error: \${prov.errorMessage}'));
+        if (prov.isLoading)
+          return const Center(child: CircularProgressIndicator());
+        if (prov.errorMessage != null)
+          return Center(child: Text('Error: \${prov.errorMessage}'));
         if (prov.displayedServices.isEmpty) {
           return const Center(
             child: Text(
@@ -237,8 +234,10 @@ class _ServiceGrid extends StatelessWidget {
                                 height: 70,
                                 width: 70,
                                 fit: BoxFit.cover,
-                                placeholder: (_, __) => const CircularProgressIndicator(),
-                                errorWidget: (_, __, ___) => const Icon(Icons.error),
+                                placeholder: (_, __) =>
+                                    const CircularProgressIndicator(),
+                                errorWidget: (_, __, ___) =>
+                                    const Icon(Icons.error),
                               ),
                             ),
                           ),
@@ -249,7 +248,8 @@ class _ServiceGrid extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: prov.isServiceBlocked(svc)
-                                ? MyTextStyles.drawerButtonTextStyle1.copyWith(color: Colors.white.withOpacity(0.5))
+                                ? MyTextStyles.drawerButtonTextStyle1.copyWith(
+                                    color: Colors.white.withOpacity(0.5))
                                 : MyTextStyles.drawerButtonTextStyle1,
                           ),
                         ],
@@ -267,8 +267,12 @@ class _ServiceGrid extends StatelessWidget {
                             child: LayoutBuilder(
                               builder: (context, constraints) {
                                 final maxHeight = constraints.maxHeight;
-                                final iconSize = maxHeight * 0.18 > 40 ? 40.0 : maxHeight * 0.18;
-                                final profIconSize = maxHeight * 0.16 > 38 ? 38.0 : maxHeight * 0.16;
+                                final iconSize = maxHeight * 0.18 > 40
+                                    ? 40.0
+                                    : maxHeight * 0.18;
+                                final profIconSize = maxHeight * 0.16 > 38
+                                    ? 38.0
+                                    : maxHeight * 0.16;
                                 return SingleChildScrollView(
                                   physics: const BouncingScrollPhysics(),
                                   child: ConstrainedBox(
@@ -277,7 +281,8 @@ class _ServiceGrid extends StatelessWidget {
                                       maxHeight: maxHeight,
                                     ),
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         TweenAnimationBuilder<double>(
                                           tween: Tween(begin: 1.0, end: 1.15),
@@ -286,7 +291,9 @@ class _ServiceGrid extends StatelessWidget {
                                           builder: (context, scale, child) {
                                             return Transform.scale(
                                               scale: scale,
-                                              child: Icon(Icons.lock_outline, color: Colors.white, size: iconSize),
+                                              child: Icon(Icons.lock_outline,
+                                                  color: Colors.white,
+                                                  size: iconSize),
                                             );
                                           },
                                           onEnd: () {},
@@ -296,23 +303,22 @@ class _ServiceGrid extends StatelessWidget {
                                           'Próximamente',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: maxHeight * 0.09 > 17 ? 17 : maxHeight * 0.09,
+                                            fontSize: maxHeight * 0.09 > 17
+                                                ? 17
+                                                : maxHeight * 0.09,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 1.1,
                                           ),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        Icon(
-                                          _iconForService(svc.name),
-                                          color: Colors.white,
-                                          size: profIconSize,
                                         ),
                                         const SizedBox(height: 10),
                                         Text(
                                           svc.name,
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(0.95),
-                                            fontSize: maxHeight * 0.08 > 15 ? 15 : maxHeight * 0.08,
+                                            color:
+                                                Colors.white.withOpacity(0.95),
+                                            fontSize: maxHeight * 0.05 > 11
+                                                ? 11
+                                                : maxHeight * 0.05,
                                             fontWeight: FontWeight.w500,
                                           ),
                                           textAlign: TextAlign.center,
@@ -338,7 +344,6 @@ class _ServiceGrid extends StatelessWidget {
     );
   }
 }
-
 
 class _DetailsPanel extends StatelessWidget {
   const _DetailsPanel();
@@ -374,11 +379,6 @@ class _DetailsPanel extends StatelessWidget {
               svc.name,
               style: MyTextStyles.titleTextStyle,
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              svc.description,
-              style: MyTextStyles.formServiceTextStyle,
             ),
             const SizedBox(height: 10),
             const Row(

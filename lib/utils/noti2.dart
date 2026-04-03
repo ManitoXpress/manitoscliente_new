@@ -30,7 +30,7 @@ class FCMService {
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print("Notificación seleccionada con payload: ${response.payload}");
+        null;
       },
     );
   }
@@ -40,12 +40,11 @@ class FCMService {
 
     // Obtener y mostrar el token
     String? fcmToken = await messaging.getToken();
-    print("FCM Token: $fcmToken");
+    null;
 
     // Listener para notificaciones recibidas en primer plano
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Notificación recibida en primer plano: ${message.notification
-          ?.title}");
+      null;
 
       if (message.notification != null) {
         // Mostrar notificación con título y cuerpo enviados por el backend
@@ -64,7 +63,7 @@ class FCMService {
 
     // Listener para cuando se abre la app desde una notificación
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print("Notificación abierta por el usuario");
+      null;
       // Aquí puedes manejar la navegación o acciones adicionales
     });
   }

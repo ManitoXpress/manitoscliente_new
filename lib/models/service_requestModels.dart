@@ -1,12 +1,6 @@
-// lib/models/service_request_model.dart
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/models/expertise_models.dart';
-// lib/models/service_request_model.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'expertiseModels.dart';
 
 class ServiceRequestModel {
   final String id;
@@ -62,22 +56,22 @@ class ServiceRequestModel {
         .toList();
 
     return ServiceRequestModel(
-      id: doc.id,
-      status: data['status'] as String? ?? '',
-      date: data['date'] as String? ?? '',
-      time: data['time'] as String? ?? '',
-      description: data['description'] as String? ?? '',
-      location: {
-        'lat': (locMap['lat'] as num?)?.toDouble() ?? 0.0,
-        'lng': (locMap['lng'] as num?)?.toDouble() ?? 0.0,
-      },
-      images: imgs,
-      expertises: expertises,
-      rawOffers: rawOffers,
-      rawComments: rawComments,
-      userId: data['userId'] as String? ?? '',
-      workerId: data['workerId'] as String? ?? '',
-      completionImageUrl: data['completionImageUrl'] as String?,
-    );
-  }
+        id: doc.id,
+        status: data['status'] as String? ?? '',
+        date: data['date'] as String? ?? '',
+        time: data['time'] as String? ?? '',
+        description: data['description'] as String? ?? '',
+        location: {
+          'lat': (locMap['lat'] as num?)?.toDouble() ?? 0.0,
+          'lng': (locMap['lng'] as num?)?.toDouble() ?? 0.0,
+        },
+        images: imgs,
+        expertises: expertises,
+        rawOffers: rawOffers,
+        rawComments: rawComments,
+        userId: data['userId'] as String? ?? '',
+        workerId: data['workerId'] as String? ?? '',
+        completionImageUrl: data['completionImageUrl'] as String?,
+        );
+    }
 }

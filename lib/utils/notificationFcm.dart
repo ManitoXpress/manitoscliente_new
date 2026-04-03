@@ -41,7 +41,7 @@ class FCMService {
       requestSoundPermission: true,
       onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) async {
         // Handle iOS local notification when app is in foreground
-        print("Received iOS local notification: $title");
+        null;
       },
     );
 
@@ -53,7 +53,7 @@ class FCMService {
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print("Notification selected with payload: ${response.payload}");
+        null;
         // Handle notification tap
       },
     );
@@ -64,17 +64,17 @@ class FCMService {
 
     // Get FCM token and handle token refresh
     String? fcmToken = await messaging.getToken();
-    print("FCM Token: $fcmToken");
+    null;
 
     // Listen for token refresh
     messaging.onTokenRefresh.listen((String token) {
-      print("FCM Token refreshed: $token");
+      null;
       // Here you should update the token in your backend
     });
 
     // Foreground message handler
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Foreground notification received: ${message.notification?.title}");
+      null;
 
       if (message.notification != null) {
         showLocalNotification(
@@ -94,14 +94,14 @@ class FCMService {
     // When app is opened from terminated state
     FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        print("App opened from terminated state via notification");
+        null;
         // Handle notification tap when app is terminated
       }
     });
 
     // When app is in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print("App opened from background state via notification");
+      null;
       // Handle notification tap when app is in background
     });
   }

@@ -8,19 +8,19 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
+import 'package:manitoscliente_new/provider/providerService.dart';
+import 'package:manitoscliente_new/request/ResponseGet.dart';
+import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/request/dataprofile.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 
+import 'package:manitoscliente_new/widgets/serviceList.dart';
 import 'package:provider/provider.dart';
 
 import 'Styles/stilo.dart';
-
+import 'constant/serviceConstants.dart';
 import 'HistorialTabWidgets.dart';
-import 'constants/service_constants.dart';
-import 'provider/providerService.dart';
-import 'request/ResponseGet.dart';
-import 'request/ResponsePost.dart';
-import 'request/resquest.dart';
-import 'widgets/serviceList.dart';
+import 'services/historial_preload_service.dart';
 
 
 class HistorialScreen extends StatefulWidget {
@@ -45,6 +45,7 @@ class _HistorialScreenState extends State<HistorialScreen>
   String _token = '';
   String _deviceId = '';
   Timer? _autoRefreshTimer;
+  bool _isInitialized = false;
 
   @override
   String? get restorationId => 'historial_screen';
@@ -61,40 +62,89 @@ class _HistorialScreenState extends State<HistorialScreen>
       }
     });
 
-    // 2) Obtenemos credenciales y disparamos la carga
+    // Inicialización optimizada con delay mínimo
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initializeHistorial();
+    });
+  }
+
+  /// 🚀 OPTIMIZADO: Inicialización ultra-rápida del historial con precarga
+  Future<void> _initializeHistorial() async {
+    try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      final token = await user.getIdToken();
-      final deviceId = await _fetchDeviceId();
+      null;
+      final startTime = DateTime.now();
 
-      if (!mounted) return;
       setState(() {
         _userId = user.uid;
+      });
+
+      // 🚀 OPTIMIZACIÓN: Verificar si ya se precargó
+      final preloadService = HistorialPreloadService();
+      if (preloadService.isPreloadedForUser(_userId)) {
+        null;
+        _isInitialized = true;
+        return;
+      }
+
+      // Si no está precargado, cargar normalmente
+      final futures = await Future.wait([
+        user.getIdToken(),
+        _fetchDeviceId(),
+      ]).timeout(const Duration(seconds: 5));
+
+      final token = futures[0] as String?;
+      final deviceId = futures[1] as String;
+
+      if (!mounted) return;
+      
+      setState(() {
         _token = token ?? '';
         _deviceId = deviceId;
       });
 
-      // Usar el provider del contexto
-      final historialProv =
-          Provider.of<HistorialProvider>(context, listen: false);
-      await historialProv.loadAll(
-        userId: _userId,
-        token: _token,
-        deviceId: _deviceId,
-      );
+      // Usar el provider del contexto con optimizaciones
+      final historialProv = Provider.of<HistorialProvider>(context, listen: false);
+      
+      // 🚀 OPTIMIZACIÓN: Cargar datos de forma asíncrona sin bloquear la UI
+      Future.microtask(() async {
+        await historialProv.loadAll(
+          userId: _userId,
+          token: _token,
+          deviceId: _deviceId,
+        );
 
-      // Iniciar polling automático
-      historialProv.startAutoRefresh(
-        userId: _userId,
-        token: _token,
-        deviceId: _deviceId,
-      );
+        // Iniciar actualización automática inteligente
+        historialProv.startAutoRefresh(
+          userId: _userId,
+          token: _token,
+          deviceId: _deviceId,
+        );
 
-      // Iniciar temporizador de cancelación automática de servicios vencidos
-      historialProv.iniciarTemporizadorCancelacion(_userId, _token);
-    });
+        // Iniciar temporizador de cancelación automática
+        historialProv.iniciarTemporizadorCancelacion(_userId, _token);
+
+        _isInitialized = true;
+        
+        final endTime = DateTime.now();
+        final duration = endTime.difference(startTime);
+        null;
+      });
+
+    } catch (e) {
+      null;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al inicializar: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -108,15 +158,20 @@ class _HistorialScreenState extends State<HistorialScreen>
   }
 
   Future<String> _fetchDeviceId() async {
-    final info = DeviceInfoPlugin();
-    if (Platform.isAndroid) {
-      final a = await info.androidInfo;
-      return a.id ?? 'unknown';
-    } else if (Platform.isIOS) {
-      final i = await info.iosInfo;
-      return i.identifierForVendor ?? 'unknown';
+    try {
+      final info = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final a = await info.androidInfo;
+        return a.id ?? 'unknown';
+      } else if (Platform.isIOS) {
+        final i = await info.iosInfo;
+        return i.identifierForVendor ?? 'unknown';
+      }
+      return 'unsupported';
+    } catch (e) {
+      null;
+      return 'error';
     }
-    return 'unsupported';
   }
 
   @override
@@ -124,7 +179,38 @@ class _HistorialScreenState extends State<HistorialScreen>
     _tabController.dispose();
     _tabIndex.dispose();
     _autoRefreshTimer?.cancel();
+    
+    // Detener actualización automática al salir
+    if (_userId.isNotEmpty) {
+      final historialProv = Provider.of<HistorialProvider>(context, listen: false);
+      historialProv.stopAutoRefresh();
+    }
+    
     super.dispose();
+  }
+
+  /// Refrescar historial de forma optimizada
+  Future<void> _refreshHistorial() async {
+    if (_userId.isEmpty || _token.isEmpty || _deviceId.isEmpty) return;
+    
+    try {
+      final historialProv = Provider.of<HistorialProvider>(context, listen: false);
+      await historialProv.refresh(
+        userId: _userId,
+        token: _token,
+        deviceId: _deviceId,
+      );
+    } catch (e) {
+      null;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -132,25 +218,70 @@ class _HistorialScreenState extends State<HistorialScreen>
     return Scaffold(
       body: Column(
         children: [
-          // TabBar sobre fondo blanco, visible bajo el AppBar principal
+          // TabBar optimizado con indicadores de estado
           Container(
             color: Colors.white,
-            child: ModernTabBar(
-              controller: _tabController,
-              availableCount: Provider.of<HistorialProvider>(context).availableCount,
-              offerServiceCount: Provider.of<HistorialProvider>(context).offerServiceCount,
-              inProgressCount: Provider.of<HistorialProvider>(context).inProgressCount,
-              completedCount: Provider.of<HistorialProvider>(context).completedCount,
+            child: Consumer<HistorialProvider>(
+              builder: (context, provider, child) {
+                return ModernTabBar(
+                  controller: _tabController,
+                  availableCount: provider.availableCount,
+                  offerServiceCount: provider.offerServiceCount,
+                  inProgressCount: provider.inProgressCount,
+                  completedCount: provider.completedCount,
+                );
+              },
             ),
           ),
+          
+          // Header con información de estado
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Center(
-              child: Text('Historial', style: MyTextStyles.buttonTextStyle3),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Text('Historial', style: MyTextStyles.buttonTextStyle3),
+                  ),
+                ),
+                // 🚀 MEJORADO: Indicador de estado de caché más informativo
+                Consumer<HistorialProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.isRefreshing) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A819A)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Actualizando...',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF1A819A),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
           ),
           const Divider(height: 1),
+          
+          // Contenido principal optimizado
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -161,12 +292,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                   userData: widget.userData,
                   apiService: ApiService(),
                   apiService2: ApiService2(),
-                  onRefresh: () =>
-                      Provider.of<HistorialProvider>(context, listen: false)
-                          .refresh(
-                              userId: _userId,
-                              token: _token,
-                              deviceId: _deviceId),
+                  onRefresh: _refreshHistorial,
                   isLoading: Provider.of<HistorialProvider>(context).isLoading,
                 ),
                 _ServiceListTab(
@@ -175,12 +301,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                   userData: widget.userData,
                   apiService: ApiService(),
                   apiService2: ApiService2(),
-                  onRefresh: () =>
-                      Provider.of<HistorialProvider>(context, listen: false)
-                          .refresh(
-                              userId: _userId,
-                              token: _token,
-                              deviceId: _deviceId),
+                  onRefresh: _refreshHistorial,
                   isLoading: Provider.of<HistorialProvider>(context).isLoading,
                 ),
                 _ServiceListTab(
@@ -189,12 +310,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                   userData: widget.userData,
                   apiService: ApiService(),
                   apiService2: ApiService2(),
-                  onRefresh: () =>
-                      Provider.of<HistorialProvider>(context, listen: false)
-                          .refresh(
-                              userId: _userId,
-                              token: _token,
-                              deviceId: _deviceId),
+                  onRefresh: _refreshHistorial,
                   isLoading: Provider.of<HistorialProvider>(context).isLoading,
                 ),
                 _ServiceListTab(
@@ -203,12 +319,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                   userData: widget.userData,
                   apiService: ApiService(),
                   apiService2: ApiService2(),
-                  onRefresh: () =>
-                      Provider.of<HistorialProvider>(context, listen: false)
-                          .refresh(
-                              userId: _userId,
-                              token: _token,
-                              deviceId: _deviceId),
+                  onRefresh: _refreshHistorial,
                   isLoading: Provider.of<HistorialProvider>(context).isLoading,
                 ),
               ],
@@ -216,25 +327,33 @@ class _HistorialScreenState extends State<HistorialScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: Provider.of<HistorialProvider>(context).isLoading ||
-                _userId.isEmpty ||
-                _token.isEmpty ||
-                _deviceId.isEmpty
-            ? null
-            : () {
-                print(
-                    'Botón actualizar presionado: userId=\x1B[32m$_userId\x1B[0m, token=\x1B[32m$_token\x1B[0m, deviceId=\x1B[32m$_deviceId\x1B[0m');
-                Provider.of<HistorialProvider>(context, listen: false).refresh(
-                  userId: _userId,
-                  token: _token,
-                  deviceId: _deviceId,
-                );
-              },
-        label: const Text('Actualizar'),
-        icon: const Icon(Icons.refresh),
-        backgroundColor: const Color(0xFF1A819A),
-        foregroundColor: Colors.white,
+      
+      // Botón flotante optimizado
+      floatingActionButton: Consumer<HistorialProvider>(
+        builder: (context, provider, child) {
+          final canRefresh = _isInitialized && 
+                           _userId.isNotEmpty && 
+                           _token.isNotEmpty && 
+                           _deviceId.isNotEmpty &&
+                           !provider.isRefreshing;
+          
+          return FloatingActionButton.extended(
+            onPressed: canRefresh ? _refreshHistorial : null,
+            label: Text(provider.isRefreshing ? 'Actualizando...' : 'Actualizar'),
+            icon: provider.isRefreshing 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            backgroundColor: canRefresh ? const Color(0xFF1A819A) : Colors.grey,
+            foregroundColor: Colors.white,
+          );
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -269,6 +388,7 @@ class _ServiceListTab extends StatefulWidget {
 class _ServiceListTabState extends State<_ServiceListTab>
     with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
@@ -287,12 +407,33 @@ class _ServiceListTabState extends State<_ServiceListTab>
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       if (prov.hasMore(widget.status) && !prov.isLoadingMore(widget.status)) {
-        prov.loadMore(
-          status: widget.status,
-          userId: widget.userId,
-          token: '', // Puedes pasar el token real si lo necesitas
-          deviceId: '', // Puedes pasar el deviceId real si lo necesitas
-        );
+        _loadMoreData(prov);
+      }
+    }
+  }
+
+  /// Carga más datos de forma optimizada
+  Future<void> _loadMoreData(HistorialProvider provider) async {
+    if (_isLoadingMore) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      await provider.loadMore(
+        status: widget.status,
+        userId: widget.userId,
+        token: '', // Se obtendrá del provider
+        deviceId: '', // Se obtendrá del provider
+      );
+    } catch (e) {
+      null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
       }
     }
   }
@@ -300,12 +441,15 @@ class _ServiceListTabState extends State<_ServiceListTab>
   @override
   bool get wantKeepAlive => true;
 
-  /// Método helper para construir la lista de servicios
+  /// Método helper para construir la lista de servicios optimizado
   Widget _buildServiceList(
       String status, List<ServiceRequest> list, double w, double h) {
+    if (list.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     switch (status) {
       case 'available':
-        final offers = list.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceListAvailable(
           list,
           w,
@@ -366,456 +510,360 @@ class _ServiceListTabState extends State<_ServiceListTab>
 
   @override
   Widget build(BuildContext context) {
-    final prov = Provider.of<HistorialProvider>(context);
-    final list = prov.list(widget.status);
-    final isLoadingMore = prov.isLoadingMore(widget.status);
-    final hasMore = prov.hasMore(widget.status);
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    return Consumer<HistorialProvider>(
+      builder: (context, provider, child) {
+        final list = provider.list(widget.status);
+        final isLoadingMore = provider.isLoadingMore(widget.status);
+        final hasMore = provider.hasMore(widget.status);
+        final errorMessage = provider.errorMessage;
 
-    // Declarar las variables de tamaño al inicio
-    final w = MediaQuery.of(context).size.width;
-    final h = MediaQuery.of(context).size.height;
+        // Declarar las variables de tamaño al inicio
+        final w = MediaQuery.of(context).size.width;
+        final h = MediaQuery.of(context).size.height;
 
-    return RefreshIndicator(
-      onRefresh: () async => widget.onRefresh(),
-      child: Builder(
-        builder: (context) {
-          if (prov.errorMessage != null) {
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              controller: _scrollController,
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Color(0xFF1A819A),
-                        size: 64,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Error al cargar historial',
-                        style: TextStyle(
-                          color: Color(0xFF1A819A),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          prov.errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: () => widget.onRefresh(),
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        label: const Text(
-                          'Reintentar',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A819A),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }
-
-          if (list.isEmpty && !widget.isLoading) {
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              controller: _scrollController,
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-                const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.history,
-                        color: Color(0xFF1A819A),
-                        size: 64,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No hay servicios en esta categoría',
-                        style: TextStyle(
-                          color: Color(0xFF1A819A),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Usa el botón de refresh para actualizar',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }
-
-          // Skeleton loader para carga inicial
-          if (widget.isLoading && list.isEmpty) {
-            return ListView.builder(
-              controller: _scrollController,
-              itemCount: 6,
-              itemBuilder: (context, index) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        margin: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[400],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 120,
-                                height: 14,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: 80,
-                                height: 12,
-                                color: Colors.grey[300],
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: 60,
-                                height: 12,
-                                color: Colors.grey[300],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-
-          // Skeleton loader para actualización (cuando hay datos pero se está actualizando)
-          if (prov.isRefreshing && list.isNotEmpty) {
-            return Stack(
-              children: [
-                // Mostrar los datos actuales con opacidad reducida
-                Opacity(
-                  opacity: 0.3,
-                  child: _buildServiceList(widget.status, list, w, h),
-                ),
-                // Overlay con skeleton loader
-                Container(
-                  color: Colors.white.withOpacity(0.8),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: 3,
-                    itemBuilder: (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              margin: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[400],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 120,
-                                      height: 14,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      width: 80,
-                                      height: 12,
-                                      color: Colors.grey[300],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      width: 60,
-                                      height: 12,
-                                      color: Colors.grey[300],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }
-
-          Widget listWidget;
-          switch (widget.status) {
-            case 'available':
-              final offers = list.expand((s) => s.offers).toList();
-              listWidget = ServiceListBuilder.buildServiceListAvailable(
-                list,
-                w,
-                h,
-                widget.userId,
-                widget.userData,
-                widget.apiService,
-              );
-              break;
-            case 'offer':
-              final offers = list.expand((s) => s.offers).toList();
-              listWidget = ServiceListBuilder.buildOfferList(
-                list,
-                offers,
-                w,
-                h,
-                widget.userId,
-                widget.userData,
-                widget.apiService,
-              );
-              break;
-            case 'in_progress':
-              // Debug: Imprimir información de la lista
-              print('🔍 Debug - Lista de servicios recibida: ${list.length}');
-              for (int i = 0; i < list.length; i++) {
-                print(
-                    '🔍 Debug - Servicio $i: ID=${list[i].id}, Status=${list[i].status.id}, Offers=${list[i].offers.length}');
+        return RefreshIndicator(
+          onRefresh: () async => widget.onRefresh(),
+          child: Builder(
+            builder: (context) {
+              // Manejo de errores optimizado
+              if (errorMessage != null) {
+                return _buildErrorView(errorMessage, widget.onRefresh);
               }
 
-              // 1) Expandir todas las ofertas de cada servicio, forzando el tipo a Offer
-              final List<Offer> listOffer = list
-                  .expand((s) => (s.offers ?? <Offer>[]).cast<Offer>())
-                  .toList();
-
-              print(
-                  '🔍 Debug - Total de ofertas expandidas: ${listOffer.length}');
-              for (int i = 0; i < listOffer.length; i++) {
-                print(
-                    '🔍 Debug - Oferta $i: ID=${listOffer[i].id}, Status=${listOffer[i].status.id}, ServiceId=${listOffer[i].serviceId}');
+              // Vista vacía optimizada
+              if (list.isEmpty && !widget.isLoading) {
+                return _buildEmptyView();
               }
 
-              // 2) FILTRAR sólo las que están realmente en "in_progress".
-              //    Aquí comparamos offer.status.id (que es un String como "in_progress")
-              //    con nuestro ServiceStatus.inProgress (también "in_progress").
-              final List<Offer> ofertasEnProgreso = listOffer
-                  .where((offer) => offer.status.id == ServiceStatus.inProgress)
-                  .toList();
-
-              print(
-                  '🔍 Debug - Ofertas filtradas por in_progress: ${ofertasEnProgreso.length}');
-              print(
-                  '🔍 Debug - ServiceStatus.inProgress = ${ServiceStatus.inProgress}');
-
-              // Si no hay ofertas en progreso, también mostrar servicios que tengan status in_progress directamente
-              if (ofertasEnProgreso.isEmpty) {
-                print(
-                    '🔍 Debug - No se encontraron ofertas en progreso, revisando servicios directamente...');
-                final serviciosEnProgreso = list
-                    .where((s) => s.status.id == ServiceStatus.inProgress)
-                    .toList();
-                print(
-                    '🔍 Debug - Servicios con status in_progress: ${serviciosEnProgreso.length}');
-
-                if (serviciosEnProgreso.isNotEmpty) {
-                  // Si hay servicios en progreso pero sin ofertas, crear ofertas dummy
-                  final ofertasDummy = serviciosEnProgreso.map((service) {
-                    return Offer(
-                      id: service.id,
-                      workerId: service.workerId.isNotEmpty
-                          ? service.workerId
-                          : 'unknown',
-                      offeredPrice: service.offeredPrice,
-                      hasOffer: true,
-                      serviceId: service.id,
-                      extraCosts: 0.0,
-                      totalPrice: service.offeredPrice,
-                      status: service.status,
-                      userToken: '',
-                      createdAt: DateTime.now(),
-                      expertises: service.expertises,
-                      subcategoryName: service.subcategoryName,
-                    );
-                  }).toList();
-
-                  print(
-                      '🔍 Debug - Creando ofertas dummy para servicios en progreso: ${ofertasDummy.length}');
-                  listWidget = ServiceListBuilder.inProgressList(
-                    list,
-                    ofertasDummy,
-                    w,
-                    h,
-                    widget.userId,
-                    widget.userData,
-                    widget.apiService,
-                  );
-                } else {
-                  listWidget = const Center(
-                    child: Text(
-                      'No hay servicios en progreso',
-                      style: TextStyle(
-                        color: Color(0xFF1A819A),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }
-              } else {
-                // 3) Ahora sí, pasamos sólo esa sublista al builder
-                listWidget = ServiceListBuilder.inProgressList(
-                  list, // List<ServiceRequest>
-                  ofertasEnProgreso, // List<Offer> filtrada
-                  w, // screenWidth
-                  h, // screenHeight
-                  widget.userId,
-                  widget.userData,
-                  widget.apiService,
-                );
+              // Skeleton loader para carga inicial
+              if (widget.isLoading && list.isEmpty) {
+                return _buildSkeletonLoader();
               }
-              break;
-            case 'completed':
-              final offers = list
-                  .expand((s) => s.offers)
-                  .where((offer) => offer.status.id == ServiceStatus.completed)
-                  .toList();
-              listWidget = ServiceListBuilder.buildServiceListComplete(
-                list,
-                offers,
-                w,
-                h,
-                widget.userId,
-                widget.userData,
-                widget.apiService,
-              );
-              break;
-            case 'cancelled':
-              listWidget = ServiceListBuilder.buildServiceListCancelled(
-                list, // tu lista de ServiceRequest (incluye offers internamente)
-                w, // ancho
-                h, // alto
-                widget.userId,
-                widget.userData,
-                widget.apiService,
-              );
-              break;
-            default:
-              listWidget = const SizedBox.shrink();
-          }
 
-          return Stack(
+              // Skeleton loader para actualización
+              if (provider.isRefreshing && list.isNotEmpty) {
+                return _buildRefreshSkeleton(list, w, h);
+              }
+
+              // Lista principal optimizada
+              return _buildMainList(list, w, h, hasMore, isLoadingMore, provider);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// Vista de error optimizada
+  Widget _buildErrorView(String errorMessage, VoidCallback onRefresh) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      controller: _scrollController,
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              NotificationListener<ScrollNotification>(
-                onNotification: (scrollInfo) {
-                  if (scrollInfo.metrics.pixels >=
-                          scrollInfo.metrics.maxScrollExtent - 200 &&
-                      hasMore &&
-                      !isLoadingMore) {
-                    prov.loadMore(
-                      status: widget.status,
-                      userId: widget.userId,
-                      token: '', // Puedes pasar el token real si lo necesitas
-                      deviceId:
-                          '', // Puedes pasar el deviceId real si lo necesitas
-                    );
-                  }
-                  return false;
-                },
-                child: listWidget,
+              const Icon(
+                Icons.error_outline,
+                color: Color(0xFF1A819A),
+                size: 64,
               ),
-              if (isLoadingMore)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF1A819A)),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Cargando más...',
-                              style: TextStyle(
-                                  fontSize: 14, color: Color(0xFF1A819A))),
-                        ],
-                      ),
-                    ),
+              const SizedBox(height: 16),
+              const Text(
+                'Error al cargar historial',
+                style: TextStyle(
+                  color: Color(0xFF1A819A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
                   ),
                 ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: onRefresh,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Reintentar',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A819A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ],
-          );
-        },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Vista vacía optimizada
+  Widget _buildEmptyView() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      controller: _scrollController,
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+        const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.history,
+                color: Color(0xFF1A819A),
+                size: 64,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No hay servicios en esta categoría',
+                style: TextStyle(
+                  color: Color(0xFF1A819A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Usa el botón de refresh para actualizar',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Skeleton loader optimizado
+  Widget _buildSkeletonLoader() {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: 6,
+      itemBuilder: (context, index) => _buildSkeletonItem(),
+    );
+  }
+
+  /// Skeleton loader para actualización
+  Widget _buildRefreshSkeleton(List<ServiceRequest> list, double w, double h) {
+    return Stack(
+      children: [
+        // Mostrar los datos actuales con opacidad reducida
+        Opacity(
+          opacity: 0.3,
+          child: _buildServiceList(widget.status, list, w, h),
+        ),
+        // Overlay con skeleton loader
+        Container(
+          color: Colors.white.withOpacity(0.8),
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: 3,
+            itemBuilder: (context, index) => _buildSkeletonItem(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Item de skeleton reutilizable
+  Widget _buildSkeletonItem() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 14,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 80,
+                      height: 12,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 60,
+                      height: 12,
+                      color: Colors.grey[300],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// Lista principal optimizada
+  Widget _buildMainList(
+    List<ServiceRequest> list,
+    double w,
+    double h,
+    bool hasMore,
+    bool isLoadingMore,
+    HistorialProvider provider,
+  ) {
+    Widget listWidget;
+    
+    // Construir la lista según el estado
+    switch (widget.status) {
+      case 'available':
+        listWidget = ServiceListBuilder.buildServiceListAvailable(
+          list,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+        break;
+      case 'offer':
+        final offers = list.expand((s) => s.offers).toList();
+        listWidget = ServiceListBuilder.buildOfferList(
+          list,
+          offers,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+        break;
+      case 'in_progress':
+        final offers = list.expand((s) => s.offers).toList();
+        listWidget = ServiceListBuilder.inProgressList(
+          list,
+          offers,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+        break;
+      case 'completed':
+        final offers = list
+            .expand((s) => s.offers)
+            .where((offer) => offer.status.id == ServiceStatus.completed)
+            .toList();
+        listWidget = ServiceListBuilder.buildServiceListComplete(
+          list,
+          offers,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+        break;
+      case 'cancelled':
+        listWidget = ServiceListBuilder.buildServiceListCancelled(
+          list,
+          w,
+          h,
+          widget.userId,
+          widget.userData,
+          widget.apiService,
+        );
+        break;
+      default:
+        listWidget = const SizedBox.shrink();
+    }
+
+    return Stack(
+      children: [
+        // Lista principal con scroll listener optimizado
+        NotificationListener<ScrollNotification>(
+          onNotification: (scrollInfo) {
+            if (scrollInfo.metrics.pixels >=
+                    scrollInfo.metrics.maxScrollExtent - 200 &&
+                hasMore &&
+                !isLoadingMore) {
+              _loadMoreData(provider);
+            }
+            return false;
+          },
+          child: listWidget,
+        ),
+        
+        // Indicador de carga más datos
+        if (isLoadingMore)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF1A819A)),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Text('Cargando más...',
+                        style: TextStyle(
+                            fontSize: 14, color: Color(0xFF1A819A))),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

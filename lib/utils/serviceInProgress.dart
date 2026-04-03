@@ -1,16 +1,5 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../main.dart';
 import '../controller/baseurl.dart';
 import '../request/ResponseGet.dart';
@@ -75,7 +64,7 @@ class ServiceRepositoryInProgress {
       if (cachedRequest != null &&
           (cachedRequest.status.id == 'in_progress' ||
               cachedRequest.status.id == 'pending_confirmation')) {
-        print('Datos del caché encontrados para el usuario autenticado.');
+        null;
         return [cachedRequest];
       }
 
@@ -88,7 +77,7 @@ class ServiceRepositoryInProgress {
       );
 
       if (response.statusCode != 200) {
-        print('Error en la solicitud HTTP: ${response.statusCode}');
+        null;
         return [];
       }
 
@@ -156,7 +145,7 @@ class ServiceRepositoryInProgress {
           "in_progress", // Tipo de filtro
           deviceId,
           [service],
-          status,
+          "in_progress", // Filtrar solo ofertas en estado in_progress
         );
 
         // Mapear cada objeto ServiceRequest a un objeto Offer
@@ -193,7 +182,7 @@ class ServiceRepositoryInProgress {
       validServices.forEach(LocalCacheService.cacheServiceRequest);
       return validServices.where((s) => s.workerId.isNotEmpty).toList();
     } catch (e) {
-      print('Error crítico en _fetchServicesByInProgress: ${e.toString()}');
+      null;
       return [];
     }
   }
@@ -216,7 +205,7 @@ class ServiceRepositoryInProgress {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
+        null;
         return 0.0;
       }
     } else if (value is num) {

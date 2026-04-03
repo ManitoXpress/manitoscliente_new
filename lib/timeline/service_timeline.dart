@@ -5,8 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../Styles/stilo.dart';
-
-import '../constants/service_constants.dart';
+import '../constant/serviceConstants.dart';
 import '../models/service_requestModels.dart';
 import '../models/worker_detailsModels.dart';
 import '../provider/serviceDetails_providers.dart';

@@ -1,12 +1,14 @@
+import 'dart:ui'; // Para ImageFilter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:manitoscliente_new/request/ResponsePost.dart';
+import 'package:manitoscliente_new/request/dataprofile.dart';
+import 'package:manitoscliente_new/utils/fcmToken.dart';
+import 'package:manitoscliente_new/widgets/maps.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../request/dataprofile.dart';
-import '../widgets/maps.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,9 +19,9 @@ import 'menu/Referido.dart';
 import 'menu/UserProfile.dart';
 import 'menu/help.dart';
 import 'controller/RegisController.dart';
-import 'utils/fcmToken.dart';
-
-final GlobalKey<_HomeScreenState> homeScreenKey = GlobalKey<_HomeScreenState>();
+import 'provider/providerService.dart';
+import 'package:provider/provider.dart';
+import 'services/historial_preload_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialPageIndex;
@@ -28,32 +30,57 @@ class HomeScreen extends StatefulWidget {
   HomeScreen({
     this.initialPageIndex = 0,
     required this.userData,
+    // ← lo hacemos requerido
     Key? key,
-  }) : super(key: key ?? homeScreenKey);
+  }) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+class _HomeScreenState extends State<HomeScreen> with RestorationMixin {
+  final RestorableInt _currentIndex = RestorableInt(0);
   late PageController _pageController;
   late final UserData userData;
+
+  @override
+  String? get restorationId => 'home_screen';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        FCMService().registerTokenForUser(widget.userData.userId);
-      } catch (e) {
-        print('❌ Error registrando token FCM: $e');
+      FCMService().registerTokenForUser(widget.userData.userId);
+      
+      // 🚀 PRECARGA: Iniciar precarga del historial en background
+      _preloadHistorialInBackground();
+    });
+    // Inicializa con 0, el valor real se ajusta en restoreState
+    _pageController = PageController(initialPage: 0);
+  }
+
+  /// 🚀 Precarga el historial en background para mejorar la experiencia
+  Future<void> _preloadHistorialInBackground() async {
+    try {
+      // Esperar un poco para no interferir con la carga inicial del home
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      final preloadService = HistorialPreloadService();
+      await preloadService.preloadHistorial(context, widget.userData.userId);
+      
+    } catch (e) {
+      null;
+    }
+  }
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
+    registerForRestoration(_currentIndex, 'current_tab_index');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _pageController.jumpToPage(_currentIndex.value);
       }
     });
-
-    _currentIndex =
-        widget.initialPageIndex; // Inicializar con la página seleccionada.
-    _pageController = PageController(
-        initialPage: widget.initialPageIndex); // Controlador de PageView.
   }
 
   Future<String?> getCodeReferral() async {
@@ -73,7 +100,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final supportUrl =
         'https://wa.me/59173666393?text=Hola%20Soy%20$name,%20Necesito%20soporte%20';
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A819A).withOpacity(0.65), // Teal with transparency
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withOpacity(0.25), // Subtle glassy highlight
+                    width: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         title: Row(
           mainAxisAlignment:
               MainAxisAlignment.spaceBetween, // Distribuir elementos
@@ -267,15 +313,15 @@ class _HomeScreenState extends State<HomeScreen> {
         children: _buildScreens(),
         onPageChanged: (index) {
           setState(() {
-            _currentIndex = index;
+            _currentIndex.value = index;
           });
         },
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _currentIndex.value,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;
+            _currentIndex.value = index;
           });
           _pageController.jumpToPage(index);
         },
@@ -324,11 +370,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return [
       ServiceScreen(),
       MapScreen(), // Pantalla del mapa
-      HistorialScreen(
-        onTabTapped: () {
-          _refreshHistorial();
-        },
-        userData: UserData.empty(),
+      ChangeNotifierProvider<HistorialProvider>(
+        create: (_) => HistorialProvider(),
+        child: HistorialScreen(
+          onTabTapped: () {
+            _refreshHistorial();
+          },
+          userData: UserData.empty(),
+        ),
       ),
     ];
   }
@@ -337,10 +386,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // Aquí puedes actualizar el historial desde tu backend
   }
 
-  void goToHistorialTab() {
-    setState(() {
-      _currentIndex = 2;
-    });
-    _pageController.jumpToPage(2);
+  @override
+  void dispose() {
+    _currentIndex.dispose();
+    _pageController.dispose();
+    super.dispose();
   }
 }

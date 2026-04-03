@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../constants/service_constants.dart';
+import '../constant/serviceConstants.dart';
 import '../provider/serviceDetails_providers.dart';
 
 /// Modal para mostrar y enviar comentarios en el servicio (lado socio).

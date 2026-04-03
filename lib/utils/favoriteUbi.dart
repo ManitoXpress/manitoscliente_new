@@ -6,6 +6,15 @@ import 'package:flutter/services.dart';
 
 import '../Styles/stilo.dart';
 import '../wizards/datalocation.dart';
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:flutter/services.dart';
+
+import '../Styles/stilo.dart';
+import '../wizards/datalocation.dart';
+
 class FavoriteLocationsScreen extends StatefulWidget {
   @override
   _FavoriteLocationsScreenState createState() =>
@@ -74,7 +83,7 @@ class _FavoriteLocationsScreenState extends State<FavoriteLocationsScreen> {
         );
       }
     } catch (e) {
-      print("Error al convertir la dirección a coordenadas: $e");
+      null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al procesar la ubicación')),
       );

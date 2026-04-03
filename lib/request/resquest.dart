@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../request/requestExpertise.dart';
-import '../request/requestServiceType.dart';
-import '../request/requestStatus.dart';
-import '../request/requestWoker.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/requestWoker.dart';
 
 class Offer {
   final String id;
@@ -18,6 +18,8 @@ class Offer {
   List<Expertise> expertises;
   final String subcategoryName;
   WorkerDetails? workerDetails;
+
+
 
   Offer({
     required this.id,
@@ -47,8 +49,7 @@ class Offer {
       'status': status.toMap(),
       'hasOffer': hasOffer,
       'userToken': userToken,
-      'createdAt': createdAt
-          .toIso8601String(), // Usar toIso8601String para formato de fecha
+      'createdAt': createdAt.toIso8601String(),  // Usar toIso8601String para formato de fecha
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'subcategoryName': subcategoryName,
       'workerDetails': workerDetails?.toMap(),
@@ -79,10 +80,12 @@ class Offer {
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
           : null,
+
+
+
     );
   }
 }
-
 class ServiceRequest {
   final DateTime createdAt;
   String serviceDateTime;
@@ -131,9 +134,10 @@ class ServiceRequest {
     this.workerDetails,
   });
 
-  // Factory constructor para instancia vacía
+  // Constructor de instancia vacía
   factory ServiceRequest.empty() {
     return ServiceRequest(
+      createdAt: DateTime.now(),
       serviceDateTime: '',
       id: '',
       devicesId: '',
@@ -157,11 +161,9 @@ class ServiceRequest {
       hasOffer: false,
       offers: [],
       workerDetails: null,
-      createdAt: DateTime.now(),
     );
   }
 
-  // Resto de métodos (se mantienen igual)
   @override
   String toString() {
     return 'ServiceRequest{id: $id, description: $description, serviceDateTime: $serviceDateTime, offeredPrice: $offeredPrice}';
@@ -169,6 +171,7 @@ class ServiceRequest {
 
   Map<String, dynamic> toMap() {
     return {
+      'createdAt': createdAt.toIso8601String(),
       'serviceDateTime': serviceDateTime,
       'id': id,
       'devicesId': devicesId,
@@ -193,16 +196,8 @@ class ServiceRequest {
   }
 
   factory ServiceRequest.fromSnapshot(Map<String, dynamic> map) {
-    // Compatibilidad: usar selectedDate/selectedTime si existen, si no usar date/time
-    String? selectedDate = map['selectedDate'];
-    String? selectedTime = map['selectedTime'];
-    if ((selectedDate == null || selectedDate.isEmpty) && map['date'] != null) {
-      selectedDate = map['date'];
-    }
-    if ((selectedTime == null || selectedTime.isEmpty) && map['time'] != null) {
-      selectedTime = map['time'];
-    }
     return ServiceRequest(
+      createdAt: _parseDateTime(map['createdAt']),
       serviceDateTime: map['serviceDateTime'] ?? '',
       id: map['serviceId'] ?? '',
       devicesId: map['devicesId'] ?? '',
@@ -214,12 +209,12 @@ class ServiceRequest {
       userId: map['userId'] ?? '',
       workerId: map['workerId'] ?? '',
       isFavorite: map['isFavorite'] ?? false,
-      selectedDate: selectedDate,
-      selectedTime: selectedTime,
+      selectedDate: map['selectedDate'],
+      selectedTime: map['selectedTime'],
       acceptedTerms: map['acceptedTerms'] ?? false,
       expertises: map['expertises'] != null
           ? List<Expertise>.from(
-              (map['expertises'] as List).map((e) => Expertise.fromMap(e)))
+          (map['expertises'] as List).map((e) => Expertise.fromMap(e)))
           : [],
       status: Status(
         id: map['status'] ?? '',
@@ -229,12 +224,11 @@ class ServiceRequest {
       hasOffer: map['hasOffer'] ?? false,
       offers: map['offers'] != null
           ? List<Offer>.from(
-              (map['offers'] as List).map((e) => Offer.fromMap(e)))
+          (map['offers'] as List).map((e) => Offer.fromMap(e)))
           : [],
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
           : null,
-      createdAt: _parseDateTime(map['createdAt'] ?? DateTime.now().toString()),
     );
   }
 
@@ -246,7 +240,7 @@ class ServiceRequest {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
+        null;
         return 0.0;
       }
     } else if (value is num) {

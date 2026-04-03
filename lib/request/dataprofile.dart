@@ -1,4 +1,5 @@
 import '../controller/RegisController.dart';
+
 class UserData {
   String userId;
   String displayName;

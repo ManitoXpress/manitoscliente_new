@@ -13,11 +13,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+
 import '../controller/logincontroller.dart';
 import '../request/dataprofile.dart';
 import '../Styles/stilo.dart';
+import '../home.dart';
 
-
+import '../request/resquest.dart';
+import '../widgets/welcome.dart';
 class LoginScreen extends StatefulWidget {
   final String deviceId;
   final VoidCallback onLoginSuccess;

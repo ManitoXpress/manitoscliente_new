@@ -50,7 +50,7 @@ class RemoteNotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print("Notificación seleccionada con payload: ${response.payload}");
+        null;
       },
     );
   }
@@ -61,10 +61,10 @@ class RemoteNotificationService {
 
     // Obtener y mostrar el token
     String? fcmToken = await messaging.getToken();
-    print("FCM Token: $fcmToken");
+    null;
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Notificación recibida en primer plano: ${message.notification?.title}");
+      null;
       if (message.notification != null) {
         _showLocalNotification(
           message.notification!.title ?? 'Nueva Notificación',
@@ -74,7 +74,7 @@ class RemoteNotificationService {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print("Notificación abierta por el usuario");
+      null;
     });
   }
 
@@ -85,7 +85,7 @@ class RemoteNotificationService {
       String? authToken = await AuthUtils.getToken();
 
       if (fcmToken == null || authToken == null) {
-        print('FCM Token o Auth Token es nulo o vacío');
+        null;
         return;
       }
 
@@ -103,14 +103,14 @@ class RemoteNotificationService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('Solicitud exitosa');
+        null;
         await _handleBackendNotification('{"Notification": true, "title": "Hola", "message": "Este es un mensaje de prueba"}');
 
       } else {
-        print('Error en la respuesta del backend: ${response.statusCode}');
+        null;
       }
     } catch (e) {
-      print('Error al realizar la solicitud al backend: $e');
+      null;
     }
   }
 
@@ -118,7 +118,7 @@ class RemoteNotificationService {
     try {
       // Verificar si responseBody está vacío
       if (responseBody.isEmpty) {
-        print('Error: Response body está vacío.');
+        null;
         return;
       }
 
@@ -131,10 +131,10 @@ class RemoteNotificationService {
         await _showLocalNotification(title, body);
       }
     } on FormatException catch (e) {
-      print('Error al decodificar JSON: $e');
-      print('Contenido de la respuesta: $responseBody');
+      null;
+      null;
     } catch (e) {
-      print('Error al manejar la notificación del backend: $e');
+      null;
     }
   }
 

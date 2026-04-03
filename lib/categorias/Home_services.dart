@@ -1,51 +1,35 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/controller/auth_utils.dart';
-
-import 'package:manitoscliente_new/provider/dataProvider.dart';
-import 'package:manitoscliente_new/provider/home_provider.dart';
-
-import '../request/resquest.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
+import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import '../Styles/stilo.dart';
-
+import '../controller/auth_utils.dart';
+import '../provider/home_provider.dart';
+import '../controller/home_screen_functions.dart';
+import '../provider/dataProvider.dart';
+import '../request/ResponseGet.dart';
+import '../request/requestExpertise.dart';
+import '../request/requestServiceType.dart';
 import '../utils/status.dart';
 import 'Service_DetailsScreen.dart';
-// home_services_screen.dart
-
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-final Map<String, IconData> serviceIcons = {
-  'cocina y catering': Icons.restaurant_menu,
-  'arquitectura y diseño': Icons.architecture,
-  'carpintería': Icons.handyman,
-  'mudanza': Icons.local_shipping,
-  'vidriero': Icons.window,
-  'canaletas': Icons.water_damage,
-  // ... puedes agregar más
-};
-
-IconData _iconForService(String name) {
-  return serviceIcons.entries
-      .firstWhere((e) => name.toLowerCase().contains(e.key), orElse: () => MapEntry('', Icons.work_outline))
-      .value;
-}
 
 class HomeServicesScreen extends StatelessWidget {
   final String parentCategoryId;
-  const HomeServicesScreen({Key? key, required this.parentCategoryId,})
-      : super(key: key);
+  const HomeServicesScreen({
+    Key? key,
+    required this.parentCategoryId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) =>
-      HomeServicesProvider()..loadServices(parentId: parentCategoryId),
+          HomeServicesProvider()..loadServices(parentId: parentCategoryId),
       child: const _HomeServicesView(),
     );
   }
@@ -64,49 +48,47 @@ class _HomeServicesView extends StatelessWidget {
         automaticallyImplyLeading: true,
         title: prov.isSearching
             ? Container(
-          width: double.infinity,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: TextField(
-            onChanged: prov.filter,
-            decoration: InputDecoration(
-              contentPadding:
-              const EdgeInsets.symmetric(horizontal: 15),
-              hintText: 'Buscar servicios...',
-              border: InputBorder.none,
-              suffixIcon:
-              prov.displayedServices.isNotEmpty
-                  ? IconButton(
-                icon: const Icon(Icons.clear,
-                    color: Color(0xFF1A819A)),
-                onPressed: prov.clearFilter,
-              )
-                  : null,
-            ),
-          ),
-        )
-            : Row(
-          children: [
-            Expanded(
-              child: const Text(
-                'Servicios Profesionales',
-                style: MyTextStyles.buttonTextStyle,
-              ),
-            ),
-            if (prov.isRefreshing)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
                 ),
+                child: TextField(
+                  onChanged: prov.filter,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                    hintText: 'Buscar servicios...',
+                    border: InputBorder.none,
+                    suffixIcon: prov.displayedServices.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear,
+                                color: Color(0xFF1A819A)),
+                            onPressed: prov.clearFilter,
+                          )
+                        : null,
+                  ),
+                ),
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: const Text(
+                      'Servicios Profesionales',
+                      style: MyTextStyles.buttonTextStyle,
+                    ),
+                  ),
+                  if (prov.isRefreshing)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                ],
               ),
-          ],
-        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -371,7 +353,8 @@ class _ServiceGrid extends StatelessWidget {
                             fit: BoxFit.cover,
                             placeholder: (_, __) =>
                                 const CircularProgressIndicator(),
-                            errorWidget: (_, __, ___) => const Icon(Icons.error),
+                            errorWidget: (_, __, ___) =>
+                                const Icon(Icons.error),
                           ),
                         ),
                       ),
@@ -382,7 +365,8 @@ class _ServiceGrid extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: prov.isServiceBlocked(svc)
-                            ? MyTextStyles.drawerButtonTextStyle1.copyWith(color: Colors.white.withOpacity(0.5))
+                            ? MyTextStyles.drawerButtonTextStyle1
+                                .copyWith(color: Colors.white.withOpacity(0.5))
                             : MyTextStyles.drawerButtonTextStyle1,
                       ),
                     ],
@@ -400,8 +384,10 @@ class _ServiceGrid extends StatelessWidget {
                         child: LayoutBuilder(
                           builder: (context, constraints) {
                             final maxHeight = constraints.maxHeight;
-                            final iconSize = maxHeight * 0.18 > 40 ? 40.0 : maxHeight * 0.18;
-                            final profIconSize = maxHeight * 0.16 > 38 ? 38.0 : maxHeight * 0.16;
+                            final iconSize =
+                                maxHeight * 0.18 > 40 ? 40.0 : maxHeight * 0.18;
+                            final profIconSize =
+                                maxHeight * 0.16 > 38 ? 38.0 : maxHeight * 0.16;
                             return SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
                               child: ConstrainedBox(
@@ -419,7 +405,9 @@ class _ServiceGrid extends StatelessWidget {
                                       builder: (context, scale, child) {
                                         return Transform.scale(
                                           scale: scale,
-                                          child: Icon(Icons.lock_outline, color: Colors.white, size: iconSize),
+                                          child: Icon(Icons.lock_outline,
+                                              color: Colors.white,
+                                              size: iconSize),
                                         );
                                       },
                                       onEnd: () {},
@@ -429,23 +417,21 @@ class _ServiceGrid extends StatelessWidget {
                                       'Próximamente',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: maxHeight * 0.09 > 17 ? 17 : maxHeight * 0.09,
+                                        fontSize: maxHeight * 0.09 > 17
+                                            ? 17
+                                            : maxHeight * 0.09,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 1.1,
                                       ),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    Icon(
-                                      _iconForService(svc.name),
-                                      color: Colors.white,
-                                      size: profIconSize,
                                     ),
                                     const SizedBox(height: 10),
                                     Text(
                                       svc.name,
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.95),
-                                        fontSize: maxHeight * 0.08 > 15 ? 15 : maxHeight * 0.08,
+                                        fontSize: maxHeight * 0.05 > 11
+                                            ? 11
+                                            : maxHeight * 0.05,
                                         fontWeight: FontWeight.w500,
                                       ),
                                       textAlign: TextAlign.center,
@@ -502,11 +488,6 @@ class _DetailsPanel extends StatelessWidget {
               style: MyTextStyles.titleTextStyle,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            Text(
-              svc.description,
-              style: MyTextStyles.formServiceTextStyle,
-            ),
             const SizedBox(height: 10),
             const Row(
               children: [
@@ -547,7 +528,8 @@ class _DetailsPanel extends StatelessWidget {
                       devicesId: '',
                       hasOffer: false,
                       offers: [],
-                      subcategoryName: svc.name, createdAt: DateTime.now(),
+                      subcategoryName: svc.name,
+                      createdAt: DateTime.now(),
                     );
                     String? token = await AuthUtils.getToken();
                     Navigator.push(

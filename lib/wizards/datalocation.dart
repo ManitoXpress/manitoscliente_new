@@ -17,6 +17,10 @@ import '../utils/favoriteubi.dart';
 import 'package:location/location.dart' as loc_pkg;
 
 // Modelo para ubicaciones favoritas
+
+// Modelo para ubicaciones favoritas
+
+// Modelo para ubicaciones favoritas
 class FavoriteLocation {
   final String id;
   final String name;
@@ -212,7 +216,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
         ),
       );
     } catch (e) {
-      debugPrint('Error al guardar ubicación favorita: $e');
+      null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -257,7 +261,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
       final List<dynamic> jsonList = json.decode(jsonString);
       return jsonList.map((item) => FavoriteLocation.fromJson(item)).toList();
     } catch (e) {
-      debugPrint('Error al cargar ubicaciones favoritas: $e');
+      null;
       return [];
     }
   }
@@ -287,7 +291,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
         ),
       );
     } catch (e) {
-      debugPrint('Error al eliminar ubicación favorita: $e');
+      null;
     }
   }
 
@@ -481,8 +485,7 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                                   ),
                                 );
                               } catch (e) {
-                                debugPrint(
-                                    'Error al obtener ubicación GPS: $e');
+                                null;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
@@ -1217,60 +1220,46 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
 
   Widget _buildLocationCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
-        gradient: selectedLocation != null
-            ? const LinearGradient(
-                colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
-              )
-            : null,
-        color: selectedLocation != null ? null : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selectedLocation != null
+              ? const Color(0xFF115E70)
+              : Colors.grey.shade300,
+          width: selectedLocation != null ? 1.5 : 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: selectedLocation != null
-                ? const Color(0xFF1A819A).withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
-            blurRadius: selectedLocation != null ? 12 : 8,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: selectedLocation != null
-            ? null
-            : Border.all(
-                color: Colors.grey[300]!,
-                width: 1,
-              ),
       ),
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: selectedLocation != null
-                  ? Colors.white.withOpacity(0.2)
-                  : const Color(0xFF1A819A).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(30),
+              color: const Color(0xFF115E70).withOpacity(0.08),
+              shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.location_on,
-              color: selectedLocation != null
-                  ? Colors.white
-                  : const Color(0xFF1A819A),
-              size: 28,
+              selectedLocation != null ? Icons.my_location_rounded : Icons.location_on_outlined,
+              color: const Color(0xFF115E70),
+              size: 32,
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Ubicación del servicio',
-            style: GoogleFonts.poppins(
+            selectedLocation != null ? 'Ubicación seleccionada' : 'Ubicación del servicio',
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: selectedLocation != null
-                  ? Colors.white
-                  : const Color(0xFF1A819A),
+              color: const Color(0xFF212529),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1278,17 +1267,26 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
           Text(
             selectedLocation != null
                 ? writtenLocationController.text
-                : 'Toca para seleccionar ubicación',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: selectedLocation != null
-                  ? Colors.white.withOpacity(0.9)
-                  : Colors.grey[600],
+                : 'Toca para seleccionar en el mapa',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: const Color(0xFF6C757D),
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (selectedLocation != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Toca para cambiar ubicación',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF115E70),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1301,67 +1299,22 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
       child: SlideTransition(
         position: _slideAnimation,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1A819A), Color(0xFF0D4A5A)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1A819A).withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+              Text(
+                "Paso 2: ¿Dónde necesitas el servicio?",
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF495057),
                 ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: const Icon(
-                        Icons.location_on,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Ubicación del servicio',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Selecciona dónde necesitas el servicio',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+                textAlign: TextAlign.left,
               ),
+              const SizedBox(height: 30),
 
-              const SizedBox(height: 32),
-
-              // Selector de ubicación
+              // Selector de ubicación (The solitary unified card)
               GestureDetector(
                 onTap: _showMapScreen,
                 child: _buildLocationCard(),
@@ -1369,21 +1322,22 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
 
               const SizedBox(height: 24),
 
-              // Información adicional
+              // Información adicional con diseño limpio M3
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A819A).withOpacity(0.1),
+                  color: const Color(0xFF115E70).withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF1A819A).withOpacity(0.2),
+                    color: const Color(0xFF115E70).withOpacity(0.1),
                   ),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: const Color(0xFF1A819A),
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      color: Color(0xFF115E70),
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -1392,19 +1346,19 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Ubicación precisa',
-                            style: GoogleFonts.poppins(
+                            'Precisión de ubicación',
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1A819A),
+                              color: const Color(0xFF115E70),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Una ubicación precisa ayuda a los profesionales a llegar más rápido y ofrecer un mejor servicio.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: const Color(0xFF1A819A),
+                            'Una ubicación precisa ayuda a los profesionales a llegar sin contratiempos.',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: const Color(0xFF495057),
                             ),
                           ),
                         ],
@@ -1415,51 +1369,6 @@ class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
               ),
 
               const SizedBox(height: 24),
-
-              // Resumen de selección
-              if (selectedLocation != null)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green[200]!,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: Colors.green[600],
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ubicación seleccionada',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green[700],
-                              ),
-                            ),
-                            Text(
-                              writtenLocationController.text,
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: Colors.green[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),

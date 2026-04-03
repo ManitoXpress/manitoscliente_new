@@ -14,7 +14,7 @@ class LocalCacheService {
       final String serviceRequestJson = jsonEncode(serviceRequest.toMap());
       await prefs.setString(serviceRequestKey, serviceRequestJson);
     } catch (e) {
-      print('Error al cachear el servicio: $e');
+      null;
     }
   }
 
@@ -29,7 +29,7 @@ class LocalCacheService {
 
       }
     } catch (e) {
-      print('Error al obtener el servicio del caché: $e');
+      null;
     }
     return null;
   }

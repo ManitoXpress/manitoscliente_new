@@ -12,7 +12,7 @@ class ServiceActions {
 
       onStatusChanged('completed');
     } catch (e) {
-      print('Error al confirmar la finalización del trabajo: $e');
+      null;
     }
   }
 
@@ -25,7 +25,7 @@ class ServiceActions {
 
       onStatusChanged('in_progress');
     } catch (e) {
-      print('Error al rechazar la finalización del trabajo: $e');
+      null;
     }
   }
 
@@ -38,7 +38,7 @@ class ServiceActions {
 
       onStatusChanged('in_progress');
     } catch (e) {
-      print('Error al aceptar la propuesta: $e');
+      null;
     }
   }
 
@@ -54,7 +54,7 @@ class ServiceActions {
       onStatusChanged('blocked');
       onComplete();
     } catch (e) {
-      print('Error al bloquear la participación del usuario: $e');
+      null;
     }
   }
 
@@ -67,7 +67,7 @@ class ServiceActions {
 
       onStatusChanged(status);
     } catch (e) {
-      print('$errorMessage: $e');
+      null;
     }
   }
 }

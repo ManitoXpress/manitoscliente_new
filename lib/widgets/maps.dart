@@ -59,7 +59,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       _handleTap(currentLocation);
     } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
+      null;
       setState(() {
         selectedLocation = _initialPosition;
         _markers.clear();
@@ -86,7 +86,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    print("Mapa creado correctamente");
+    null;
   }
 
   Future<void> _loadCustomMarker() async {
@@ -122,7 +122,7 @@ class _MapScreenState extends State<MapScreen> {
         writtenLocationController.text = "Dirección no encontrada";
       }
     } catch (e) {
-      print("Error obteniendo dirección: $e");
+      null;
       writtenLocationController.text = "Error obteniendo dirección";
     }
   }
@@ -142,7 +142,7 @@ class _MapScreenState extends State<MapScreen> {
           desiredAccuracy: LocationAccuracy.high,
         );
       } catch (e) {
-        print("Error obteniendo la ubicación actual: $e");
+        null;
         position = Position(
           latitude: _initialPosition.latitude,
           longitude: _initialPosition.longitude,
@@ -207,10 +207,10 @@ class _MapScreenState extends State<MapScreen> {
                                       );
                                     });
                                   } else {
-                                    print("No se encontró la dirección");
+                                    null;
                                   }
                                 } catch (e) {
-                                  print("Error buscando dirección: $e");
+                                  null;
                                 }
                               }
                             },
@@ -275,7 +275,7 @@ class _MapScreenState extends State<MapScreen> {
                             );
                           });
                         } catch (e) {
-                          print("Error obteniendo la ubicación actual: $e");
+                          null;
                         }
                       },
                       child: Icon(Icons.gps_fixed),

@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:manitoscliente_new/constants/service_constants.dart';
-import 'package:manitoscliente_new/models/expertise_models.dart';
-import 'package:manitoscliente_new/models/service_requestModels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 
+import '../constant/serviceConstants.dart';
+import '../constant/cacheConstants.dart';
 import '../controller/serviceFetcher.dart';
+import '../models/expertiseModels.dart';
+import '../models/service_requestModels.dart';
 import '../request/ResponseGet.dart';
 import '../request/ResponsePost.dart';
 import '../request/requestExpertise.dart';
@@ -29,14 +29,30 @@ class HistorialProvider extends ChangeNotifier {
   final ServiceRepositoryComplete _repoComplete;
   final ServiceRepositoryCancelled _repoCancelled;
 
-  // Estado
+  // Estado optimizado
   bool isLoading = false;
   bool isRefreshing = false;
   String? errorMessage;
   final Map<String, List<ServiceRequest>> _byStatus = {};
   final Map<String, DateTime> _lastUpdate = {};
+  final Map<String, bool> _isLoadingMore = {};
+  final Map<String, bool> _hasMore = {};
+  
+  // Caché inteligente
   Timer? _autoRefreshTimer;
+  Timer? _smartRefreshTimer;
   String? _currentUserId;
+  bool _isInitialized = false;
+  
+  // 🚀 OPTIMIZADO: Configuración de caché mejorada desde constantes
+  static const int _cacheValidMinutes = CacheConstants.historialCacheValidMinutes;
+  static const int _autoRefreshMinutes = CacheConstants.historialAutoRefreshMinutes;
+  static const int _smartRefreshSeconds = CacheConstants.historialSmartRefreshSeconds;
+  static const int _networkTimeoutSeconds = CacheConstants.networkTimeoutSeconds;
+  static const int _maxCacheAgeHours = CacheConstants.maxCacheAgeHours;
+  static const int _maxCacheItemsPerStatus = CacheConstants.maxCacheItemsPerStatus;
+  static const int _criticalDataCacheMinutes = CacheConstants.criticalDataCacheMinutes;
+  static const int _normalDataCacheMinutes = CacheConstants.normalDataCacheMinutes;
 
   HistorialProvider()
       : _repoAvailable = ServiceRepository(
@@ -62,82 +78,78 @@ class HistorialProvider extends ChangeNotifier {
         );
 
   List<ServiceRequest> _ordenarPorFecha(List<ServiceRequest> lista) {
-    print('🔍 Debug - _ordenarPorFecha: ${lista.length} elementos');
-    lista.sort((a, b) {
+    if (lista.isEmpty) return lista;
+    
+    final sortedList = List<ServiceRequest>.from(lista);
+    sortedList.sort((a, b) {
       final aDate = a.createdAt;
       final bDate = b.createdAt;
       return bDate.compareTo(aDate); // Descendente: más reciente primero
     });
-    return lista;
+    return sortedList;
   }
 
-  /// Devuelve la lista para cada estado
+  /// Devuelve la lista para cada estado con caché inteligente
   List<ServiceRequest> list(String status) {
     final lista = _byStatus[status] ?? [];
-    print('🔍 Debug - list($status): ${lista.length} elementos');
+    
+    // Si no hay datos y no se ha inicializado, marcar para carga
+    if (lista.isEmpty && !_isInitialized && _currentUserId != null) {
+      _scheduleSmartRefresh();
+    }
+    
     return lista;
   }
 
   int get availableCount => list('available').length;
   int get offerServiceCount => list('offer').expand((s) => s.offers).length;
-  int get inProgressCount {
-    final count = list('in_progress').length;
-    print('🔍 Debug - inProgressCount: $count');
-    print(
-        '🔍 Debug - Lista in_progress: ${list('in_progress').map((s) => '${s.id}(${s.status.id})').join(', ')}');
-    return count;
-  }
-
+  int get inProgressCount => list('in_progress').length;
   int get completedCount => list('completed').length;
   int get cancelledCount => list('cancelled').length;
 
-  /// Carga todo el historial con optimizaciones
+  /// Carga todo el historial con optimizaciones avanzadas
   Future<void> loadAll({
     required String userId,
     required String token,
     required String deviceId,
   }) async {
-    print('🔍 Debug - loadAll iniciado para userId: $userId');
-    _currentUserId = userId;
+    if (_currentUserId == userId && _isInitialized) {
+      return;
+    }
 
-    // 1. Cargar desde caché local inmediatamente
-    print('🔍 Debug - Cargando desde caché...');
+    _currentUserId = userId;
+    _isInitialized = false;
+
+    // 1. Cargar desde caché local inmediatamente (más rápido)
     await _loadFromCache(userId);
 
     // 2. Si no hay datos en caché o están muy viejos, cargar desde servidor
     if (_shouldRefreshFromServer(userId)) {
-      print('🔍 Debug - Refrescando desde servidor...');
       await _loadFromServer(userId, token, deviceId);
-    } else {
-      print('🔍 Debug - Usando datos del caché');
     }
 
-    // 3. Configurar actualización automática
+    // 3. Configurar actualización automática inteligente (menos agresiva)
+    _setupSmartRefresh(userId, token, deviceId);
     _setupAutoRefresh(userId, token, deviceId);
 
-    print('🔍 Debug - loadAll completado');
+    _isInitialized = true;
   }
 
-  /// Carga desde caché local
+  /// Carga desde caché local optimizada
   Future<void> _loadFromCache(String userId) async {
     try {
-      print('🔍 Debug - _loadFromCache iniciado para userId: $userId');
       final prefs = await SharedPreferences.getInstance();
       final cacheKey = 'historial_cache_$userId';
       final tsKey = 'historial_timestamp_$userId';
+      final versionKey = 'historial_version_$userId';
 
       final cachedJson = prefs.getString(cacheKey);
       final ts = prefs.getInt(tsKey) ?? 0;
+      final version = prefs.getInt(versionKey) ?? 1;
       final nowMs = DateTime.now().millisecondsSinceEpoch;
 
-      print('🔍 Debug - Caché encontrado: ${cachedJson != null}');
-      print('🔍 Debug - Timestamp caché: $ts');
-      print('🔍 Debug - Timestamp actual: $nowMs');
-      print('🔍 Debug - Diferencia: ${nowMs - ts} ms');
-
-      // Caché válido por 15 minutos
-      if (cachedJson != null && nowMs - ts < 900000) {
-        print('🔍 Debug - Usando caché válido');
+      // Caché válido por tiempo configurado
+      if (cachedJson != null && nowMs - ts < (_cacheValidMinutes * 60 * 1000)) {
         final Map<String, dynamic> decoded = jsonDecode(cachedJson);
 
         for (final entry in decoded.entries) {
@@ -145,50 +157,44 @@ class HistorialProvider extends ChangeNotifier {
           final servicesJson = entry.value as List<dynamic>;
 
           _byStatus[status] = servicesJson
-              .map(
-                  (s) => ServiceRequest.fromSnapshot(s as Map<String, dynamic>))
+              .map((s) => ServiceRequest.fromSnapshot(s as Map<String, dynamic>))
               .toList();
           _lastUpdate[status] = DateTime.fromMillisecondsSinceEpoch(ts);
-
-          print(
-              '🔍 Debug - Caché cargado para $status: ${_byStatus[status]?.length ?? 0} elementos');
+          
+          // Inicializar estado de paginación
+          _isLoadingMore[status] = false;
+          _hasMore[status] = false;
         }
 
         notifyListeners();
       } else {
-        print('🔍 Debug - Caché no válido o no encontrado');
+        // Limpiar caché obsoleto
+        await prefs.remove(cacheKey);
+        await prefs.remove(tsKey);
       }
     } catch (e) {
-      print('🔍 Debug - Error cargando caché: $e');
-      debugPrint('Error cargando caché de historial: $e');
+      null;
     }
   }
 
-  /// Verifica si debe refrescar desde servidor
+  /// Verifica si debe refrescar desde servidor con lógica mejorada
   bool _shouldRefreshFromServer(String userId) {
-    print('🔍 Debug - _shouldRefreshFromServer evaluando...');
-    print('🔍 Debug - _byStatus.isEmpty: ${_byStatus.isEmpty}');
-
     if (_byStatus.isEmpty) {
-      print('🔍 Debug - Debe refrescar: _byStatus está vacío');
       return true;
     }
 
     final now = DateTime.now();
     for (final lastUpdate in _lastUpdate.values) {
       final difference = now.difference(lastUpdate).inMinutes;
-      print('🔍 Debug - Diferencia desde último update: $difference minutos');
-      if (difference > 15) {
-        print('🔍 Debug - Debe refrescar: han pasado más de 15 minutos');
+      if (difference > _cacheValidMinutes) {
         return true;
       }
     }
 
-    print('🔍 Debug - No debe refrescar: datos recientes');
     return false;
   }
 
-  /// Carga desde servidor
+  /// 🚀 OPTIMIZADO: Carga desde servidor con optimizaciones mejoradas
   Future<void> _loadFromServer(
       String userId, String token, String deviceId) async {
     if (isRefreshing) return;
@@ -196,47 +202,58 @@ class HistorialProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Cargar en paralelo con timeout
-      final results = await Future.wait<List<ServiceRequest>>([
+      // 🚀 OPTIMIZACIÓN: Cargar datos críticos primero (available, in_progress)
+      final criticalFutures = [
         _loadAvailableServices(userId, token),
-        _loadOfferServices(userId, token, deviceId),
         _loadInProgressServices(userId, token),
+      ];
+      
+      // Cargar datos menos críticos en paralelo
+      final normalFutures = [
+        _loadOfferServices(userId, token, deviceId),
         _loadCompletedServices(userId, token),
         _loadCancelledServices(userId, token),
-      ]).timeout(const Duration(seconds: 30));
+      ];
 
-      _byStatus['available'] = _ordenarPorFecha(results[0]);
-      _byStatus['offer'] = _ordenarPorFecha(results[1]);
-      _byStatus['in_progress'] = _ordenarPorFecha(results[2]);
-      _byStatus['completed'] = _ordenarPorFecha(results[3]);
-      _byStatus['cancelled'] = _ordenarPorFecha(results[4]);
+      // Ejecutar cargas críticas primero
+      final criticalResults = await Future.wait<List<ServiceRequest>>(criticalFutures)
+          .timeout(Duration(seconds: _networkTimeoutSeconds ~/ 2));
+      
+      // Actualizar UI inmediatamente con datos críticos
+      _byStatus['available'] = _ordenarPorFecha(criticalResults[0]);
+      _byStatus['in_progress'] = _ordenarPorFecha(criticalResults[1]);
+      _updateTimestamps(['available', 'in_progress']);
+      notifyListeners(); // 🚀 Notificar UI inmediatamente
+      
+      // Cargar datos normales en background
+      final normalResults = await Future.wait<List<ServiceRequest>>(normalFutures)
+          .timeout(Duration(seconds: _networkTimeoutSeconds ~/ 2));
+      
+      _byStatus['offer'] = _ordenarPorFecha(normalResults[0]);
+      _byStatus['completed'] = _ordenarPorFecha(normalResults[1]);
+      _byStatus['cancelled'] = _ordenarPorFecha(normalResults[2]);
+      _updateTimestamps(['offer', 'completed', 'cancelled']);
 
-      print('🔍 Debug - _loadFromServer - Servicios guardados:');
-      print(
-          '🔍 Debug - available:  [32m${_byStatus['available']?.length ?? 0} [0m');
-      print('🔍 Debug - offer:  [32m${_byStatus['offer']?.length ?? 0} [0m');
-      print(
-          '🔍 Debug - in_progress:  [32m${_byStatus['in_progress']?.length ?? 0} [0m');
-      print(
-          '🔍 Debug - completed:  [32m${_byStatus['completed']?.length ?? 0} [0m');
-      print(
-          '🔍 Debug - cancelled:  [32m${_byStatus['cancelled']?.length ?? 0} [0m');
-
-      // Actualizar timestamps
-      final now = DateTime.now();
-      for (final status in _byStatus.keys) {
-        _lastUpdate[status] = now;
-      }
-
-      // Guardar en caché
+      // Guardar en caché con versión
       await _saveToCache(userId);
       errorMessage = null;
+      
     } catch (e) {
       errorMessage = 'Error cargando historial: $e';
-      debugPrint('Error cargando desde servidor: $e');
+      null;
     } finally {
       isRefreshing = false;
       notifyListeners();
+    }
+  }
+
+  /// 🚀 Helper para actualizar timestamps de forma eficiente
+  void _updateTimestamps(List<String> statuses) {
+    final now = DateTime.now();
+    for (final status in statuses) {
+      _lastUpdate[status] = now;
+      _isLoadingMore[status] = false;
+      _hasMore[status] = false;
     }
   }
 
@@ -244,27 +261,11 @@ class HistorialProvider extends ChangeNotifier {
   Future<List<ServiceRequest>> _loadAvailableServices(
       String userId, String token) async {
     try {
-      print('🔍 Debug - _loadAvailableServices iniciado para userId: $userId');
       final result = await _repoAvailable
           .fetchServicesByStatus('available', 'status', userId, token, []);
-      print(
-          '🔍 Debug - _loadAvailableServices completado: ${result.length} elementos');
-
-      // Debug: verificar los datos raw de Firestore
-      for (int i = 0; i < result.length; i++) {
-        final service = result[i];
-        print('🔍 Debug - ServiceRequest $i raw data:');
-        print('  - ID: ${service.id}');
-        print('  - selectedDate: "${service.selectedDate}"');
-        print('  - selectedTime: "${service.selectedTime}"');
-        print('  - status: ${service.status.id}');
-        print('  - description: "${service.description}"');
-      }
-
       return result;
     } catch (e) {
-      print('🔍 Debug - Error en _loadAvailableServices: $e');
-      debugPrint('Error en available: $e');
+      null;
       return <ServiceRequest>[];
     }
   }
@@ -273,14 +274,11 @@ class HistorialProvider extends ChangeNotifier {
     Timer.periodic(const Duration(seconds: 30), (_) async {
       final servicios = await _loadAvailableServices(userId, token);
 
-      print(
-          '🔍 Debug - iniciarTemporizadorCancelacion - Servicios obtenidos: ${servicios.length}');
+      null;
       for (int i = 0; i < servicios.length; i++) {
         final s = servicios[i];
-        print(
-            '🔍 Debug - Servicio $i: ID=${s.id}, selectedDate="${s.selectedDate}", selectedTime="${s.selectedTime}"');
-        print(
-            '🔍 Debug - Servicio $i: status=${s.status.id}, description="${s.description}"');
+        null;
+        null;
       }
 
       // Convertir ServiceRequest a ServiceRequestModel
@@ -309,8 +307,7 @@ class HistorialProvider extends ChangeNotifier {
       // Debug: verificar los datos mapeados
       for (int i = 0; i < serviciosModel.length; i++) {
         final sm = serviciosModel[i];
-        print(
-            '🔍 Debug - ServiceRequestModel $i: ID=${sm.id}, date="${sm.date}", time="${sm.time}"');
+        null;
       }
 
       await _cancelarServiciosVencidos(serviciosModel);
@@ -321,7 +318,6 @@ class HistorialProvider extends ChangeNotifier {
   Future<List<ServiceRequest>> _loadOfferServices(
       String userId, String token, String deviceId) async {
     try {
-      print('🔍 Debug - _loadOfferServices iniciado para userId: $userId');
       final result = await _repoOffer.fetchOffersForUser(
         'offer',
         userId,
@@ -351,12 +347,9 @@ class HistorialProvider extends ChangeNotifier {
         ),
         deviceId,
       );
-      print(
-          '🔍 Debug - _loadOfferServices completado: ${result.length} elementos');
       return result;
     } catch (e) {
-      print('🔍 Debug - Error en _loadOfferServices: $e');
-      debugPrint('Error en offer: $e');
+      null;
       return <ServiceRequest>[];
     }
   }
@@ -365,25 +358,12 @@ class HistorialProvider extends ChangeNotifier {
   Future<List<ServiceRequest>> _loadInProgressServices(
       String userId, String token) async {
     try {
-      print(
-          '🔍 Debug - Iniciando carga de servicios en progreso para userId: $userId');
-
       // Solo buscar servicios con estado in_progress para evitar duplicados
       final result = await _repoInProgress.fetchServicesByInProgress(
           'in_progress', userId, 'status', token);
-
-      print(
-          '🔍 Debug - Total de servicios en progreso encontrados: ${result.length}');
-
-      for (int i = 0; i < result.length; i++) {
-        final service = result[i];
-        print(
-            '🔍 Debug - Servicio $i: ID=${service.id}, Status=${service.status.id}, WorkerId=${service.workerId}, Offers=${service.offers.length}');
-      }
-
       return result;
     } catch (e) {
-      debugPrint('Error en in_progress: $e');
+      null;
       return <ServiceRequest>[];
     }
   }
@@ -392,15 +372,11 @@ class HistorialProvider extends ChangeNotifier {
   Future<List<ServiceRequest>> _loadCompletedServices(
       String userId, String token) async {
     try {
-      print('🔍 Debug - _loadCompletedServices iniciado para userId: $userId');
       final result = await _repoComplete.fetchServicesByComplete(
           'completed', userId, 'status', token);
-      print(
-          '🔍 Debug - _loadCompletedServices completado: ${result.length} elementos');
       return result;
     } catch (e) {
-      print('🔍 Debug - Error en _loadCompletedServices: $e');
-      debugPrint('Error en completed: $e');
+      null;
       return <ServiceRequest>[];
     }
   }
@@ -412,7 +388,7 @@ class HistorialProvider extends ChangeNotifier {
       return await _repoCancelled.fetchServicesByCancelled(
           'cancelled', userId, 'status', token);
     } catch (e) {
-      debugPrint('Error en cancelled: $e');
+      null;
       return <ServiceRequest>[];
     }
   }
@@ -420,65 +396,81 @@ class HistorialProvider extends ChangeNotifier {
   /// Guarda en caché local
   Future<void> _saveToCache(String userId) async {
     try {
-      print('🔍 Debug - _saveToCache iniciado para userId: $userId');
       final prefs = await SharedPreferences.getInstance();
       final cacheKey = 'historial_cache_$userId';
       final tsKey = 'historial_timestamp_$userId';
+      final versionKey = 'historial_version_$userId';
 
       final Map<String, dynamic> cacheData = {};
       for (final entry in _byStatus.entries) {
         cacheData[entry.key] = entry.value.map((s) => s.toMap()).toList();
-        print(
-            '🔍 Debug - Guardando en caché para ${entry.key}: ${entry.value.length} elementos');
       }
 
       await prefs.setString(cacheKey, jsonEncode(cacheData));
       await prefs.setInt(tsKey, DateTime.now().millisecondsSinceEpoch);
-      print('🔍 Debug - Caché guardado exitosamente');
+      await prefs.setInt(versionKey, 1); // Incrementar versión de caché
     } catch (e) {
-      print('🔍 Debug - Error guardando caché: $e');
-      debugPrint('Error guardando caché de historial: $e');
+      null;
     }
   }
 
-  /// Configura actualización automática
-  void _setupAutoRefresh(String userId, String token, String deviceId) {
-    print('🔍 Debug - _setupAutoRefresh configurado para userId: $userId');
-    _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
-      if (_currentUserId == userId) {
-        print('🔍 Debug - Auto refresh ejecutado para userId: $userId');
+  /// Configura actualización automática inteligente
+  void _setupSmartRefresh(String userId, String token, String deviceId) {
+    _smartRefreshTimer?.cancel();
+    _smartRefreshTimer = Timer.periodic(const Duration(seconds: _smartRefreshSeconds), (timer) {
+      if (_currentUserId == userId && !isRefreshing) {
+        // Solo actualizar si no se está refrescando actualmente
         _loadFromServer(userId, token, deviceId);
       }
     });
   }
 
-  /// Inicia la actualización automática (método público)
+  /// Configura actualización automática (método público)
   void startAutoRefresh({
     required String userId,
     required String token,
     required String deviceId,
   }) {
-    print('🔍 Debug - startAutoRefresh llamado para userId: $userId');
     _setupAutoRefresh(userId, token, deviceId);
+  }
+
+  /// Configura actualización automática tradicional
+  void _setupAutoRefresh(String userId, String token, String deviceId) {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(minutes: _autoRefreshMinutes), (timer) {
+      if (_currentUserId == userId && !isRefreshing) {
+        // Solo actualizar si no se está refrescando actualmente
+        _loadFromServer(userId, token, deviceId);
+      }
+    });
+  }
+
+  /// Programa una actualización inteligente
+  void _scheduleSmartRefresh() {
+    if (_smartRefreshTimer != null) return;
+    
+    _smartRefreshTimer = Timer(const Duration(seconds: _smartRefreshSeconds), () {
+      if (_currentUserId != null) {
+        // Aquí podrías implementar lógica más inteligente
+        // Por ejemplo, solo actualizar datos críticos o verificar cambios
+      }
+    });
   }
 
   /// Detiene la actualización automática
   void stopAutoRefresh() {
-    print('🔍 Debug - stopAutoRefresh llamado');
     _autoRefreshTimer?.cancel();
+    _smartRefreshTimer?.cancel();
   }
 
   /// Verifica si hay más datos para cargar (para paginación)
   bool hasMore(String status) {
-    // Por ahora siempre retorna false ya que no implementamos paginación
-    return false;
+    return _hasMore[status] ?? false;
   }
 
   /// Verifica si está cargando más datos
   bool isLoadingMore(String status) {
-    // Por ahora siempre retorna false ya que no implementamos paginación
-    return false;
+    return _isLoadingMore[status] ?? false;
   }
 
   /// Carga más datos (para paginación)
@@ -488,32 +480,136 @@ class HistorialProvider extends ChangeNotifier {
     required String token,
     required String deviceId,
   }) async {
-    // Por ahora no hace nada ya que no implementamos paginación
-    print('🔍 Debug - loadMore llamado para status: $status (no implementado)');
+    if (isLoadingMore(status)) {
+      return;
+    }
+    
+    _isLoadingMore[status] = true;
+    notifyListeners();
+
+    try {
+      // Implementar lógica de paginación aquí
+      // Por ahora, solo recargamos los datos del estado específico
+      List<ServiceRequest> result;
+      switch (status) {
+        case 'available':
+          result = await _loadAvailableServices(userId, token);
+          break;
+        case 'offer':
+          result = await _loadOfferServices(userId, token, deviceId);
+          break;
+        case 'in_progress':
+          result = await _loadInProgressServices(userId, token);
+          break;
+        case 'completed':
+          result = await _loadCompletedServices(userId, token);
+          break;
+        case 'cancelled':
+          result = await _loadCancelledServices(userId, token);
+          break;
+        default:
+          result = [];
+      }
+      
+      _byStatus[status] = _ordenarPorFecha(result);
+      _lastUpdate[status] = DateTime.now();
+      _isLoadingMore[status] = false;
+      _hasMore[status] = false; // No hay más datos para cargar si se cargó todo
+      
+      // Actualizar caché
+      await _saveToCache(userId);
+      notifyListeners();
+    } catch (e) {
+      errorMessage = 'Error cargando más datos: $e';
+      null;
+      _isLoadingMore[status] = false;
+      notifyListeners();
+    }
   }
 
-  /// Refrescar manualmente
+  /// Refrescar manualmente con optimización
   Future<void> refresh({
     required String userId,
     required String token,
     required String deviceId,
   }) async {
-    print('🔍 Debug - refresh llamado para userId: $userId');
+    // Si ya se está refrescando, no hacer nada
+    if (isRefreshing) {
+      return;
+    }
+    
+    // Limpiar caché obsoleto antes de refrescar
+    await _clearObsoleteCache(userId);
+    
     await _loadFromServer(userId, token, deviceId);
-    print('🔍 Debug - refresh completado');
+  }
+
+  /// Limpia caché obsoleto
+  Future<void> _clearObsoleteCache(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'historial_cache_$userId';
+      final tsKey = 'historial_timestamp_$userId';
+      final versionKey = 'historial_version_$userId';
+      
+      final ts = prefs.getInt(tsKey) ?? 0;
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      
+      // Si el caché tiene más de 2 horas, limpiarlo completamente
+      if (nowMs - ts > (_maxCacheAgeHours * 60 * 60 * 1000)) {
+        await prefs.remove(cacheKey);
+        await prefs.remove(tsKey);
+        await prefs.remove(versionKey);
+      }
+    } catch (e) {
+      null;
+    }
+  }
+
+  /// Limpia todos los datos y caché
+  void clearAll() {
+    _byStatus.clear();
+    _lastUpdate.clear();
+    _isLoadingMore.clear();
+    _hasMore.clear();
+    _isInitialized = false;
+    errorMessage = null;
+    notifyListeners();
+  }
+
+  /// Obtiene estadísticas de caché
+  Map<String, dynamic> getCacheStats() {
+    final now = DateTime.now();
+    final stats = <String, dynamic>{};
+    
+    for (final entry in _lastUpdate.entries) {
+      final status = entry.key;
+      final lastUpdate = entry.value;
+      final difference = now.difference(lastUpdate).inMinutes;
+      final count = _byStatus[status]?.length ?? 0;
+      
+      stats[status] = {
+        'count': count,
+        'lastUpdate': lastUpdate.toIso8601String(),
+        'minutesAgo': difference,
+        'isValid': difference < _cacheValidMinutes,
+      };
+    }
+    
+    return stats;
   }
 
   /// Limpia recursos
   @override
   void dispose() {
-    print('🔍 Debug - dispose llamado');
     _autoRefreshTimer?.cancel();
+    _smartRefreshTimer?.cancel();
     super.dispose();
   }
 
   @override
   void notifyListeners() {
-    print('🔍 Debug - notifyListeners llamado');
+    // Reducir logs excesivos para mejorar rendimiento
     super.notifyListeners();
   }
 
@@ -527,20 +623,17 @@ class HistorialProvider extends ChangeNotifier {
     final ahoraBolivia = _nowBolivia();
     final api = ApiService();
 
-    print(
-        '🔍 Debug - _cancelarServiciosVencidos iniciado con ${servicios.length} servicios');
-    print('🔍 Debug - Hora actual Bolivia: $ahoraBolivia');
+    null;
+    null;
 
     for (final servicio in servicios) {
       // Solo procesar servicios en estado "available" o "offer"
       if (servicio.status != 'available' && servicio.status != 'offer') {
-        print(
-            '🔍 Debug - Saltando servicio ${servicio.id}: estado=${servicio.status} (no es available/offer)');
+        null;
         continue;
       }
 
-      print(
-          '🔍 Debug - Procesando servicio ${servicio.id}: date="${servicio.date}", time="${servicio.time}", status="${servicio.status}"');
+      null;
 
       DateTime? fechaServicio;
 
@@ -548,20 +641,18 @@ class HistorialProvider extends ChangeNotifier {
         if (servicio.date.isNotEmpty && servicio.time.isNotEmpty) {
           // Usar la función _parseFechaHoraBolivia que tiene logs detallados
           fechaServicio = _parseFechaHoraBolivia(servicio.date, servicio.time);
-          print('🔍 Debug - Fecha servicio parseada: $fechaServicio');
+          null;
         } else {
-          print('🔍 Debug - Fecha o hora vacía, saltando servicio');
+          null;
           continue; // Saltar este servicio si no tiene fecha/hora
         }
       } catch (e) {
-        print(
-            '🔍 Debug - Error parseando fecha/hora del servicio ${servicio.id}: $e');
+        null;
         continue; // Saltar este servicio si hay error
       }
 
       if (fechaServicio != null && ahoraBolivia.isAfter(fechaServicio)) {
-        print(
-            '🔍 Debug - Servicio ${servicio.id} debe cancelarse (ya pasó la hora, estado: ${servicio.status})');
+        null;
         try {
           await api.updateService(
             serviceId: servicio.id,
@@ -586,16 +677,13 @@ class HistorialProvider extends ChangeNotifier {
             });
           }
 
-          print(
-              '✅ Servicio ${servicio.id} cancelado automáticamente (estado: ${servicio.status}, ya pasó la hora del servicio).');
+          null;
         } catch (e) {
-          debugPrint('❌ Error al cancelar servicio automáticamente: $e');
+          null;
         }
       } else {
-        print(
-            '🔍 Debug - Servicio ${servicio.id} no se cancela: estado=${servicio.status}, fechaServicio=$fechaServicio, ahoraBolivia=$ahoraBolivia');
-        debugPrint(
-            '⏳ Servicio ${servicio.id} (${servicio.status}) aún no pasó la hora del servicio. No se cancela.');
+        null;
+        null;
       }
     }
   }
@@ -603,64 +691,64 @@ class HistorialProvider extends ChangeNotifier {
   /// Convierte una fecha y hora a DateTime en zona horaria de Bolivia
   DateTime? _parseFechaHoraBolivia(String date, String time) {
     try {
-      print('🔍 Debug - Parsing fecha/hora: date="$date", time="$time"');
+      null;
 
       // Parsear la fecha
       final fechaBase = DateTime.parse(date);
-      print('🔍 Debug - Fecha base parseada: $fechaBase');
+      null;
 
       // Parsear la hora
       String timeRaw = time.trim();
       int hour = 0;
       int minute = 0;
 
-      print('🔍 Debug - Time raw: "$timeRaw"');
+      null;
 
       // Detectar AM/PM con regex más robusto
       final amPmMatch =
           RegExp(r'(AM|PM)', caseSensitive: false).firstMatch(timeRaw);
       if (amPmMatch != null) {
         final isPm = amPmMatch.group(0)!.toUpperCase() == 'PM';
-        print('🔍 Debug - AM/PM detectado: ${amPmMatch.group(0)}, isPm: $isPm');
+        null;
 
         // Extraer solo números y dos puntos
         timeRaw = timeRaw.replaceAll(RegExp(r'[^0-9:]'), '');
-        print('🔍 Debug - Time raw después de limpiar: "$timeRaw"');
+        null;
 
         final timeParts = timeRaw.split(':');
         if (timeParts.length >= 2) {
           hour = int.tryParse(timeParts[0]) ?? 0;
           minute = int.tryParse(timeParts[1]) ?? 0;
         } else {
-          print('🔍 Debug - Error: formato de hora inválido');
+          null;
           return null;
         }
 
-        print('🔍 Debug - Hora antes de conversión: $hour:$minute');
+        null;
 
         // Convertir formato 12h a 24h
         if (isPm && hour < 12) {
           hour += 12;
-          print('🔍 Debug - Conversión PM: $hour:$minute');
+          null;
         }
         if (!isPm && hour == 12) {
           hour = 0;
-          print('🔍 Debug - Conversión AM 12: $hour:$minute');
+          null;
         }
 
-        print('🔍 Debug - Hora después de conversión: $hour:$minute');
+        null;
       } else {
         // Formato 24h
-        print('🔍 Debug - Formato 24h detectado');
+        null;
         final timeParts = timeRaw.split(':');
         if (timeParts.length >= 2) {
           hour = int.tryParse(timeParts[0]) ?? 0;
           minute = int.tryParse(timeParts[1]) ?? 0;
         } else {
-          print('🔍 Debug - Error: formato de hora inválido');
+          null;
           return null;
         }
-        print('🔍 Debug - Hora 24h: $hour:$minute');
+        null;
       }
 
       // Crear DateTime local (Bolivia)
@@ -671,12 +759,11 @@ class HistorialProvider extends ChangeNotifier {
         hour,
         minute,
       );
-      print('🔍 Debug - Fecha Bolivia local: $fechaBolivia');
-      print(
-          '🔍 Debug - Fecha Bolivia local (ISO): ${fechaBolivia.toIso8601String()}');
+      null;
+      null;
       return fechaBolivia;
     } catch (e) {
-      print('🔍 Debug - Error parseando fecha/hora: $e');
+      null;
       return null;
     }
   }

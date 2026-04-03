@@ -80,18 +80,17 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         );
 
         if (response.statusCode == 200) {
-          print('Usuario actualizado con éxito');
+          null;
           Navigator.pop(context);
           widget.onUpdateProfile?.call();
         } else {
-          print('Error en la respuesta del servidor: ${response.statusCode}');
+          null;
         }
       } else {
-        print(
-            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        null;
       }
     } catch (error) {
-      print('Error durante el proceso de registro: $error');
+      null;
     }
   }
 

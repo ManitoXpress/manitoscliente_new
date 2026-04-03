@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/request/dataprofile.dart';
 
 import '../Historial.dart';
 import '../Styles/stilo.dart';
-import '../home.dart';
+import '../request/dataprofile.dart';
+
 
 class ServiceFunctions {
   static int notificationCount = 0;
+  UserData? userData;
+
 
   static void showNotifications(BuildContext context,
       {required String title, required String body, VoidCallback? onTap}) {
@@ -59,10 +61,10 @@ class ServiceFunctions {
   }
 
   static void notifyNewService(
-    BuildContext context, {
-    required UserData userData,
-    required VoidCallback onTabTapped,
-  }) {
+      BuildContext context, {
+        required UserData userData,
+        required VoidCallback onTabTapped,
+      }) {
     notificationCount++;
     showNotifications(
       context,
@@ -70,7 +72,15 @@ class ServiceFunctions {
       body: 'Haz clic para ver los detalles del servicio.',
       onTap: () {
         Navigator.pop(context); // cerrar el bottom sheet
-        homeScreenKey.currentState?.goToHistorialTab();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HistorialScreen(
+              userData: userData,
+              onTabTapped: onTabTapped,
+            ),
+          ),
+        );
       },
     );
   }

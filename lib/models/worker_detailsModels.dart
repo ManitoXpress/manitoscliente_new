@@ -1,8 +1,4 @@
-// lib/models/worker_details_model.dart
-
-
-
-import 'package:manitoscliente_new/models/expertise_models.dart';
+import 'expertiseModels.dart';
 
 class WorkerDetailsModel {
   final String displayName;
@@ -26,16 +22,16 @@ class WorkerDetailsModel {
   factory WorkerDetailsModel.fromMap(Map<String, dynamic> map) {
     final rawExpertises = map['expertises'] as List<dynamic>? ?? [];
     return WorkerDetailsModel(
-      displayName: map['displayName'] as String? ?? 'Sin nombre',
-      email: map['email'] as String? ?? 'Sin correo',
-      expLevel: (map['expLevel'] is int) ? map['expLevel'] as int : null,
-      expertises: rawExpertises
-          .map((e) => ExpertiseModel.fromMap(Map<String, dynamic>.from(e)))
-          .toList(),
-      imagePath: map['imagePath'] as String? ?? '',
-      idDocumentImagePath:
-          map['idDocumentImagePath'] as String? ?? '',
-      phoneNumber: map['phoneNumber'] as String? ?? '',
-    );
-  }
+        displayName: map['displayName'] as String? ?? 'Sin nombre',
+        email: map['email'] as String? ?? 'Sin correo',
+        expLevel: (map['expLevel'] is int) ? map['expLevel'] as int : null,
+        expertises: rawExpertises
+            .map((e) => ExpertiseModel.fromMap(Map<String, dynamic>.from(e)))
+            .toList(),
+        imagePath: map['imagePath'] as String? ?? '',
+        idDocumentImagePath:
+        map['idDocumentImagePath'] as String? ?? '',
+        phoneNumber: map['phoneNumber'] as String? ?? '',
+        );
+    }
 }

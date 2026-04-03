@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import 'Styles/stilo.dart';
-
 
 class ModernBadge extends StatelessWidget {
   final int count;

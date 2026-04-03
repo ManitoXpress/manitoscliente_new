@@ -12,11 +12,11 @@ class TimelineHelpers {
     double? workerOfferedPrice;
     
     // Debug: Imprimir información para diagnosticar
-    print('🔍 Debug - workerId: $workerId');
-    print('🔍 Debug - serviceId: ${serviceData.id}');
-    print('🔍 Debug - serviceStatus: ${serviceData.status}');
-    print('🔍 Debug - rawOffers length: ${serviceData.rawOffers.length}');
-    print('🔍 Debug - rawOffers: ${serviceData.rawOffers}');
+    null;
+    null;
+    null;
+    null;
+    null;
     
     // Intentar obtener el precio desde rawOffers primero
     if (serviceData.rawOffers.isNotEmpty) {
@@ -26,15 +26,15 @@ class TimelineHelpers {
           (o) => o['workerId'] == workerId,
         );
         
-        print('🔍 Debug - anyOffer encontrada: ${anyOffer.isNotEmpty}');
-        print('🔍 Debug - anyOffer: $anyOffer');
+        null;
+        null;
         
         if (anyOffer.isNotEmpty) {
           workerOfferedPrice = (anyOffer['offeredPrice'] as num?)?.toDouble();
-          print('🔍 Debug - workerOfferedPrice desde rawOffers: $workerOfferedPrice');
+          null;
         }
       } catch (e) {
-        print('🔍 Debug - No se encontró oferta con workerId específico en rawOffers');
+        null;
       }
     }
     
@@ -42,19 +42,19 @@ class TimelineHelpers {
     if (workerOfferedPrice == null && serviceData.rawOffers.isNotEmpty) {
       final firstOffer = serviceData.rawOffers.first;
       workerOfferedPrice = (firstOffer['offeredPrice'] as num?)?.toDouble();
-      print('🔍 Debug - Usando primera oferta desde rawOffers: $workerOfferedPrice');
+      null;
     }
     
     // Si aún no hay precio, intentar obtenerlo desde la colección offers en Firestore
     if (workerOfferedPrice == null) {
       try {
-        print('🔍 Debug - Buscando ofertas en Firestore para serviceId: ${serviceData.id}');
+        null;
         final offersSnapshot = await FirebaseFirestore.instance
             .collection('offers')
             .where('serviceId', isEqualTo: serviceData.id)
             .get();
         
-        print('🔍 Debug - Ofertas encontradas en Firestore: ${offersSnapshot.docs.length}');
+        null;
         
         if (offersSnapshot.docs.isNotEmpty) {
           // Buscar la oferta que coincida con el workerId
@@ -62,10 +62,10 @@ class TimelineHelpers {
           
           for (final doc in offersSnapshot.docs) {
             final data = doc.data();
-            print('🔍 Debug - Revisando oferta: ${doc.id} con workerId: ${data['workerId']}');
+            null;
             if (data['workerId'] == workerId) {
               matchingOffer = doc;
-              print('🔍 Debug - ¡Coincidencia encontrada!');
+              null;
               break;
             }
           }
@@ -73,23 +73,23 @@ class TimelineHelpers {
           // Si no se encontró coincidencia, usar la primera
           if (matchingOffer == null) {
             matchingOffer = offersSnapshot.docs.first;
-            print('🔍 Debug - Usando primera oferta disponible');
+            null;
           }
           
           final offerData = matchingOffer.data();
           workerOfferedPrice = (offerData['offeredPrice'] as num?)?.toDouble();
-          print('🔍 Debug - workerOfferedPrice desde Firestore: $workerOfferedPrice');
-          print('🔍 Debug - Datos de la oferta: $offerData');
+          null;
+          null;
         }
       } catch (e) {
-        print('🔍 Debug - Error al obtener ofertas desde Firestore: $e');
+        null;
       }
     }
     
     // Si aún no hay precio, intentar obtenerlo desde el documento del servicio directamente
     if (workerOfferedPrice == null) {
       try {
-        print('🔍 Debug - Buscando precio en documento del servicio');
+        null;
         final serviceDoc = await FirebaseFirestore.instance
             .collection('services')
             .doc(serviceData.id)
@@ -98,37 +98,37 @@ class TimelineHelpers {
         if (serviceDoc.exists) {
           final serviceData = serviceDoc.data();
           workerOfferedPrice = (serviceData?['offeredPrice'] as num?)?.toDouble();
-          print('🔍 Debug - workerOfferedPrice desde documento del servicio: $workerOfferedPrice');
+          null;
         }
       } catch (e) {
-        print('🔍 Debug - Error al obtener precio desde documento del servicio: $e');
+        null;
       }
     }
     
     // Para servicios en progreso, también buscar en ofertas con status 'in_progress'
     if (workerOfferedPrice == null && serviceData.status == 'in_progress') {
       try {
-        print('🔍 Debug - Buscando ofertas en progreso en Firestore');
+        null;
         final offersSnapshot = await FirebaseFirestore.instance
             .collection('offers')
             .where('serviceId', isEqualTo: serviceData.id)
             .where('status', isEqualTo: 'in_progress')
             .get();
         
-        print('🔍 Debug - Ofertas en progreso encontradas: ${offersSnapshot.docs.length}');
+        null;
         
         if (offersSnapshot.docs.isNotEmpty) {
           final offerData = offersSnapshot.docs.first.data();
           workerOfferedPrice = (offerData['offeredPrice'] as num?)?.toDouble();
-          print('🔍 Debug - workerOfferedPrice desde ofertas en progreso: $workerOfferedPrice');
+          null;
         }
       } catch (e) {
-        print('🔍 Debug - Error al obtener ofertas en progreso: $e');
+        null;
       }
     }
     
-    print('🔍 Debug - Precio final: $workerOfferedPrice');
-    print('🔍 Debug - Condición para mostrar informe: ${workerOfferedPrice != null && workerOfferedPrice > 0}');
+    null;
+    null;
 
     return workerOfferedPrice;
   }

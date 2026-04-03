@@ -24,7 +24,7 @@ class NotificationService {
     );
 
     await _flutterLocalNotificationsPlugin.initialize(initializationSettings, onDidReceiveNotificationResponse: (NotificationResponse response) {
-      print('Notificación seleccionada: ${response.payload}');
+      null;
     });
 
     FirebaseMessaging.onMessage.listen(_handleNotification);
@@ -66,7 +66,7 @@ class NotificationService {
 
   @pragma('vm:entry-point')
   static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-    print('Procesando notificación en segundo plano: ${message.messageId}');
+    null;
   }
 
   void dispose() {

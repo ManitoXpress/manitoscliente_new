@@ -55,15 +55,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (response.statusCode == 200) {
-        print('Perfil actualizado con éxito');
+        null;
         // Maneja la respuesta del backend según sea necesario
       } else {
-        print('Error en la solicitud PATCH: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
+        null;
+        null;
         throw Exception('Error al actualizar el perfil');
       }
     } catch (e) {
-      print('Error en la solicitud PATCH: $e');
+      null;
       throw Exception('Error al actualizar el perfil');
     }
   }

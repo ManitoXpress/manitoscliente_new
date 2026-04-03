@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../main.dart';
 import '../controller/baseurl.dart';
@@ -29,14 +29,13 @@ class ServiceRepositoryCancelled {
     String column,
     String token,
   ) async {
-    debugPrint(
-        '▶️ fetchServicesByCancelled iniciado con status=$status, userId=$userId');
+    null;
     // 1. Obtener estados válidos
     final validStatuses = await _getValidStatusesFromFirestore();
-    debugPrint('   > estados válidos desde Firestore: $validStatuses');
+    null;
 
     if (!validStatuses.contains(status)) {
-      debugPrint('   ⚠️ Estado no válido: $status');
+      null;
       throw ArgumentError('Estado no válido: $status');
     }
 
@@ -47,8 +46,7 @@ class ServiceRepositoryCancelled {
       userId,
       token,
     );
-    debugPrint(
-        '◀️ fetchServicesByCancelled devuelve ${result.length} servicios cancelados');
+    null;
     return result;
   }
 
@@ -67,7 +65,7 @@ class ServiceRepositoryCancelled {
       }
       return statusSet.toList();
     } catch (e) {
-      debugPrint('   ❌ Error al obtener estados desde Firestore: $e');
+      null;
       rethrow;
     }
   }
@@ -82,32 +80,30 @@ class ServiceRepositoryCancelled {
       // 1. Cache local
       final cached = await LocalCacheService.getCachedServiceRequest(userId);
       if (cached != null && cached.status.id == status) {
-        debugPrint('   • Retornando cache para $status: ${cached.id}');
+        null;
         return [cached];
       }
 
       // 2. Llamada al backend
       await obtenerDeviceId();
-      debugPrint(
-          '   • Llamando getAllServices con status=$status, column=$column');
+      null;
       final response =
           await apiService.getAllServices(token, column, userId, status);
       if (response.statusCode != 200) {
-        debugPrint('   ❌ getAllServices statusCode=${response.statusCode}');
+        null;
         return [];
       }
 
       final servicesData =
           List<Map<String, dynamic>>.from(json.decode(response.body));
-      debugPrint('   • getAllServices devolvió ${servicesData.length} items');
+      null;
 
       // 3. Filtrar por status == 'cancelled' y creados por este usuario
       final filteredServices = servicesData.where((item) {
         return (item['status'] as String? ?? '') == 'cancelled' &&
             (item['userId']?.toString() ?? '') == userId;
       }).toList();
-      debugPrint(
-          '   • filteredServices (cancelados de $userId) = ${filteredServices.length}');
+      null;
 
       // 4. Mapear a ServiceRequest
       final serviceRequestsList = filteredServices
@@ -174,18 +170,17 @@ class ServiceRepositoryCancelled {
             serviceReq.offers = allOffers;
           }
         } catch (e) {
-          debugPrint('     ❌ Error getOffers para ${serviceReq.id}: $e');
+          null;
         }
       }).toList();
       await Future.wait(futures);
 
       // 6. Cache y retorno de todos los cancelados
       serviceRequestsList.forEach(LocalCacheService.cacheServiceRequest);
-      debugPrint(
-          '   • Total cancelados retornados = ${serviceRequestsList.length}');
+      null;
       return serviceRequestsList;
     } catch (e) {
-      debugPrint('❌ Error crítico en _fetchServicesByStatus: $e');
+      null;
       return [];
     }
   }

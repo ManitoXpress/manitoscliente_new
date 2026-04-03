@@ -39,7 +39,7 @@ class AuthService {
       // Verificar si el token ha expirado
       return expiryDate.isBefore(DateTime.now());
     } catch (e) {
-      print("Error al decodificar el token: $e");
+      null;
       return true; // Si hay un error, considerar que el token ha expirado
     }
   }

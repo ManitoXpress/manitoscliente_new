@@ -108,11 +108,10 @@ class OfferRepository {
       final cachedRequest =
           await LocalCacheService.getCachedServiceRequest(userId);
       if (cachedRequest != null) {
-        print('Datos del caché encontrados.');
+        null;
         return [cachedRequest];
       } else {
-        print(
-            'Enviando solicitud a getAllServices para el servicio ID: ${service.id}');
+        null;
 
         final response = await apiService2.getAllServices(
           token,
@@ -122,11 +121,11 @@ class OfferRepository {
 
 
         );
-        print('token=$token');
-        print('columnoffer=$column');
-        print('useroofer=$userId');
-        print('typeoffer=$type');
-        print('deviceiffer=$deviceId');
+        null;
+        null;
+        null;
+        null;
+        null;
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
@@ -189,8 +188,7 @@ class OfferRepository {
               // Ahora obtenemos las ofertas de forma asincrónica
               List<Future> requests =
                   serviceRequestsList.map((serviceRequest) async {
-                print(
-                    'Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
+                null;
                 try {
                   final offerResponses = await ApiService2().getOffers(
                     "userId",    // Columna a filtrar
@@ -198,7 +196,7 @@ class OfferRepository {
                     "offer",    // Tipo de filtro
                     deviceId,
                     [serviceRequest],
-                    "offer", 
+                    "offer", // Filtrar solo ofertas en estado offer
                   );
                   
 
@@ -235,11 +233,9 @@ class OfferRepository {
                   serviceRequest.offers = offers;
 
                   // Imprimir la cantidad de ofertas obtenidas
-                  print(
-                      'Ofertas obtenidas para el servicio ${serviceRequest.id}: ${offers.length}');
+                  null;
                 } catch (e) {
-                  print(
-                      'Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
+                  null;
                 }
               }).toList();
 
@@ -249,20 +245,20 @@ class OfferRepository {
               // Retornar la lista de solicitudes de servicio con sus ofertas
               return serviceRequestsList;
             } catch (e) {
-              print('Error al procesar los datos del servicio: $e');
+              null;
               return [];
             }
           } else {
-            print('No se encontraron servicios disponibles.');
+            null;
             return [];
           }
         } else {
-          print('Error en la solicitud HTTP: ${response.statusCode}');
+          null;
           return [];
         }
       }
     } catch (e) {
-      print('Error en la solicitud: $e');
+      null;
       return [];
     }
   }
@@ -288,7 +284,7 @@ class OfferRepository {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
+        null;
       }
     } else if (value is num) {
       return value.toDouble();

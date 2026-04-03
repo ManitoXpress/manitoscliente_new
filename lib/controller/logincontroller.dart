@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
-import 'package:manitoscliente_new/request/dataprofile.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,10 +10,9 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../home.dart';
 import '../provider/providerService.dart';
 import '../request/ResponsePost.dart';
+import '../request/dataprofile.dart';
 import '../widgets/welcome.dart';
 import 'RegisController.dart';
-
-
 class LoginScreenController {
   static final ApiService apiService = ApiService();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;

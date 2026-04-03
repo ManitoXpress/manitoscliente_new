@@ -7,11 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:manitoscliente_new/provider/dataProvider.dart';
-
-import 'package:manitoscliente_new/utils/deleteAccount.dart';
-import 'package:provider/provider.dart';
 
 import '../request/ResponseGet.dart';
 import '../request/dataprofile.dart';
@@ -124,7 +119,7 @@ class _ProfilePageState extends State<ProfilePage> {
         throw 'No se pudo obtener el ID del usuario autenticado.';
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      null;
       return ProfileData(
         displayName: 'Error',
         email: '',
@@ -158,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
         userData = Future.value(updatedUserData);
       });
     } catch (e) {
-      print('Error durante la carga de datos de usuario: $e');
+      null;
     }
   }
 
@@ -170,7 +165,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 deviceId: '', onLoginSuccess: () {  },
               )));
     } catch (e) {
-      print('Error al cerrar sesión: $e');
+      null;
     }
   }
 
@@ -210,7 +205,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (profileData == null) {
       return Text('Error: No se pudo cargar la información del perfil');
     }
-    print('Display Name: ${profileData.displayName}');
+    null;
 
     return Container(
       margin: const EdgeInsets.all(20.0),
@@ -260,44 +255,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-                ElevatedButton(
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        final authToken = await user.getIdToken();
-                        showDialog(
-                          context: context,
-                          builder: (_) => DeleteAccountByIdDialog(
-                            userId: user.uid,
-                            authToken: authToken!,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 3,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.delete_forever, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Eliminar Cuenta',
-                          style: MyTextStyles.buttonTextStyle.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
           const SizedBox(height: 20),
           Container(
             width: double.infinity,

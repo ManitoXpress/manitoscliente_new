@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../controller/auth_utils.dart';
 import '../request/ResponseGet.dart';
@@ -41,7 +42,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool formCompleted = false;
   String? fcmToken;
   LatLng? location;
-   // NUEVO: para sincronizar la ubicación seleccionada
   @override
   void initState() {
     super.initState();
@@ -88,7 +88,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         registrationController: registrationController,
         userData: userData,
       );
-      // Inicializa la ubicación seleccionada
     });
 
     step2Location = LocationAndFavoritesWizard(
@@ -99,7 +98,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               'lat': location.latitude,
               'lng': location.longitude,
             };
-          // Sincroniza la ubicación seleccionada
           }
         });
       },
@@ -111,10 +109,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           _nextStep();
         } else {
           // Mostrar mensaje o realizar alguna acción indicando que la ubicación es obligatoria.
-          print('Selecciona una ubicación antes de pasar al siguiente paso.');
+          null;
         }
       },
-      location: {}, // Pasa la ubicación seleccionada como prop
+      location: {},
     );
   }
 
@@ -128,12 +126,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('Permiso de notificaciones concedido');
+      null;
     } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      print('Permiso de notificaciones denegado');
+      null;
     } else if (settings.authorizationStatus ==
         AuthorizationStatus.provisional) {
-      print('Permiso provisional concedido');
+      null;
     }
   }
 
@@ -148,8 +146,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     // Validar el primer paso
     if (currentStep == 0) {
       if (!step1Data.isStep1Valid()) {
-        print(
-            'Completa todos los campos obligatorios antes de pasar al siguiente paso.');
+        null;
         return;
       }
     }
@@ -165,13 +162,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     try {
       String? token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
-        print('FCM Token obtenido: $token');
+        null;
       } else {
-        print('FCM Token es nulo');
+        null;
       }
       return token;
     } catch (e) {
-      print('Error al obtener el FCM Token: $e');
+      null;
       return null;
     }
   }
@@ -181,7 +178,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     User? user = FirebaseAuth.instance.currentUser;
     try {
       if (referralCode.isEmpty) {
-        print('No hay código de referido para registrar.');
+        null;
         return;
       }
 
@@ -192,7 +189,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           .get();
 
       if (querySnapshot.docs.isEmpty) {
-        print('No se encontró un trabajador con este código de referido.');
+        null;
         return;
       }
       String? token = await user?.getIdToken();
@@ -215,64 +212,61 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       final apiService = ApiService2();
       await apiService.updateWorkerPoints(referrerId, token!);
     } catch (e) {
-      print('Error al registrar el referido: $e');
+      null;
     }
   }
 
   Future<void> _completeRegistration() async {
-    print('Entrando a _completeRegistration');
+    null;
 
     try {
       final apiService = ApiService();
+      final apiService2 = ApiService2();
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user == null) {
-        print('Advertencia: Usuario no autenticado');
+        null;
         return;
       }
 
       if (currentStep < 1) {
-        print(
-            'Completa todos los pasos del formulario antes de completar el registro.');
+        null;
         return;
       }
 
-      // Obtener Device ID y FCM Token con manejo de errores mejorado
+      setState(() => loadingCompleteRegistration = true);
+
+      // Obtener Device ID y FCM Token
       String? devicesId;
       String? fcmToken;
-
       try {
         devicesId = await AuthUtils.getDeviceId();
-
-        // Solicitar permiso explícitamente antes de obtener el token
-        NotificationSettings settings =
+        final NotificationSettings settings =
             await FirebaseMessaging.instance.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-          provisional: false,
+          alert: true, badge: true, sound: true, provisional: false,
         );
-
         if (settings.authorizationStatus == AuthorizationStatus.authorized) {
           fcmToken = await _getFirebaseMessagingToken();
-        } else {
-          print('El usuario no ha concedido permisos de notificación');
-          fcmToken = null;
         }
       } catch (e) {
-        print('Error obteniendo Device ID o FCM Token: $e');
-        devicesId = null;
-        fcmToken = null;
+        null;
       }
 
-      // Validar que los valores no sean nulos
-      if (devicesId == null) {
-        devicesId = 'unknown_device_id';
+      devicesId ??= 'unknown_device_id';
+      fcmToken ??= 'no_fcm_token';
+
+      // Obtener token fresco de Firebase Auth
+      final String? token = await user.getIdToken(true);
+      if (token == null) {
+        null;
+        setState(() => loadingCompleteRegistration = false);
+        return;
       }
 
-      if (fcmToken == null) {
-        fcmToken = 'no_fcm_token';
-      }
+      // Obtener puntos actuales de Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users').doc(user.uid).get();
+      final int points = userDoc.data()?['points'] ?? 0;
 
       registrationData = RegistrationData.fromForm(
         userId: user.uid,
@@ -284,76 +278,93 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         selectedCountryCode: '',
         devicesId: devicesId,
         fcmToken: fcmToken,
-        points: 0,
+        points: points,
       );
 
-      print('Device ID: $devicesId');
-      print('FCM Token: $fcmToken');
+      null;
+      null;
 
-      String? token = await user.getIdToken();
-
-      if (token == null) {
-        print('Error: No se pudo obtener el token de autenticación');
-        return;
+      // MEJORA-01: Verificar si el usuario ya existe en el backend antes de PATCH
+      bool userExistsInBackend = false;
+      try {
+        final existingUser = await apiService2.fetchUserData(user.uid, token);
+        userExistsInBackend = existingUser.userId.isNotEmpty;
+        null;
+      } catch (e) {
+        null;
+        userExistsInBackend = false;
       }
-      // Registrar el referido si hay un código válido
-      if (userData.referralCode.isNotEmpty &&
-          userData.referrerUserId.isNotEmpty) {
+
+      // Si no existe en el backend, crear primero con POST /users
+      if (!userExistsInBackend) {
+        null;
+        final createResponse = await apiService.sendTokenAndUserDataToServer(
+          token: token,
+          displayName: user.displayName ?? userData.displayName,
+          email: user.email ?? userData.email,
+          phoneNumber: userData.phoneNumber,
+          imagePath: user.photoURL,
+        );
+        null;
+        if (createResponse.statusCode != 200 && createResponse.statusCode != 201) {
+          null;
+          // Continuar igualmente con el PATCH por si el trigger ya lo creó
+        }
+      }
+
+      // Registrar referido si aplica
+      if (userData.referralCode.isNotEmpty && userData.referrerUserId.isNotEmpty) {
         await _registerReferralInFirestore(user.uid, userData.referralCode);
       }
 
-      // Obtener los puntos actualizados del trabajador
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      final points = userDoc.data()?['points'] ?? 0;
-      registrationData.points =
-          points; // Asignar los puntos al registrationData
-
+      // PATCH para actualizar datos completos de perfil
       final response = await apiService.updateUser(
-        user.uid,
-        registrationData,
-        token,
-        devicesId,
-        fcmToken,
+        user.uid, registrationData, token, devicesId, fcmToken,
       );
 
+      setState(() => loadingCompleteRegistration = false);
+
       if (response.statusCode == 200) {
-        print('Usuario actualizado con éxito');
+        null;
         widget.completeRegistrationCallback();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-              builder: (context) => HomeScreen(
-                    userData: userData!,
-                  )),
+          MaterialPageRoute(builder: (context) => HomeScreen(userData: userData!)),
         );
       } else {
-        print('Error en la respuesta del servidor: ${response.statusCode}');
+        null;
       }
     } catch (error, stackTrace) {
-      print('Error durante el proceso de registro: $error');
-      print(stackTrace);
+      setState(() => loadingCompleteRegistration = false);
+      null;
+      null;
     }
   }
+
 
 // Método personalizado para obtener el token con múltiples intentos
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Color(0xFF115E70)),
         title: Text(
           'Registro de Usuario',
-          style: MyTextStyles.buttonTextStyle,
+          style: GoogleFonts.inter(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF115E70),
+          ),
         ),
-        backgroundColor: const Color(0xFF1A819A),
+        backgroundColor: Colors.transparent,
       ),
       body: Theme(
         data: ThemeData(
-          colorScheme: ColorScheme.light(primary: Color(0xFF1A819A)),
+          colorScheme: const ColorScheme.light(primary: Color(0xFF115E70)),
         ),
         child: Stepper(
           type: StepperType.vertical,
@@ -373,41 +384,62 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             }
           },
           controlsBuilder: (BuildContext context, ControlsDetails details) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                if (currentStep > 0)
-                  ElevatedButton(
-                    onPressed: details.onStepCancel,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A819A),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+            return Column(
+              children: [
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    if (currentStep > 0)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: details.onStepCancel,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(color: Color(0xFF115E70), width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: Text(
+                            'CANCELAR',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF115E70),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (currentStep > 0) const SizedBox(width: 15),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: details.onStepContinue,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF115E70),
+                          elevation: 2,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: loadingCompleteRegistration
+                            ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              )
+                            : Text(
+                                currentStep == 1 ? 'COMPLETAR REGISTRO' : 'CONTINUAR',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
-                    child: const Text(
-                      'Cancelar',
-                      style: MyTextStyles.drawerButtonLabelTextStyle,
-                    ),
-                  ),
-                ElevatedButton(
-                  onPressed: details.onStepContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A819A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: loadingCompleteRegistration
-                      ? CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        )
-                      : Text(
-                          currentStep == 1 ? 'Completar Registro' : 'Continuar',
-                          style: MyTextStyles.drawerButtonLabelTextStyle,
-                        ),
+                  ],
                 ),
+                const SizedBox(height: 20),
               ],
             );
           },

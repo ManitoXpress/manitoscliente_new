@@ -62,7 +62,7 @@ class UserDataProvider extends ChangeNotifier {
       }
     } catch (e) {
       // Si ocurre cualquier excepción, imprimimos en consola y no modificamos el userData actual
-      debugPrint('Error cargando UserData desde Firestore: $e');
+      null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -112,7 +112,7 @@ class UserDataProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      debugPrint('Error guardando UserData en Firestore: $e');
+      null;
       return false;
     }
   }

@@ -12,7 +12,7 @@ class CustomTicketShapePainter extends CustomPainter {
 
   // Método para obtener el color según el id del estado
   Color _getStatusColor(String id) {
-    print('Estado recibido (id): "$id"'); // Muestra el id con comillas para depurar
+    null; // Muestra el id con comillas para depurar
     switch (id.trim().toLowerCase()) { // Usamos el id en lugar del status completo
       case 'available':
         return Colors.green;

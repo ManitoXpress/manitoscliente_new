@@ -46,7 +46,7 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     } catch (e) {
-      print("Error al obtener displayName: $e");
+      null;
     }
   }
 

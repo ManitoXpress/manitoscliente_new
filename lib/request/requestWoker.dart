@@ -1,6 +1,6 @@
 
-import '../request/requestExpertise.dart';
-import '../request/requestLocation.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestLocation.dart';
 class WorkerDetails {
   final String id;
   final List<String> certificateImagePaths;   // ← Ahora es lista
@@ -39,15 +39,15 @@ class WorkerDetails {
       id: map['id'] ?? '',
       // Si viene como lista o como string CSV, atacamos ambos casos:
       certificateImagePaths: map['certificateImagePaths'] is List
-        ? List<String>.from(map['certificateImagePaths'])
-        : (map['certificateImagePaths'] is String
-            // opcionalmente parsea CSV antiguo
-            ? (map['certificateImagePaths'] as String)
-                .split(',')
-                .map((s) => s.trim())
-                .where((s) => s.isNotEmpty)
-                .toList()
-            : <String>[]),
+          ? List<String>.from(map['certificateImagePaths'])
+          : (map['certificateImagePaths'] is String
+      // opcionalmente parsea CSV antiguo
+          ? (map['certificateImagePaths'] as String)
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList()
+          : <String>[]),
       idDocumentImagePath: map['idDocumentImagePath'] ?? '',
       imagePath: map['imagePath'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
@@ -55,8 +55,8 @@ class WorkerDetails {
       email: map['email'] ?? '',
       expLevel: List<String>.from(map['expLevel'] ?? []),
       expertises: (map['expertises'] as List<dynamic>?)
-              ?.map((item) => Expertise.fromMap(item))
-              .toList() ??
+          ?.map((item) => Expertise.fromMap(item))
+          .toList() ??
           [],
       criminalRecordImagePath: map['criminalRecordImagePath'] ?? '',
       fcmToken: map['fcmToken'] ?? '',

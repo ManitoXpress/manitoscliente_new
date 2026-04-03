@@ -1,13 +1,12 @@
-
 import 'package:flutter/material.dart';
 
 import 'Styles/stilo.dart';
-import 'controller/workers.dart';
+import 'models/worker_detailsModels.dart';
 
 class FavoriteScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    List<Worker> favoriteWorkers = getFavoriteWorkers();
+    List<WorkerDetailsModel> favoriteWorkers = getFavoriteWorkers();
 
     return Scaffold(
       appBar: AppBar(
@@ -20,13 +19,13 @@ class FavoriteScreen extends StatelessWidget {
       body: ListView.builder(
         itemCount: favoriteWorkers.length,
         itemBuilder: (context, index) {
-          Worker worker = favoriteWorkers[index];
+          WorkerDetailsModel worker = favoriteWorkers[index];
           return ListTile(
             leading: CircleAvatar(
-              backgroundImage: AssetImage(worker.profileImage),
+              backgroundImage: AssetImage(worker.imagePath.isNotEmpty ? worker.imagePath : 'images/default_worker.jpg'),
             ),
-            title: Text(worker.name),
-            subtitle: Text(worker.specialty),
+            title: Text(worker.displayName),
+            subtitle: Text(worker.expertises.isNotEmpty ? worker.expertises.first.name : 'Sin especialidad'),
             trailing: IconButton(
               icon: Icon(Icons.favorite),
               color: Colors.red,
@@ -40,22 +39,29 @@ class FavoriteScreen extends StatelessWidget {
     );
   }
 
-  List<Worker> getFavoriteWorkers() {
+  List<WorkerDetailsModel> getFavoriteWorkers() {
     return [
-      Worker('Juan Pérez', 'Plomero', 'images/plomero.jpg'),
-      Worker('María Rodríguez', 'Electricista', 'images/electricista.jpg'),
-      Worker('Carlos Gutiérrez', 'Jardinería', 'images/jardinero.jpg'),
-      Worker('Laura Martínez', 'Diseñador Gráfico', 'images/designer.jpg'),
-      Worker('Luis Sánchez', 'Programador', 'images/programmer.jpg'),
-      Worker('Ana López', 'Nutricionista', 'images/nutritionist.jpg'),
-      Worker('José González', 'Plomero', 'images/plomero2.jpg'),
-      Worker('Elena Fernández', 'Electricista', 'images/electricista2.jpg'),
-      Worker('Pedro Ramírez', 'Jardinería', 'images/jardinero2.jpg'),
-      Worker('Sofía Torres', 'Diseñador Gráfico', 'images/designer2.jpg'),
+      WorkerDetailsModel(
+        displayName: 'Juan Pérez',
+        email: 'juan@example.com',
+        expertises: [],
+        imagePath: 'images/plomero.jpg',
+        idDocumentImagePath: '',
+        phoneNumber: '',
+      ),
+      WorkerDetailsModel(
+        displayName: 'María Rodríguez',
+        email: 'maria@example.com',
+        expertises: [],
+        imagePath: 'images/electricista.jpg',
+        idDocumentImagePath: '',
+        phoneNumber: '',
+      ),
+      // Agregar más trabajadores según sea necesario
     ];
   }
 
-  void removeFromFavorites(Worker worker) {
+  void removeFromFavorites(WorkerDetailsModel worker) {
     // Implementa la lógica para eliminar a un trabajador de favoritos aquí
     // Esto podría incluir actualizar una base de datos o una lista en memoria.
   }

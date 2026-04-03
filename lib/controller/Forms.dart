@@ -90,11 +90,11 @@ class _ServiceFormState extends State<ServiceForm> {
         });
       } else {
         // Manejar el caso en el que la solicitud no fue exitosa
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
+        null;
+        null;
       }
     } catch (e) {
-      print('Error al cargar detalles del servicio desde el backend: $e');
+      null;
     }
   }
 
@@ -104,13 +104,13 @@ class _ServiceFormState extends State<ServiceForm> {
       // Aquí deberías verificar si userId es nulo y manejarlo apropiadamente
       final imageUrl = await apiService.getImage(userId);
 
-      print('URL de la imagen: $imageUrl'); // Imprimir la URL
+      null; // Imprimir la URL
 
       setState(() {
         images;
       });
     } catch (e) {
-      print('Error al cargar la imagen desde el backend: $e');
+      null;
     }
   }
 

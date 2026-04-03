@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../main.dart';
 import '../controller/baseurl.dart';
@@ -29,14 +29,13 @@ class ServiceRepositoryComplete {
     String column,
     String token,
   ) async {
-    debugPrint(
-        '▶️ fetchServicesByComplete iniciado con status=$status, userId=$userId');
+    null;
     // 1. Obtener estados válidos
     List<String> validStatuses = await _getValidStatusesFromFirestore();
-    debugPrint('   > estados válidos desde Firestore: $validStatuses');
+    null;
 
     if (!validStatuses.contains(status)) {
-      debugPrint('   ⚠️ Estado no válido: $status');
+      null;
       throw ArgumentError('Estado no válido: $status');
     }
 
@@ -47,8 +46,7 @@ class ServiceRepositoryComplete {
       userId,
       token,
     );
-    debugPrint(
-        '◀️ fetchServicesByComplete devuelve ${result.length} servicios completos');
+    null;
     return result;
   }
 
@@ -62,13 +60,13 @@ class ServiceRepositoryComplete {
           statusSet.add(data['status'] as String);
         }
       }
-      debugPrint('   • _getValidStatusesFromFirestore encontró: $statusSet');
+      null;
       if (statusSet.isEmpty) {
         throw Exception('No se encontraron estados válidos en Firestore.');
       }
       return statusSet.toList();
     } catch (e) {
-      debugPrint('   ❌ Error al obtener estados desde Firestore: $e');
+      null;
       rethrow;
     }
   }
@@ -86,26 +84,24 @@ class ServiceRepositoryComplete {
           (cached.status.id == 'in_progress' ||
               cached.status.id == 'pending_confirmation' ||
               cached.status.id == 'pending_confirmation2')) {
-        debugPrint(
-            '   • Retornando cache para in_progress/pending: ${cached.id}');
+        null;
         return [cached];
       }
 
       // 2. Llamada al backend
       final deviceId = await obtenerDeviceId();
-      debugPrint(
-          '   • Llamando getAllServices con status=$status, column=$column');
+      null;
       final response =
           await apiService.getAllServices(token, column, userId, status);
 
       if (response.statusCode != 200) {
-        debugPrint('   ❌ getAllServices statusCode=${response.statusCode}');
+        null;
         return [];
       }
 
       final List<Map<String, dynamic>> servicesData =
           List<Map<String, dynamic>>.from(json.decode(response.body));
-      debugPrint('   • getAllServices devolvió ${servicesData.length} items');
+      null;
 
       // 3. Filtrar por status == 'completed'
       // 3. Filtrar por status == 'completed' y services creados por este userId
@@ -114,15 +110,13 @@ class ServiceRepositoryComplete {
         final ownerId = item['userId']?.toString() ?? '';
         return statusVal == 'completed' && ownerId == userId;
       }).toList();
-      debugPrint(
-          '   • filteredServices (completados de $userId) = ${filteredServices.length}');
+      null;
 
       // 4. Mapear a ServiceRequest
       final serviceRequestsList = filteredServices.map((item) {
         final rawOfferedPrice = item['offeredPrice'];
         final parsedOfferedPrice = _parseOfferedPrice(rawOfferedPrice);
-        debugPrint(
-            '     • offeredPrice (raw): $rawOfferedPrice -> parsed: $parsedOfferedPrice');
+        null;
 
         return ServiceRequest(
           createdAt: DateTime.now(),
@@ -165,7 +159,7 @@ class ServiceRepositoryComplete {
       // 5. Obtener ofertas para cada servicio y poblar validServices
       final validServices = <ServiceRequest>[];
       final futures = serviceRequestsList.map((serviceReq) async {
-        debugPrint('   • solicitando ofertas para servicio ${serviceReq.id}');
+        null;
         try {
           final offerResponses = await apiService.getOffers(
             'workerId',
@@ -175,8 +169,7 @@ class ServiceRepositoryComplete {
             [serviceReq],
             'offer',
           );
-          debugPrint(
-              '     – getOffers devolvió ${offerResponses.length} items');
+          null;
 
           // Mapeamos *todas* las respuestas a Offer, sin filtrar por workerId
           final allOffers = offerResponses
@@ -195,7 +188,7 @@ class ServiceRepositoryComplete {
                     subcategoryName: svc.subcategoryName,
                   ))
               .toList();
-          debugPrint('     – allOffers.length = ${allOffers.length}');
+          null;
 
           if (allOffers.isNotEmpty) {
             serviceReq.hasOffer = true;
@@ -203,18 +196,18 @@ class ServiceRepositoryComplete {
             validServices.add(serviceReq);
           }
         } catch (e) {
-          debugPrint('     ❌ Error getOffers para ${serviceReq.id}: $e');
+          null;
         }
       }).toList();
 
       await Future.wait(futures);
-      debugPrint('   • validServices.length = ${validServices.length}');
+      null;
 
       // Cache y retorno
       validServices.forEach(LocalCacheService.cacheServiceRequest);
       return validServices;
     } catch (e) {
-      debugPrint('❌ Error crítico en _fetchServicesByStatus: $e');
+      null;
       return [];
     }
   }

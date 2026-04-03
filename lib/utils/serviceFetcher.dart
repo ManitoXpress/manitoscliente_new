@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
 import 'dart:convert';
 
 import '../main.dart';
@@ -80,19 +81,19 @@ class ServiceRepository {
       if (cachedRequest != null) {
         // Verificar si el estado del servicio en caché es 'available'
         if (cachedRequest.status.id == 'available') {
-          print('Datos del caché encontrados y filtrados por available...');
+          null;
           return [cachedRequest];
         } else {
-          print('Datos en caché no tienen estado available...');
+          null;
           return [];
         }
       } else {
         final deviceId = await obtenerDeviceId();
 
-        print('Parámetro type: $type');
-        print('Parámetro column: $column');
-        print('Parámetro userId: $userId');
-        print('Parámetro deviceId: $deviceId');
+        null;
+        null;
+        null;
+        null;
 
         final response = await ApiService2().getAllServices(
           token,
@@ -179,20 +180,20 @@ class ServiceRepository {
               // Retornar la lista de solicitudes de servicio con sus ofertas
               return serviceRequestsList;
             } catch (e) {
-              print('Error al procesar los datos del servicio: $e');
+              null;
               return [];
             }
           } else {
-            print('No se encontraron servicios disponibles.');
+            null;
             return [];
           }
         } else {
-          print('Error en la solicitud HTTP: ${response.statusCode}');
+          null;
           return [];
         }
       }
     } catch (e) {
-      print('Error en la solicitud: $e');
+      null;
       return [];
     }
   }
@@ -203,7 +204,7 @@ class ServiceRepository {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
+        null;
         return 0.0;
       }
     } else if (value is num) {

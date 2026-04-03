@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:manitoscliente_new/categorias/terms.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import '../Historial.dart';
 import '../Styles/stilo.dart';
@@ -19,7 +19,6 @@ import '../utils/status.dart';
 import '../wizards/datalocation.dart';
 import '../wizards/dataservice.dart';
 import '../wizards/datetime.dart';
-import 'terms.dart';
 
 class ServiceFormPage extends StatefulWidget {
   final ServiceRequest serviceRequest;
@@ -81,13 +80,13 @@ class _ServiceFormPageState extends State<ServiceFormPage>
   @override
   void initState() {
     super.initState();
-
+    
     // Configurar animaciones
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
+    
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -95,7 +94,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-
+    
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
@@ -103,11 +102,11 @@ class _ServiceFormPageState extends State<ServiceFormPage>
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-
+    
     // Inicialización síncrona inmediata
     userData = widget.userData;
     pickedDate = widget.selectedDate;
-
+    
     // Parse selectedTime (which came as a String). If parse fails, keep null.
     try {
       final parsed = DateTime.parse(widget.selectedTime).toLocal();
@@ -149,16 +148,16 @@ class _ServiceFormPageState extends State<ServiceFormPage>
     termsWizard = TermsAndConditionsWizard(
       isChecked: false,
       onAcceptTerms: (accepted) =>
-          widget.serviceRequest.acceptedTerms = accepted,
+      widget.serviceRequest.acceptedTerms = accepted,
       onNextStep: () {},
     );
 
     // Marcar como inicializado
     _initialized = true;
-
+    
     // Iniciar animación
     _animationController.forward();
-
+    
     // Cargar datos asíncronos después
     _loadAsyncData();
   }
@@ -171,7 +170,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
 
   Future<void> _loadAsyncData() async {
     try {
-      // Solo obtener el token, no el fcmToken
+      // Solo obtenemos el token de AuthUtils
       final t = await AuthUtils.getToken();
       if (mounted) {
         setState(() {
@@ -303,7 +302,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
       final devicesId = await AuthUtils.getDeviceId();
       final authToken = await AuthUtils.getToken();
 
-      // Enviar datos al backend (elimina fcmToken del envío)
+      // Enviar datos al backend
       final response = await ApiService().sendDataToBackend(
         widget.serviceRequest,
         authToken!,
@@ -315,9 +314,9 @@ class _ServiceFormPageState extends State<ServiceFormPage>
         widget.expertiseName,
         imageUrls,
         devicesId,
-        null, // fcmToken eliminado, se pasa null
-        DateFormat('yyyy-MM-dd').format(pickedDate!),
-        pickedTime!.format(context),
+        null, // Si el parámetro es obligatorio, enviamos null
+        dateOnly,
+        timeOnly,
       );
 
       Navigator.of(context).pop(); // Cerrar diálogo de progreso
@@ -398,10 +397,16 @@ class _ServiceFormPageState extends State<ServiceFormPage>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                    homeScreenKey.currentState?.goToHistorialTab();
-                  },
+                  onPressed: () => Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HomeScreen(
+                        initialPageIndex: 2,
+                        userData: userData,
+                      ),
+                    ),
+                    (_) => false,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A819A),
                     foregroundColor: Colors.white,
@@ -516,7 +521,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
         children: List.generate(3, (index) {
           final isActive = index == currentStep;
           final isCompleted = index < currentStep;
-
+          
           return Expanded(
             child: Container(
               margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
@@ -539,8 +544,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
                     ),
                     child: Center(
                       child: isCompleted
-                          ? const Icon(Icons.check,
-                              color: Colors.white, size: 20)
+                          ? const Icon(Icons.check, color: Colors.white, size: 20)
                           : Text(
                               '${index + 1}',
                               style: GoogleFonts.poppins(
@@ -558,10 +562,10 @@ class _ServiceFormPageState extends State<ServiceFormPage>
                     _getStepTitle(index),
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      fontWeight:
-                          isActive ? FontWeight.w600 : FontWeight.normal,
-                      color:
-                          isActive ? const Color(0xFF1A819A) : Colors.grey[600],
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                      color: isActive
+                          ? const Color(0xFF1A819A)
+                          : Colors.grey[600],
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -589,7 +593,7 @@ class _ServiceFormPageState extends State<ServiceFormPage>
 
   Widget _buildStepContent() {
     Widget content;
-
+    
     switch (currentStep) {
       case 0:
         content = dataWizard!;

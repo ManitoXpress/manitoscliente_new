@@ -72,10 +72,10 @@ class ServiceListBuilder {
                           serviceId: offer.serviceId,
                           initialStatus: offer.status.id,
                           onComplete: (status) {
-                            print('Estado completado: $status');
+                            null;
                           },
                           onStatusChanged: (newStatus) {
-                            print('Estado cambiado a: $newStatus');
+                            null;
                           },
                           userData: userData,
                           workerId: offer.workerId,
@@ -88,7 +88,7 @@ class ServiceListBuilder {
                 );
               } catch (e) {
                 // Mostrar error en consola o con SnackBar
-                print('Error al cargar los detalles del trabajador: $e');
+                null;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('No se pudo abrir los detalles del servicio.'),
@@ -116,10 +116,10 @@ class ServiceListBuilder {
       ) {
     final serviceDataFetcher = ServiceDataFetcher();
 
-    print('🔍 Debug - inProgressList llamado con ${services.length} servicios y ${offers.length} ofertas');
+    null;
     
     if (offers.isEmpty) {
-      print('🔍 Debug - No hay ofertas para mostrar en inProgressList');
+      null;
       return const Center(
         child: Text(
           'No hay servicios en progreso',
@@ -141,7 +141,7 @@ class ServiceListBuilder {
         itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          print('🔍 Debug - Construyendo item $index: Offer ID=${offer.id}, ServiceId=${offer.serviceId}');
+          null;
           
           final service = services.firstWhere(
                 (s) => s.id == offer.serviceId,
@@ -174,10 +174,10 @@ class ServiceListBuilder {
                           serviceId: offer.serviceId,
                           initialStatus: offer.status.id,
                           onComplete: (status) {
-                            print('Estado completado: $status');
+                            null;
                           },
                           onStatusChanged: (newStatus) {
-                            print('Estado cambiado a: $newStatus');
+                            null;
                           },
                           userData: userData,
                           workerId: offer.workerId,
@@ -189,7 +189,7 @@ class ServiceListBuilder {
                   ),
                 );
               } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
+                null;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('No se pudo abrir los detalles del servicio.'),
@@ -249,10 +249,10 @@ class ServiceListBuilder {
                           serviceId: service.id,
                           initialStatus: service.status.id,
                           onComplete: (status) {
-                            print('Estado completado: $status');
+                            null;
                           },
                           onStatusChanged: (newStatus) {
-                            print('Estado cambiado a: $newStatus');
+                            null;
                           },
                           userData: userData,
                           workerId: service.workerId,
@@ -264,7 +264,7 @@ class ServiceListBuilder {
                   ),
                 );
               } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
+                null;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('No se pudo abrir los detalles del servicio.'),
@@ -329,10 +329,10 @@ class ServiceListBuilder {
                           serviceId: offer.serviceId,
                           initialStatus: offer.status.id,
                           onComplete: (status) {
-                            print('Estado completado: $status');
+                            null;
                           },
                           onStatusChanged: (newStatus) {
-                            print('Estado cambiado a: $newStatus');
+                            null;
                           },
                           userData: userData,
                           workerId: offer.workerId,
@@ -344,7 +344,7 @@ class ServiceListBuilder {
                   ),
                 );
               } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
+                null;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('No se pudo abrir los detalles del servicio.'),
@@ -403,9 +403,9 @@ class ServiceListBuilder {
                           serviceId: service.id,
                           initialStatus: service.status.id,
                           onComplete: (status) =>
-                              print('Estado completado: $status'),
+                              null,
                           onStatusChanged: (newStatus) =>
-                              print('Estado cambiado a: $newStatus'),
+                              null,
                           userData: userData,
                           workerId: service.workerId,
                           apiService: apiService,
@@ -416,7 +416,7 @@ class ServiceListBuilder {
                   ),
                 );
               } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
+                null;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('No se pudo abrir los detalles del servicio.'),
@@ -481,10 +481,10 @@ class ServiceListBuilder {
                           serviceId: service.id,
                           initialStatus: service.status.id,
                           onComplete: (status) {
-                            print('Estado completado: $status');
+                            null;
                           },
                           onStatusChanged: (newStatus) {
-                            print('Estado cambiado a: $newStatus');
+                            null;
                           },
                           userData: userData,
                           workerId: service.workerId,
@@ -496,7 +496,7 @@ class ServiceListBuilder {
                   ),
                 );
               } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
+                null;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('No se pudo abrir los detalles del servicio.'),

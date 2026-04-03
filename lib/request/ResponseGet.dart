@@ -3,12 +3,12 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
-import '../request/requestExpertise.dart';
-import '../request/requestServiceType.dart';
-import '../request/requestWoker.dart';
-import '../request/resquest.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestWoker.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 
 import '../controller/auth_utils.dart';
 import '../controller/baseurl.dart';
@@ -25,79 +25,79 @@ class ApiService2 {
   }
   /// Trae todos los servicios y devuelve el que coincide con serviceId
   Future<Map<String, dynamic>> fetchSingleService(
-  String workerColumn,
-  String workerValue,
-  String type,
-  String deviceId,
-  String serviceId,
-) async {
-  try {
-    // Llamas a tu método que ya funciona para obtener todos los servicios
-    final resp = await getAllServices(
-      await AuthUtils.getToken() ?? '',
-      workerColumn,
-      workerValue,
-      type,
+      String workerColumn,
+      String workerValue,
+      String type,
+      String deviceId,
+      String serviceId,
+      ) async {
+    try {
+      // Llamas a tu método que ya funciona para obtener todos los servicios
+      final resp = await getAllServices(
+        await AuthUtils.getToken() ?? '',
+        workerColumn,
+        workerValue,
+        type,
+      );
+
+      // Verificas que la respuesta sea exitosa
+      if (resp.statusCode != 200) {
+        throw Exception('Error al obtener servicios: ${resp.statusCode}');
+      }
+
+      // Parseas el body como una lista de JSON
+      final List<dynamic> data = json.decode(resp.body);
+
+      // Conviertes la lista a un Map para optimizar la búsqueda
+      final Map<String, Map<String, dynamic>> servicesMap = {
+        for (var service in data)
+          service['id']: service,
+      };
+
+      // Intentas obtener el servicio directamente del Map
+      final found = servicesMap[serviceId];
+
+      if (found == null) {
+        throw Exception('Servicio no encontrado');
+      }
+
+      return found;
+    } catch (e) {
+      // Manejo más específico de errores
+      if (e is TimeoutException) {
+        throw Exception('La solicitud ha expirado');
+      } else {
+        throw Exception('Error inesperado: $e');
+      }
+    }
+  }
+  Future<void> patchServiceComments(
+      String serviceId,
+      List<Map<String, String>> commentsList,
+      ) async {
+    // 1) Obtén el token correctamente
+    final token = await AuthUtils.getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('No se pudo obtener un token válido');
+    }
+
+    // 2) Usa el token en la cabecera
+    final resp = await http.patch(
+      Uri.parse('$baseUrl/services/$serviceId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'comments': commentsList}),
     );
 
-    // Verificas que la respuesta sea exitosa
-    if (resp.statusCode != 200) {
-      throw Exception('Error al obtener servicios: ${resp.statusCode}');
-    }
-
-    // Parseas el body como una lista de JSON
-    final List<dynamic> data = json.decode(resp.body);
-
-    // Conviertes la lista a un Map para optimizar la búsqueda
-    final Map<String, Map<String, dynamic>> servicesMap = {
-      for (var service in data)
-        service['id']: service,
-    };
-
-    // Intentas obtener el servicio directamente del Map
-    final found = servicesMap[serviceId];
-    
-    if (found == null) {
-      throw Exception('Servicio no encontrado');
-    }
-
-    return found;
-  } catch (e) {
-    // Manejo más específico de errores
-    if (e is TimeoutException) {
-      throw Exception('La solicitud ha expirado');
-    } else {
-      throw Exception('Error inesperado: $e');
+    // 3) Manejo de errores
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception(
+          'Error al actualizar comentarios: ${resp.statusCode} – ${resp.body}'
+      );
     }
   }
-}
- Future<void> patchServiceComments(
-    String serviceId,
-    List<Map<String, String>> commentsList,
-) async {
-  // 1) Obtén el token correctamente
-  final token = await AuthUtils.getToken();
-  if (token == null || token.isEmpty) {
-    throw Exception('No se pudo obtener un token válido');
-  }
-
-  // 2) Usa el token en la cabecera
-  final resp = await http.patch(
-    Uri.parse('$baseUrl/services/$serviceId'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-    body: json.encode({'comments': commentsList}),
-  );
-
-  // 3) Manejo de errores
-  if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception(
-      'Error al actualizar comentarios: ${resp.statusCode} – ${resp.body}'
-    );
-  }
-}
 
 
   Future<List<Map<String, String>>> getServiceComments(String serviceId) async {
@@ -129,9 +129,9 @@ class ApiService2 {
     if (user != null) {
       final idToken = await user.getIdToken();
       getToken = idToken;
-      print('Token inicializado: $getToken'); // Log para verificar el token
+      null; // Log para verificar el token
     } else {
-      print('Usuario no autenticado.');
+      null;
     }
   }
   /// POST /services/{serviceId}/comments
@@ -151,8 +151,8 @@ class ApiService2 {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Error al enviar comentario: '
           '${response.statusCode} ${response.body}');
-      }
     }
+  }
 
   Future<List<Map<String, dynamic>>> getOffers2(String offerId) async {
     await _initializeToken(); // Asegúrate de que el token esté actualizado
@@ -163,13 +163,12 @@ class ApiService2 {
       },
     );
 
-    print(
-        'Respuesta de getOffers: ${response.statusCode} ${response.body}'); // Log de la respuesta
+    null; // Log de la respuesta
 
     if (response.statusCode == 200) {
       final offers =
-          List<Map<String, dynamic>>.from(json.decode(response.body));
-      print('Ofertas obtenidas: $offers'); // Log de las ofertas obtenidas
+      List<Map<String, dynamic>>.from(json.decode(response.body));
+      null; // Log de las ofertas obtenidas
       return offers;
     } else {
       throw Exception(
@@ -189,8 +188,7 @@ class ApiService2 {
       body: json.encode(data),
     );
 
-    print(
-        'Respuesta de updateService: ${response.statusCode} ${response.body}'); // Log de la respuesta
+    null; // Log de la respuesta
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -209,8 +207,7 @@ class ApiService2 {
       body: json.encode(data),
     );
 
-    print(
-        'Respuesta de updateOffer: ${response.statusCode} ${response.body}'); // Log de la respuesta
+    null; // Log de la respuesta
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -231,15 +228,14 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Worker encontrado: ${response.body}');
+        null;
       } else {
-        print(
-            'Error al obtener workerId: ${response.statusCode} - ${response.reasonPhrase}');
+        null;
       }
 
       return response;
     } catch (e) {
-      print('Error en la solicitud de workerId: $e');
+      null;
       throw Exception('Error al obtener los detalles del trabajador');
     }
   }
@@ -252,7 +248,7 @@ class ApiService2 {
       // Realizar la solicitud GET
       final response = await http.get(url, headers: {
         'Authorization':
-            'Bearer $getToken', // Enviar el token en los headers si es necesario
+        'Bearer $getToken', // Enviar el token en los headers si es necesario
       });
 
       if (response.statusCode == 200) {
@@ -264,7 +260,7 @@ class ApiService2 {
             'Error al obtener los servicios: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en la solicitud de servicios: $e');
+      null;
       throw Exception('Error en la solicitud de servicios');
     }
   }
@@ -288,20 +284,20 @@ class ApiService2 {
               .map((data) => ServiceResponse.fromJson(data))
               .toList();
 
-          print('Total de servicios obtenidos del backend: ${services.length}');
+          null;
 
           return services;
         } else {
           throw Exception('La respuesta del backend está vacía.');
         }
       } else {
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
+        null;
+        null;
 
         throw Exception('Error al cargar los servicios desde el backend');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
@@ -310,22 +306,30 @@ class ApiService2 {
       String authToken, String column, String value, String type) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
+      
+      final url = Uri.parse('$baseUrl/services?columns=$column&values=$value&type=$type');
+      null;
+      null;
 
       final response = await http.get(
-        Uri.parse('$baseUrl/services?columns=$column&values=$value&type=$type'),
+        url,
         headers: <String, String>{
           'Authorization': 'Bearer $authTokenValue',
         },
       );
 
+      null;
       if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
+        null;
+        null;
       } else {
-        print('Solicitud HTTP fallida con código: ${response.statusCode}');
+        null;
+        null;
       }
       return response;
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
+      null;
       throw Exception('Error al obtener datos del backend');
     }
   }
@@ -334,18 +338,18 @@ class ApiService2 {
   Future<String> getImageUrls(String userId, String imageName) async {
     try {
       String filePath = '$userId/$imageName';
-      print('Accediendo a la ruta de la imagen: $filePath');
+      null;
 
       final Reference ref = FirebaseStorage.instance.ref().child(filePath);
 
       // Obtener la URL de descarga
       final String downloadUrl = await ref.getDownloadURL();
 
-      print('URL de descarga de la imagen: $downloadUrl');
+      null;
 
       return downloadUrl;
     } catch (e) {
-      print('Error al obtener la URL de la imagen: $e');
+      null;
       // Manejo del caso donde la imagen no existe o no se puede acceder
       return '';
     }
@@ -356,18 +360,18 @@ class ApiService2 {
       String type,
       String deviceId,
       List<ServiceRequest> services,
-      String status, // ya no lo usamos dentro de getOffers
+      String status, // Filtro de estado para las ofertas
       ) async {
-    debugPrint('▶️ getOffers iniciado: column=$column, value=$value, type=$type, deviceId=$deviceId');
+    null;
     try {
       final String? authTokenValue = await AuthUtils.getToken();
       if (authTokenValue == null) {
-        debugPrint('   ⚠️ Token de autorización no encontrado');
+        null;
         throw Exception('Token de autorización no encontrado');
       }
 
       if (services.isEmpty) {
-        debugPrint('   ⚠️ Lista de servicios vacía');
+        null;
         throw Exception('ID del servicio no encontrado');
       }
 
@@ -381,37 +385,43 @@ class ApiService2 {
               'type=$type&'
               'deviceId=$deviceId',
         );
-        debugPrint('   • Petición GET → $url');
+        null;
 
         final response = await http.get(
           url,
           headers: {'Authorization': 'Bearer $authTokenValue'},
         );
-        debugPrint('     – statusCode: ${response.statusCode}');
+        null;
 
         if (response.statusCode == 200) {
           final offersJson = json.decode(response.body) as List<dynamic>;
-          debugPrint('     – offersJson.length: ${offersJson.length}');
+          null;
 
-          // Aquí ya no filtramos por status.id, tomamos todo
+          // Filtrar por estado si se especifica
           final parsed = offersJson
               .map((o) => ServiceRequest.fromSnapshot(o as Map<String, dynamic>))
+              .where((offer) {
+                // Si no se especifica status o es vacío, devolver todas las ofertas
+                if (status.isEmpty) {
+                  return true;
+                }
+                // Filtrar por el estado especificado
+                return offer.status.id == status;
+              })
               .toList();
-          debugPrint('     – parsed.length: ${parsed.length}');
+          null;
 
           allOffers.addAll(parsed);
         } else {
-          debugPrint(
-              '     ❌ Error al obtener ofertas para servicio ${service.id}: HTTP ${response.statusCode}'
-          );
+          null;
         }
       }).toList();
 
       await Future.wait(futures);
-      debugPrint('◀️ getOffers devuelve allOffers.length = ${allOffers.length}');
+      null;
       return allOffers;
     } catch (e) {
-      debugPrint('❌ Error en getOffers: $e');
+      null;
       throw Exception('Error al obtener ofertas');
     }
   }
@@ -431,8 +441,8 @@ class ApiService2 {
         headers: headers,
       );
 
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      null;
+      null;
 
       if (response.statusCode == 200) {
         final dynamic responseData = json.decode(response.body);
@@ -446,7 +456,7 @@ class ApiService2 {
         throw Exception('Solicitud HTTP fallida: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception('Error al obtener datos del backend');
     }
   }
@@ -458,7 +468,7 @@ class ApiService2 {
 
       if (user == null) {
         // Manejar el caso en el que el usuario no está autenticado
-        print('Error: Usuario no autenticado.');
+        null;
         return null;
       }
 
@@ -484,16 +494,15 @@ class ApiService2 {
 
         // Obtener la URL de descarga de la primera imagen
         final imageUrl = await firstImageRef.getDownloadURL();
-        print('URL de la primera imagen en Firebase Storage: $imageUrl');
+        null;
 
         return imageUrl;
       } else {
-        print(
-            'No se encontraron imágenes de perfil en la carpeta del usuario.');
+        null;
         return null;
       }
     } catch (e) {
-      print('Error al obtener la URL de la imagen desde Firebase Storage: $e');
+      null;
       throw Exception(
           'Error al obtener la URL de la imagen desde Firebase Storage: $e');
     }
@@ -520,28 +529,28 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
+        null;
       } else {
-        print('Solicitud HTTP fallida: ${response.statusCode}');
+        null;
       }
       return response;
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception('Error al obtener datos del backend');
     }
   }
 
   Future<http.Response> getServiceByIdAndName(
       String categoryId, String serviceName, String token) async {
-    print('getServiceByIdAndName() called');
-    print('Obteniendo servicio del backend:');
+    null;
+    null;
 
     // Construimos la URL con los parámetros necesarios
     final String url =
         '$baseUrl/services?categoryId=$categoryId&name=$serviceName';
 
-    print('URL: $url');
-    print('Token: $token');
+    null;
+    null;
 
     try {
       final response = await http.get(
@@ -553,13 +562,13 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Servicio obtenido con éxito');
+        null;
       } else {
-        print('Solicitud HTTP fallida con código: ${response.statusCode}');
+        null;
       }
       return response;
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception('Error al obtener el servicio del backend');
     }
   }
@@ -584,14 +593,14 @@ class ApiService2 {
           throw Exception('La respuesta del backend está vacía.');
         }
       } else {
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
+        null;
+        null;
 
         throw Exception(
             'Error al cargar los detalles del servicio desde el backend');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception(
           'Error al cargar los detalles del servicio desde el backend');
     }
@@ -599,8 +608,8 @@ class ApiService2 {
 
   // Método para cargar las imágenes desde el backend
   Future<String> getImage(
-    String userId,
-  ) async {
+      String userId,
+      ) async {
     try {
       final FirebaseStorage storage = FirebaseStorage.instance;
 
@@ -621,7 +630,7 @@ class ApiService2 {
         throw Exception('No se encontraron imágenes en el directorio.');
       }
     } catch (e) {
-      print('Error al obtener la imagen desde Firebase Storage: $e');
+      null;
       throw Exception('Error al obtener la imagen desde Firebase Storage');
     }
   }
@@ -650,12 +659,12 @@ class ApiService2 {
           throw Exception('La respuesta del backend está vacía.');
         }
       } else {
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
+        null;
+        null;
         throw Exception('Error al cargar los servicios desde el backend');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
@@ -684,12 +693,12 @@ class ApiService2 {
           throw Exception('La respuesta del backend está vacía.');
         }
       } else {
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
+        null;
+        null;
         throw Exception('Error al cargar los servicios desde el backend');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
+      null;
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
@@ -697,7 +706,7 @@ class ApiService2 {
   Future<void> updateWorkerPoints(String userId, String token) async {
     final url = Uri.parse('$baseUrl/users/$userId');
 
-    print('Token usado para la autenticación: $token');
+    null;
 
     try {
       final response = await http.patch(
@@ -713,12 +722,12 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Puntos actualizados correctamente en el backend.');
+        null;
       } else {
-        print('Error al actualizar puntos en el backend: ${response.body}');
+        null;
       }
     } catch (e) {
-      print('Error en la solicitud PATCH: $e');
+      null;
     }
   }
 }
@@ -768,19 +777,19 @@ class ServiceResponse {
     final List<dynamic> serviceTypesData = json['serviceTypes'] ?? [];
     final List<ServiceType> serviceTypes = serviceTypesData
         .map((data) => ServiceType(
-              id: data['id'] ?? '',
-              name: data['name'] ?? '',
-              selectedDate: data['selectedDate'] ?? '',
-              selectedTime: data['selectedTime'] ?? '',
-            ))
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      selectedDate: data['selectedDate'] ?? '',
+      selectedTime: data['selectedTime'] ?? '',
+    ))
         .toList();
 
     final List<dynamic> expertisesData = json['expertises'] ?? [];
     final List<Expertise> expertises = expertisesData
         .map((data) => Expertise(
-              id: data['id'] ?? '',
-              name: data['name'] ?? '',
-            ))
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+    ))
         .toList();
 
     return ServiceResponse(
@@ -816,7 +825,7 @@ class ServiceResponse {
       'image': image,
       'description': description,
       'serviceTypes':
-          serviceTypes.map((serviceType) => serviceType.toMap()).toList(),
+      serviceTypes.map((serviceType) => serviceType.toMap()).toList(),
       'parentId': parentId,
       'buttonTexts': buttonTexts,
       'priceRanges': priceRanges,
@@ -834,5 +843,5 @@ class ServiceResponse {
   @override
   String toString() {
     return 'ServiceResponse(id: $id, name: $name, image: $image, description: $description, serviceTypes: $serviceTypes, parentId: $parentId, buttonTexts: $buttonTexts, priceRanges: $priceRanges, typeName: $typeName, workerId: $workerId, userId: $userId, location: $location, offerId: $offerId, images: $images, expertises: $expertises, subcategoryName: $subcategoryName)';
-  }
+    }
 }

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 
 import '../Styles/stilo.dart';
 import '../provider/providerController.dart';
@@ -220,7 +222,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint('Error en _pickImage: $e\n$stackTrace');
+      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -253,7 +255,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
         await _processImageSafely(image);
       }
     } catch (e, stackTrace) {
-      debugPrint('Error al seleccionar imagen de galería: $e\n$stackTrace');
+      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -287,7 +289,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
         await _processImageSafely(image);
       }
     } catch (e, stackTrace) {
-      debugPrint('Error al tomar foto: $e\n$stackTrace');
+      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -363,7 +365,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('Error al procesar imagen: $e\n$stackTrace');
+      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -396,7 +398,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
         }
       }
     } catch (e, stackTrace) {
-      debugPrint('Error en _processImage: $e\n$stackTrace');
+      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -574,7 +576,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
                           );
                         }
                       } catch (e) {
-                        debugPrint('Error al eliminar imagen: $e');
+                        null;
                         Navigator.of(context).pop();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -614,7 +616,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint('Error en _showImagePreview: $e\n$stackTrace');
+      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -892,8 +894,7 @@ class _ServiceDataWizardState extends State<ServiceDataWizard>
                                               );
                                             }
                                           } catch (e) {
-                                            debugPrint(
-                                                'Error al eliminar imagen: $e');
+                                            null;
                                             if (mounted) {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(

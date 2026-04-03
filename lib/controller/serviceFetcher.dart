@@ -16,7 +16,7 @@ class ServiceDataFetcher {
   // Obtener los detalles del trabajador
   Future<WorkerDetails?> fetchWorkerDetails(String? workerId) async {
     if (workerId == null || workerId.isEmpty) {
-      print('workerId está vacío o es nulo');
+      null;
       return null;
     }
 
@@ -26,13 +26,13 @@ class ServiceDataFetcher {
       final token = await user?.getIdToken();
 
       if (token == null) {
-        print('No se pudo obtener el token de autenticación.');
+        null;
         return null;
       }
 
       // Construir la URL de la API
       final url = '$baseUrl/workers/$workerId';
-      print('Realizando solicitud GET a: $url');
+      null;
 
       // Realizar la solicitud GET con el token en los encabezados
       final response = await http.get(
@@ -46,15 +46,29 @@ class ServiceDataFetcher {
       // Validar respuesta de la API
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Datos del trabajador recibidos: $data');
-        return WorkerDetails.fromMap(data);
+        null;
+        null;
+
+        // Verificar específicamente si imagePath existe en los datos
+        null;
+        null;
+
+        // Listar todos los campos disponibles para referencia
+        null;
+
+        // Crear el objeto WorkerDetails
+        final workerDetails = WorkerDetails.fromMap(data);
+
+        // Verificar si imagePath se mapeó correctamente
+        null;
+
+        return workerDetails;
       } else {
-        print(
-            'Error al obtener los detalles del trabajador. Código de estado: ${response.statusCode}');
-        print('Respuesta del servidor: ${response.body}');
+        null;
+        null;
       }
     } catch (e) {
-      print('Error al realizar la solicitud al servidor: $e');
+      null;
     }
 
     return null;
@@ -64,7 +78,7 @@ class ServiceDataFetcher {
   // Obtener el precio ofertado para un servicio específico
   Future<double?> fetchOfferedPrice(String? serviceId) async {
     if (serviceId == null || serviceId.isEmpty) {
-      print('serviceId está vacío o es nulo');
+      null;
       return null;
     }
 
@@ -79,10 +93,10 @@ class ServiceDataFetcher {
         final offerData = querySnapshot.docs.first.data();
         return double.tryParse(offerData['offeredPrice'].toString());
       } else {
-        print('No se encontró oferta para el servicio con ID: $serviceId');
+        null;
       }
     } catch (e) {
-      print('Error al obtener el precio ofertado: $e');
+      null;
     }
     return null;
   }

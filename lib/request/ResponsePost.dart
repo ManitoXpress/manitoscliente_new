@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -10,7 +11,6 @@ import '../controller/RegisController.dart';
 import '../controller/baseurl.dart';
 import 'requestStatus.dart';
 import 'resquest.dart';
-
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl; // URL base de la API
   String? getToken;
@@ -23,8 +23,6 @@ class ApiService {
     if (user == null) return null;
     return await user.getIdToken();
   }
-  
-
   /// 2) Actualiza un servicio dado su [serviceId] con los campos que incluyas en [data].
   ///    Llamará a PUT { baseUrl }/services/{serviceId}
   Future<void> updateService({
@@ -46,14 +44,7 @@ class ApiService {
       body: jsonEncode(data),
     );
 
-    debugPrint('🔵 PATCH /services/$serviceId');
-    debugPrint('🔵 Body enviado: ' + jsonEncode(data));
-    debugPrint('🟢 StatusCode:  [32m${response.statusCode} [0m');
-    debugPrint('🟢 Response body: ${response.body}');
-
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      debugPrint(
-          '🔴 Error PATCH: statusCode=${response.statusCode}, body=${response.body}');
       throw Exception(
           'Error ${response.statusCode} al actualizar servicio: ${response.body}');
     }
@@ -72,8 +63,8 @@ class ApiService {
     }
 
     final urlString = '$baseUrl/offers/$offerId';
-    print('🤖→ PATCH a oferta: $urlString');
-    print('    body: ${jsonEncode(data)}');
+    null;
+    null;
     final uri = Uri.parse(urlString);
 
     final response = await http.patch(
@@ -85,17 +76,16 @@ class ApiService {
       body: jsonEncode(data),
     );
 
-    print(
-        '🤖← Oferta → statusCode: ${response.statusCode}, body: ${response.body}');
+    null;
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
-          'Error ${response.statusCode} al actualizar oferta: ${response.body}');
+          'Error ${response.statusCode} al actualizar oferta: ${response.body}'
+      );
     }
   }
-
-  Future<bool> deleteUsers(String userId, String authToken) async {
+  Future<bool> deleteWorker(String userId, String authToken) async {
     try {
-      final url = Uri.parse('$baseUrl/users/$userId');
+      final url = Uri.parse('$baseUrl/workers/$userId');
       final response = await http.delete(
         url,
         headers: {
@@ -105,14 +95,14 @@ class ApiService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        debugPrint('✅ Worker eliminado correctamente');
+        null;
         return true;
       } else {
-        debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+        null;
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Excepción al eliminar worker: $e');
+      null;
       return false;
     }
   }
@@ -172,10 +162,10 @@ class ApiService {
   }
 
   Future<http.Response> updateFcmToken(
-    String userId,
-    String authToken,
-    String fcmToken,
-  ) async {
+      String userId,
+      String authToken,
+      String fcmToken,
+      ) async {
     try {
       final body = jsonEncode({'fcmToken': fcmToken});
 
@@ -189,14 +179,14 @@ class ApiService {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('✅ FCM token actualizado en backend');
+        null;
       } else {
-        debugPrint('❌ Error al actualizar FCM token: ${response.statusCode}');
+        null;
       }
 
       return response;
     } catch (e) {
-      debugPrint('❌ Excepción actualizando FCM token: $e');
+      null;
       rethrow;
     }
   }
@@ -206,15 +196,15 @@ class ApiService {
     try {
       final User? user = _auth.currentUser;
       if (user == null) {
-        print('Usuario no autenticado. Por favor, inicia sesión.');
+        null;
         return null;
       }
       final token =
-          await user.getIdToken(true); // Fuerza la renovación del token
-      print('Token obtenido: $token');
+      await user.getIdToken(true); // Fuerza la renovación del token
+      null;
       return token;
     } catch (e) {
-      print('Error al obtener el token: $e');
+      null;
       return null;
     }
   }
@@ -229,7 +219,7 @@ class ApiService {
     token ??= await _getAuthToken();
 
     if (userId == null || userId.isEmpty) {
-      print('Error: userId no está disponible.');
+      null;
       return [];
     }
 
@@ -241,22 +231,21 @@ class ApiService {
     };
 
     try {
-      print('Realizando solicitud a $url');
-      print('Encabezados: $headers');
+      null;
+      null;
 
       final response = await http.get(url, headers: headers);
 
       if (response.statusCode == 200) {
-        print('Respuesta recibida: ${response.body}');
+        null;
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => e as Map<String, dynamic>).toList();
       } else {
-        print(
-            'Error al obtener servicios: Código ${response.statusCode}, Respuesta: ${response.body}');
+        null;
         return [];
       }
     } catch (e) {
-      print('Excepción al obtener servicios: $e');
+      null;
       return [];
     }
   }
@@ -284,7 +273,7 @@ class ApiService {
       );
       return response;
     } catch (e) {
-      print('Error al enviar datos al servidor: $e');
+      null;
       throw Exception('Error al enviar datos al servidor');
     }
   }
@@ -309,17 +298,17 @@ class ApiService {
       throw Exception(
           'Error al actualizar oferta: ${response.statusCode} ${response.body}');
     }
-    debugPrint('✅ Oferta $offerId actualizada a $newStatus');
+    null;
   }
 
   Future<void> updateServiceStatus(
       ServiceRequest serviceRequest, String newStatusId, String token) async {
     try {
       final String? refreshedToken =
-          await FirebaseAuth.instance.currentUser?.getIdToken(true);
+      await FirebaseAuth.instance.currentUser?.getIdToken(true);
 
       if (refreshedToken == null) {
-        print('Token de autenticación nulo o vacío');
+        null;
         throw Exception('Token de autenticación nulo o vacío');
       }
 
@@ -327,9 +316,9 @@ class ApiService {
         'status': newStatusId, // Usar el id del estado en lugar del nombre
       };
 
-      print('URL de la solicitud: $baseUrl/services/${serviceRequest.id}');
-      print('Token de autenticación: $refreshedToken');
-      print('Datos de formulario: $requestBody');
+      null;
+      null;
+      null;
 
       final response = await http.patch(
         Uri.parse('$baseUrl/services/${serviceRequest.id}'),
@@ -340,20 +329,19 @@ class ApiService {
         body: jsonEncode(requestBody),
       );
 
-      print('Código de estado de la respuesta: ${response.statusCode}');
-      print('Cuerpo de la respuesta: ${response.body}');
+      null;
+      null;
 
       if (response.statusCode == 200) {
-        print('Estado actualizado con éxito en el backend');
+        null;
       } else {
-        print(
-            'Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
-        print('Cuerpo de la respuesta de error: ${response.body}');
+        null;
+        null;
         throw Exception(
             'Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error al realizar la solicitud HTTP de actualización: $e');
+      null;
       throw Exception('Error al actualizar el estado en el backend: $e');
     }
   }
@@ -368,7 +356,7 @@ class ApiService {
       // Construir el cuerpo de la solicitud con el token
       final body = jsonEncode({
         'fcmToken':
-            token, // Ajusta el nombre del campo según lo que espere tu backend
+        token, // Ajusta el nombre del campo según lo que espere tu backend
       });
 
       // Enviar el token al servidor
@@ -382,13 +370,12 @@ class ApiService {
 
       // Verifica la respuesta del servidor
       if (response.statusCode == 200) {
-        print('Token FCM enviado exitosamente al backend.');
+        null;
       } else {
-        print(
-            'Error al enviar el token al backend. Código de estado: ${response.statusCode}');
+        null;
       }
     } catch (e) {
-      print('Error al enviar token FCM al servidor: $e');
+      null;
       throw Exception('Error al enviar token al servidor');
     }
   }
@@ -403,7 +390,7 @@ class ApiService {
       );
       return response;
     } catch (e) {
-      print('Error al enviar token al servidor: $e');
+      null;
       throw Exception('Error al enviar token al servidor');
     }
   }
@@ -411,8 +398,7 @@ class ApiService {
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
       final String extension = image.path.split('.').last;
-      final String imageName =
-          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String imageName = 'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final String userFolderPath = '$userId/';
       final String imagePath = '$userFolderPath$imageName';
 
@@ -421,17 +407,17 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
+          null;
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
+        null;
         return imageUrl;
       } else {
         throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
+      null;
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
@@ -448,8 +434,8 @@ class ApiService {
       List<String> imageUrls,
       String? devicesId,
       String? fcmToken,
-      String date, // yyyy-MM-dd
-      String time // HH:mm
+      String date,   // yyyy-MM-dd
+      String time    // HH:mm
       ) async {
     // Timestamp de creación en UTC
     final String createdAt = DateTime.now().toUtc().toIso8601String();
@@ -459,8 +445,8 @@ class ApiService {
 
     final formData = {
       'subcategoryName': subcategoryName,
-      'date': date, // tu date
-      'time': time, // tu time
+      'date': date,                   // tu date
+      'time': time,                   // tu time
       'createdAt': createdAt,
       // 'serviceDateTime': serviceRequest.serviceDateTime,  // <- quitas esta línea
       'description': serviceRequest.description,
@@ -487,7 +473,7 @@ class ApiService {
       'token': token,
     };
 
-    print('FormData: $formData');
+    null;
 
     final response = await http.post(
       Uri.parse('$baseUrl/services'),
@@ -499,20 +485,20 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      print('Datos enviados al backend con éxito');
+      null;
     } else {
-      print('Solicitud HTTP: ${response.statusCode}');
+      null;
     }
     return response;
   }
 
   Future<http.Response> updateUser(
-    String userId,
-    RegistrationData registrationData,
-    String token,
-    String? devicesId,
-    String? fcmToken,
-  ) async {
+      String userId,
+      RegistrationData registrationData,
+      String token,
+      String? devicesId,
+      String? fcmToken,
+      ) async {
     try {
       String codeReferral =
           '${registrationData.displayName.split(' ').first}_${registrationData.phoneNumber.length >= 4 ? registrationData.phoneNumber.substring(registrationData.phoneNumber.length - 4) : registrationData.phoneNumber}';
@@ -528,27 +514,42 @@ class ApiService {
         'codeReferral': codeReferral,
       };
 
-      print('Request Body: $requestBody');
+      null;
+
+      // Obtener el token de App Check para incluirlo en el header
+      String? appCheckToken;
+      try {
+        appCheckToken = await FirebaseAppCheck.instance.getToken();
+        null;
+      } catch (e) {
+        null;
+      }
+
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+      if (appCheckToken != null) {
+        headers['X-Firebase-AppCheck'] = appCheckToken;
+      }
 
       final response = await http.patch(
         Uri.parse('$baseUrl/users/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
         body: jsonEncode(requestBody),
       );
 
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      null;
+      null;
 
       return response;
     } catch (e) {
-      print('Error al actualizar el usuario: $e');
+      null;
       throw Exception('Error al actualizar el usuario: $e');
     }
   }
 }
+
 
 class FormData {
   final String dateTime;
@@ -571,16 +572,16 @@ class FormData {
 
   Map<String, dynamic> toMap() {
     return {
-      'dateTime': dateTime,
-      'description': description,
-      'images': images,
-      'location': {
-        'lat': location['lat'],
-        'lng': location['lng'],
-      },
-      'offeredPrice': offeredPrice,
-      'serviceType': serviceType,
-      'userId': userId,
+    'dateTime': dateTime,
+    'description': description,
+    'images': images,
+    'location': {
+    'lat': location['lat'],
+    'lng': location['lng'],
+    },
+    'offeredPrice': offeredPrice,
+    'serviceType': serviceType,
+    'userId': userId,
     };
-  }
+    }
 }

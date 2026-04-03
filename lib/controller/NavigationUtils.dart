@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/request/dataprofile.dart';
 
 import '../categorias/Service_DetailsScreen.dart';
+import '../request/dataprofile.dart';
 import '../request/requestServiceType.dart';
 import '../request/resquest.dart';
 import 'auth_utils.dart';
@@ -23,7 +23,7 @@ class NavigationUtils {
     String? token = await AuthUtils.getToken();
 
     if (token != null) {
-      print('Token: $token');
+      null;
 
       // Construye ServiceType
       String serviceTypeId = map['serviceType']['id'];
@@ -82,7 +82,7 @@ class NavigationUtils {
         ),
       );
     } else {
-      print('No se pudo obtener el token.');
+      null;
     }
   }
 }

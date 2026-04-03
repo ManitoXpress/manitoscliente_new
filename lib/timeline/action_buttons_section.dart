@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
-import '../constants/service_constants.dart';
+import '../constant/serviceConstants.dart';
 import '../models/service_requestModels.dart';
 import '../provider/serviceDetails_providers.dart';
 import 'timeline_helpers.dart';
