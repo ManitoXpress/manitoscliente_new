@@ -102,33 +102,30 @@ class OfferRepository {
     String deviceId,
   ) async {
     try {
-      // Verificar si hay datos en caché para este usuario.
-      final cachedRequest =
-          await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null) {
-        null;
-        return [cachedRequest];
-      } else {
-        null;
+      // No leer de caché local aquí: puede devolver el servicio sin las ofertas adjuntas.
+      // Siempre buscamos en la API para garantizar que las ofertas estén actualizadas.
 
-        // Llamada a la API usando "userId" como columna de filtro.
-        final response = await apiService2.getAllServices(
-          token,
-          "userId", // Columna de filtro fija
-          userId, // Valor del usuario autenticado
-          type,
-        );
+      // Llamada a la API usando "userId" como columna de filtro.
+      final response = await apiService2.getAllServices(
+        token,
+        "userId",
+        userId,
+        type,
+      );
 
-        null;
-        null;
-        null;
-        null;
+      debugPrint('🔍 [OfferRepo] Buscando servicios tipo=$type para userId=$userId');
+      debugPrint('🔍 [OfferRepo] HTTP status: ${response.statusCode}');
+      debugPrint('🔍 [OfferRepo] Cuerpo respuesta: ${response.body}');
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
               List<Map<String, dynamic>>.from(json.decode(response.body));
 
           if (servicesData.isNotEmpty) {
+            debugPrint('🔍 [OfferRepo] Total documentos en respuesta: ${servicesData.length}');
+            for (var item in servicesData) {
+              debugPrint('   → id=${item['id']} status=${item['status']} userId=${item['userId']}');
+            }
             try {
               // Mapeo de la respuesta para crear una lista de ServiceRequest.
               // Se filtran aquellos que tengan status 'available' y userId igual al autenticado.
@@ -181,6 +178,11 @@ class OfferRepository {
                       service.userId == userId)
                   .toList();
 
+              debugPrint('✅ [OfferRepo] Servicios filtrados como offer: ${serviceRequestsList.length}');
+              for (var s in serviceRequestsList) {
+                debugPrint('   → serviceId=${s.id} status=${s.status.id}');
+              }
+
               // Cacheamos las solicitudes de servicio para este usuario.
               for (var request in serviceRequestsList) {
                 LocalCacheService.cacheServiceRequest(request);
@@ -191,6 +193,7 @@ class OfferRepository {
                   serviceRequestsList.map((serviceRequest) async {
                 null;
                 try {
+                  debugPrint('📡 [OfferRepo] Pidiendo ofertas para serviceId=${serviceRequest.id}');
                   final offerResponses = await ApiService2().getOffers(
                     "userId", // Filtrar por la columna "userId"
                     userId, // Valor del usuario autenticado
@@ -226,9 +229,9 @@ class OfferRepository {
 
                   // Se asignan las ofertas al servicio correspondiente.
                   serviceRequest.offers = offers;
-                  null;
+                  debugPrint('✅ [OfferRepo] Ofertas asignadas al servicio ${serviceRequest.id}: ${offers.length} oferta(s)');
                 } catch (e) {
-                  null;
+                  debugPrint('❌ [OfferRepo] Error al obtener ofertas para ${serviceRequest.id}: $e');
                 }
               }).toList();
 
@@ -237,20 +240,15 @@ class OfferRepository {
 
               return serviceRequestsList;
             } catch (e) {
-              null;
               return [];
             }
           } else {
-            null;
             return [];
           }
         } else {
-          null;
           return [];
         }
-      }
     } catch (e) {
-      null;
       return [];
     }
   }

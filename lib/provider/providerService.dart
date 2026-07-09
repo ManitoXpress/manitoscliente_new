@@ -101,8 +101,9 @@ class HistorialProvider extends ChangeNotifier {
     return lista;
   }
 
+  // 'available' ahora incluye servicios en estado 'offer' con sus ofertas adjuntas
   int get availableCount => list('available').length;
-  int get offerServiceCount => list('offer').expand((s) => s.offers).length;
+  int get offerServiceCount => list('available').where((s) => s.offers.isNotEmpty).length;
   int get inProgressCount => list('in_progress').length;
   int get completedCount => list('completed').length;
   int get cancelledCount => list('cancelled').length;
@@ -177,18 +178,20 @@ class HistorialProvider extends ChangeNotifier {
     }
   }
 
-  /// Verifica si debe refrescar desde servidor con lógica mejorada
+  /// Verifica si debe refrescar desde servidor
+  /// Siempre refresca si hay servicios 'available' cacheados (pueden haber recibido ofertas)
   bool _shouldRefreshFromServer(String userId) {
-    if (_byStatus.isEmpty) {
-      return true;
-    }
+    if (_byStatus.isEmpty) return true;
+
+    // Si hay servicios en espera cacheados, siempre verificar el servidor
+    // para detectar si recibieron ofertas desde la última carga
+    final availableList = _byStatus['available'] ?? [];
+    if (availableList.isNotEmpty) return true;
 
     final now = DateTime.now();
     for (final lastUpdate in _lastUpdate.values) {
       final difference = now.difference(lastUpdate).inMinutes;
-      if (difference > _cacheValidMinutes) {
-        return true;
-      }
+      if (difference > _cacheValidMinutes) return true;
     }
 
     return false;
@@ -202,37 +205,34 @@ class HistorialProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 🚀 OPTIMIZACIÓN: Cargar datos críticos primero (available, in_progress)
+      // Cargar datos críticos primero (available+offer unificados, in_progress)
       final criticalFutures = [
-        _loadAvailableServices(userId, token),
+        _loadAvailableWithOffersServices(userId, token, deviceId),
         _loadInProgressServices(userId, token),
-      ];
-      
-      // Cargar datos menos críticos en paralelo
-      final normalFutures = [
-        _loadOfferServices(userId, token, deviceId),
-        _loadCompletedServices(userId, token),
-        _loadCancelledServices(userId, token),
       ];
 
       // Ejecutar cargas críticas primero
       final criticalResults = await Future.wait<List<ServiceRequest>>(criticalFutures)
           .timeout(Duration(seconds: _networkTimeoutSeconds ~/ 2));
-      
-      // Actualizar UI inmediatamente con datos críticos
+
+      // 'available' ahora contiene también los servicios con status='offer' (con ofertas adjuntas)
       _byStatus['available'] = _ordenarPorFecha(criticalResults[0]);
+      _byStatus['offer'] = []; // limpiamos para evitar listas huérfanas
       _byStatus['in_progress'] = _ordenarPorFecha(criticalResults[1]);
-      _updateTimestamps(['available', 'in_progress']);
-      notifyListeners(); // 🚀 Notificar UI inmediatamente
-      
+      _updateTimestamps(['available', 'offer', 'in_progress']);
+      notifyListeners();
+
       // Cargar datos normales en background
+      final normalFutures = [
+        _loadCompletedServices(userId, token),
+        _loadCancelledServices(userId, token),
+      ];
       final normalResults = await Future.wait<List<ServiceRequest>>(normalFutures)
           .timeout(Duration(seconds: _networkTimeoutSeconds ~/ 2));
-      
-      _byStatus['offer'] = _ordenarPorFecha(normalResults[0]);
-      _byStatus['completed'] = _ordenarPorFecha(normalResults[1]);
-      _byStatus['cancelled'] = _ordenarPorFecha(normalResults[2]);
-      _updateTimestamps(['offer', 'completed', 'cancelled']);
+
+      _byStatus['completed'] = _ordenarPorFecha(normalResults[0]);
+      _byStatus['cancelled'] = _ordenarPorFecha(normalResults[1]);
+      _updateTimestamps(['completed', 'cancelled']);
 
       // Guardar en caché con versión
       await _saveToCache(userId);
@@ -257,15 +257,58 @@ class HistorialProvider extends ChangeNotifier {
     }
   }
 
-  /// Carga servicios disponibles
+  /// Carga servicios disponibles (available) Y los que ya tienen oferta (offer),
+  /// y adjunta las ofertas de cada servicio para mostrarlas en la misma tarjeta.
+  Future<List<ServiceRequest>> _loadAvailableWithOffersServices(
+      String userId, String token, String deviceId) async {
+    try {
+      // 1. Servicios en estado 'available' (sin oferta aún)
+      final available = await _repoAvailable
+          .fetchServicesByStatus('available', 'status', userId, token, []);
+      debugPrint('🔍 [ProviderService] Servicios available traidos: ${available.length}');
+
+      // 2. Servicios en estado 'available' que ya tienen propuesta de trabajador
+      final withOffer = await _repoOffer.fetchOffersForUser(
+        'available',
+        userId,
+        token,
+        ServiceRequest(
+          id: '', serviceDateTime: '', description: '', images: [],
+          location: {}, offeredPrice: 0.0,
+          serviceType: ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
+          userId: userId, workerId: '', isFavorite: false, selectedDate: null,
+          selectedTime: null, acceptedTerms: false, expertises: <Expertise>[],
+          status: Status(id: 'available', name: 'Disponible'),
+          hasOffer: true, offers: [], devicesId: '', subcategoryName: '',
+          createdAt: DateTime.now(),
+        ),
+        deviceId,
+      );
+      debugPrint('🔍 [ProviderService] Servicios con offers traidos: ${withOffer.length}');
+
+      // 3. Unir ambas listas eliminando duplicados por id
+      final Map<String, ServiceRequest> unique = {};
+      for (var s in [...available, ...withOffer]) {
+        if (s.id.isNotEmpty) unique[s.id] = s;
+      }
+      final result = unique.values.toList();
+      debugPrint('✅ [ProviderService] Total unificado (available + offer): ${result.length}');
+      for (var s in result) {
+        debugPrint('   → serviceId=${s.id} offers.length=${s.offers.length}');
+      }
+      return result;
+    } catch (e) {
+      return <ServiceRequest>[];
+    }
+  }
+
+  /// Mantener para el temporizador de cancelación (uso interno)
   Future<List<ServiceRequest>> _loadAvailableServices(
       String userId, String token) async {
     try {
-      final result = await _repoAvailable
+      return await _repoAvailable
           .fetchServicesByStatus('available', 'status', userId, token, []);
-      return result;
     } catch (e) {
-      null;
       return <ServiceRequest>[];
     }
   }

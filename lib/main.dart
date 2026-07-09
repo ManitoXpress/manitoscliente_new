@@ -22,6 +22,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:manitoscliente_new/services/historial_preload_service.dart';
+import 'package:manitoscliente_new/services/remote_config_service.dart';
 import 'package:manitoscliente_new/constant/cacheConstants.dart';
 import 'package:manitoscliente_new/controller/auth_utils.dart';
 import 'package:manitoscliente_new/request/ResponseGet.dart';
@@ -109,6 +110,9 @@ void main() async {
   null;
   // 5. Inicializar servicio de sincronización
   await SyncService().initialize();
+
+  // 6. Inicializar Remote Config (mensajes dinámicos desde Firebase Console)
+  await RemoteConfigService().initialize();
   null;
 
   null;
@@ -286,7 +290,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           await Permission.locationAlways.request();
         }
       } else if (status.isPermanentlyDenied) {
-        // openAppSettings(); // Removido para evitar que se abran configuraciones automáticamente
       }
     } catch (e) {
       null;

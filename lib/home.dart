@@ -1,4 +1,3 @@
-import 'dart:ui'; // Para ImageFilter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -100,26 +99,7 @@ class _HomeScreenState extends State<HomeScreen> with RestorationMixin {
     final supportUrl =
         'https://wa.me/59173666393?text=Hola%20Soy%20$name,%20Necesito%20soporte%20';
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A819A).withOpacity(0.65), // Teal with transparency
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withOpacity(0.25), // Subtle glassy highlight
-                    width: 1.0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
         title: Row(
           mainAxisAlignment:
               MainAxisAlignment.spaceBetween, // Distribuir elementos

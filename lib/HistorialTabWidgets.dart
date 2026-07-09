@@ -36,16 +36,14 @@ class ModernBadge extends StatelessWidget {
 
 class ModernTabBar extends StatelessWidget {
   final TabController controller;
-  final int availableCount;
-  final int offerServiceCount;
+  final int waitCount;
   final int inProgressCount;
   final int completedCount;
   final Color mainColor;
   const ModernTabBar({
     super.key,
     required this.controller,
-    required this.availableCount,
-    required this.offerServiceCount,
+    required this.waitCount,
     required this.inProgressCount,
     required this.completedCount,
     this.mainColor = MyColors.main,
@@ -68,13 +66,8 @@ class ModernTabBar extends StatelessWidget {
       tabs: [
         _buildTab(
           icon: Icons.task_alt_outlined,
-          text: 'Disponibles',
-          count: availableCount,
-        ),
-        _buildTab(
-          icon: Icons.local_offer_outlined,
-          text: 'Ofertados',
-          count: offerServiceCount,
+          text: 'Pendientes',
+          count: waitCount,
         ),
         _buildTab(
           icon: Icons.assignment_ind_outlined,

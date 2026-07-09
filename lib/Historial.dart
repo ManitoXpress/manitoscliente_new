@@ -8,13 +8,13 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/provider/providerService.dart';
-import 'package:manitoscliente_new/request/ResponseGet.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
-import 'package:manitoscliente_new/request/dataprofile.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
+import 'provider/providerService.dart';
+import 'request/ResponseGet.dart';
+import 'request/ResponsePost.dart';
+import 'request/dataprofile.dart';
+import 'request/resquest.dart';
 
-import 'package:manitoscliente_new/widgets/serviceList.dart';
+import 'widgets/serviceList.dart';
 import 'package:provider/provider.dart';
 
 import 'Styles/stilo.dart';
@@ -53,7 +53,7 @@ class _HistorialScreenState extends State<HistorialScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
+    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() {
@@ -74,67 +74,57 @@ class _HistorialScreenState extends State<HistorialScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      null;
-      final startTime = DateTime.now();
+      // Obtener userId en variable local ANTES del setState
+      final userId = user.uid;
+      setState(() { _userId = userId; });
 
-      setState(() {
-        _userId = user.uid;
-      });
-
-      // 🚀 OPTIMIZACIÓN: Verificar si ya se precargó
-      final preloadService = HistorialPreloadService();
-      if (preloadService.isPreloadedForUser(_userId)) {
-        null;
-        _isInitialized = true;
-        return;
-      }
-
-      // Si no está precargado, cargar normalmente
+      // Obtener token y deviceId en variables locales — no depender de setState
       final futures = await Future.wait([
         user.getIdToken(),
         _fetchDeviceId(),
       ]).timeout(const Duration(seconds: 5));
 
-      final token = futures[0] as String?;
+      final token = (futures[0] as String?) ?? '';
       final deviceId = futures[1] as String;
 
       if (!mounted) return;
-      
+
+      // Guardar en estado solo para usos futuros (botones, refresh manual, etc.)
       setState(() {
-        _token = token ?? '';
+        _token = token;
         _deviceId = deviceId;
       });
 
-      // Usar el provider del contexto con optimizaciones
       final historialProv = Provider.of<HistorialProvider>(context, listen: false);
-      
-      // 🚀 OPTIMIZACIÓN: Cargar datos de forma asíncrona sin bloquear la UI
-      Future.microtask(() async {
+
+      // Solo omitir la carga si el provider ya tiene datos reales para este usuario
+      final yaConDatos = HistorialPreloadService().isPreloadedForUser(userId) &&
+          (historialProv.list('available').isNotEmpty ||
+           historialProv.list('offer').isNotEmpty ||
+           historialProv.list('in_progress').isNotEmpty ||
+           historialProv.list('completed').isNotEmpty);
+
+      if (!yaConDatos) {
+        // Usar variables locales garantizadas, NO _token/_deviceId del estado
         await historialProv.loadAll(
-          userId: _userId,
-          token: _token,
-          deviceId: _deviceId,
+          userId: userId,
+          token: token,
+          deviceId: deviceId,
         );
+      }
 
-        // Iniciar actualización automática inteligente
-        historialProv.startAutoRefresh(
-          userId: _userId,
-          token: _token,
-          deviceId: _deviceId,
-        );
+      if (!mounted) return;
 
-        // Iniciar temporizador de cancelación automática
-        historialProv.iniciarTemporizadorCancelacion(_userId, _token);
+      historialProv.startAutoRefresh(
+        userId: userId,
+        token: token,
+        deviceId: deviceId,
+      );
 
-        _isInitialized = true;
-        
-        final endTime = DateTime.now();
-        final duration = endTime.difference(startTime);
-        null;
-      });
+      historialProv.iniciarTemporizadorCancelacion(userId, token);
+      _isInitialized = true;
 
     } catch (e) {
-      null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -225,10 +215,9 @@ class _HistorialScreenState extends State<HistorialScreen>
               builder: (context, provider, child) {
                 return ModernTabBar(
                   controller: _tabController,
-                  availableCount: provider.availableCount,
-                  offerServiceCount: provider.offerServiceCount,
+                  waitCount: provider.availableCount + provider.offerServiceCount,
                   inProgressCount: provider.inProgressCount,
-                  completedCount: provider.completedCount,
+                  completedCount: provider.completedCount + provider.cancelledCount,
                 );
               },
             ),
@@ -287,7 +276,7 @@ class _HistorialScreenState extends State<HistorialScreen>
               controller: _tabController,
               children: [
                 _ServiceListTab(
-                  status: 'available',
+                  statuses: const ['available'],
                   userId: _userId,
                   userData: widget.userData,
                   apiService: ApiService(),
@@ -296,7 +285,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                   isLoading: Provider.of<HistorialProvider>(context).isLoading,
                 ),
                 _ServiceListTab(
-                  status: 'offer',
+                  statuses: const ['in_progress'],
                   userId: _userId,
                   userData: widget.userData,
                   apiService: ApiService(),
@@ -305,16 +294,7 @@ class _HistorialScreenState extends State<HistorialScreen>
                   isLoading: Provider.of<HistorialProvider>(context).isLoading,
                 ),
                 _ServiceListTab(
-                  status: 'in_progress',
-                  userId: _userId,
-                  userData: widget.userData,
-                  apiService: ApiService(),
-                  apiService2: ApiService2(),
-                  onRefresh: _refreshHistorial,
-                  isLoading: Provider.of<HistorialProvider>(context).isLoading,
-                ),
-                _ServiceListTab(
-                  status: 'completed',
+                  statuses: const ['completed', 'cancelled'],
                   userId: _userId,
                   userData: widget.userData,
                   apiService: ApiService(),
@@ -362,7 +342,7 @@ class _HistorialScreenState extends State<HistorialScreen>
 
 /// Un widget por pestaña, que conserva scroll y no se rebuild innecesariamente
 class _ServiceListTab extends StatefulWidget {
-  final String status;
+  final List<String> statuses;
   final String userId;
   final UserData userData;
   final ApiService apiService;
@@ -371,7 +351,7 @@ class _ServiceListTab extends StatefulWidget {
   final bool isLoading;
 
   const _ServiceListTab({
-    required this.status,
+    required this.statuses,
     required this.userId,
     required this.userData,
     required this.apiService,
@@ -406,7 +386,9 @@ class _ServiceListTabState extends State<_ServiceListTab>
     final prov = Provider.of<HistorialProvider>(context, listen: false);
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      if (prov.hasMore(widget.status) && !prov.isLoadingMore(widget.status)) {
+      final hasMore = widget.statuses.any((s) => prov.hasMore(s));
+      final isLoadingMore = widget.statuses.any((s) => prov.isLoadingMore(s));
+      if (hasMore && !isLoadingMore) {
         _loadMoreData(prov);
       }
     }
@@ -421,12 +403,16 @@ class _ServiceListTabState extends State<_ServiceListTab>
     });
 
     try {
-      await provider.loadMore(
-        status: widget.status,
-        userId: widget.userId,
-        token: '', // Se obtendrá del provider
-        deviceId: '', // Se obtendrá del provider
-      );
+      for (var s in widget.statuses) {
+        if (provider.hasMore(s) && !provider.isLoadingMore(s)) {
+          await provider.loadMore(
+            status: s,
+            userId: widget.userId,
+            token: '', 
+            deviceId: '', 
+          );
+        }
+      }
     } catch (e) {
       null;
     } finally {
@@ -441,71 +427,21 @@ class _ServiceListTabState extends State<_ServiceListTab>
   @override
   bool get wantKeepAlive => true;
 
-  /// Método helper para construir la lista de servicios optimizado
+  /// Método helper para construir la lista de servicios con Glassmorphism
   Widget _buildServiceList(
-      String status, List<ServiceRequest> list, double w, double h) {
+      List<ServiceRequest> list, double w, double h) {
     if (list.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    switch (status) {
-      case 'available':
-        return ServiceListBuilder.buildServiceListAvailable(
-          list,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-      case 'offer':
-        final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.buildOfferList(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-      case 'in_progress':
-        final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.inProgressList(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-      case 'completed':
-        final offers = list
-            .expand((s) => s.offers)
-            .where((offer) => offer.status.id == ServiceStatus.completed)
-            .toList();
-        return ServiceListBuilder.buildServiceListComplete(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-      case 'cancelled':
-        return ServiceListBuilder.buildServiceListCancelled(
-          list,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+    return ServiceListBuilder.buildGlassmorphicList(
+      list,
+      w,
+      h,
+      widget.userId,
+      widget.userData,
+      widget.apiService,
+    );
   }
 
   @override
@@ -514,9 +450,30 @@ class _ServiceListTabState extends State<_ServiceListTab>
     
     return Consumer<HistorialProvider>(
       builder: (context, provider, child) {
-        final list = provider.list(widget.status);
-        final isLoadingMore = provider.isLoadingMore(widget.status);
-        final hasMore = provider.hasMore(widget.status);
+        // Unimos todas las colecciones
+        List<ServiceRequest> rawList = [];
+        bool isLoadingMore = false;
+        bool hasMore = false;
+        for (var s in widget.statuses) {
+          rawList.addAll(provider.list(s));
+          if (provider.isLoadingMore(s)) isLoadingMore = true;
+          if (provider.hasMore(s)) hasMore = true;
+        }
+
+        // Dedup estable por propiedades estáticas (description y serviceDateTime)
+        List<ServiceRequest> list = [];
+        final itemsVistos = <String>{};
+        for (var item in rawList) {
+          final uniqueKey = '${item.description}_${item.serviceDateTime}';
+          if (!itemsVistos.contains(uniqueKey)) {
+            itemsVistos.add(uniqueKey);
+            list.add(item);
+          }
+        }
+
+        // Sort estabilizado usando serviceDateTime para evitar saltos provocados por DateTime.now() al momento de armar modelos
+        list.sort((a, b) => (b.serviceDateTime ?? '').compareTo(a.serviceDateTime ?? ''));
+
         final errorMessage = provider.errorMessage;
 
         // Declarar las variables de tamaño al inicio
@@ -671,7 +628,7 @@ class _ServiceListTabState extends State<_ServiceListTab>
         // Mostrar los datos actuales con opacidad reducida
         Opacity(
           opacity: 0.3,
-          child: _buildServiceList(widget.status, list, w, h),
+          child: _buildServiceList(list, w, h),
         ),
         // Overlay con skeleton loader
         Container(
@@ -750,72 +707,7 @@ class _ServiceListTabState extends State<_ServiceListTab>
     bool isLoadingMore,
     HistorialProvider provider,
   ) {
-    Widget listWidget;
-    
-    // Construir la lista según el estado
-    switch (widget.status) {
-      case 'available':
-        listWidget = ServiceListBuilder.buildServiceListAvailable(
-          list,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-        break;
-      case 'offer':
-        final offers = list.expand((s) => s.offers).toList();
-        listWidget = ServiceListBuilder.buildOfferList(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-        break;
-      case 'in_progress':
-        final offers = list.expand((s) => s.offers).toList();
-        listWidget = ServiceListBuilder.inProgressList(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-        break;
-      case 'completed':
-        final offers = list
-            .expand((s) => s.offers)
-            .where((offer) => offer.status.id == ServiceStatus.completed)
-            .toList();
-        listWidget = ServiceListBuilder.buildServiceListComplete(
-          list,
-          offers,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-        break;
-      case 'cancelled':
-        listWidget = ServiceListBuilder.buildServiceListCancelled(
-          list,
-          w,
-          h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-        );
-        break;
-      default:
-        listWidget = const SizedBox.shrink();
-    }
+    Widget listWidget = _buildServiceList(list, w, h);
 
     return Stack(
       children: [

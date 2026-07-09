@@ -5,75 +5,84 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/service_requestModels.dart';
 import '../models/worker_detailsModels.dart';
 import 'timeline_helpers.dart';
+import 'dart:ui';
+import '../widgets/chat/chat_screen.dart';
 
 class WorkerDetailsSection extends StatelessWidget {
   final WorkerDetailsModel worker;
   final ServiceRequestModel serviceData;
+  final String workerId;
 
   const WorkerDetailsSection({
     Key? key,
     required this.worker,
     required this.serviceData,
+    required this.workerId,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.all(16),
-        childrenPadding: const EdgeInsets.all(16),
-        backgroundColor: Colors.transparent,
-        collapsedBackgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        collapsedShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        leading: Container(
-          width: 40,
-          height: 40,
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A819A).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.person_rounded,
-            color: Color(0xFF1A819A),
-            size: 24,
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.all(16),
+            childrenPadding: const EdgeInsets.all(16),
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A819A).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.person_rounded,
+                color: Color(0xFF1A819A),
+                size: 24,
+              ),
+            ),
+            title: Text(
+              'Detalles del Trabajador',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A819A),
+              ),
+            ),
+            subtitle: Text(
+              'Información del profesional asignado',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            children: [
+              _buildWorkerDetails(context),
+            ],
           ),
         ),
-        title: Text(
-          'Detalles del Trabajador',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1A819A),
-          ),
-        ),
-        subtitle: Text(
-          'Información del profesional asignado',
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-        children: [
-          _buildWorkerDetails(context),
-        ],
-      ),
+        _buildGlassmorphicCommentsButton(context),
+      ],
     );
   }
 
@@ -468,6 +477,79 @@ class WorkerDetailsSection extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGlassmorphicCommentsButton(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A819A).withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF1A819A).withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                if (workerId.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Aún no hay un trabajador asignado para chatear.')),
+                  );
+                  return;
+                }
+                // Navegar a pantalla completa de chat — sin overlay,
+                // sin conflictos con el layout del padre, sin parpadeo.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatFullScreen(
+                      workerId: workerId,
+                      serviceId: serviceData.id,
+                      workerName: worker.displayName,
+                    ),
+                  ),
+                );
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A819A).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: Color(0xFF1A819A),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Ver Mensajes',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF1A819A),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

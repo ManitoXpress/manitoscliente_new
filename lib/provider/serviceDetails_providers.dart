@@ -3,10 +3,9 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:manitoscliente_new/constant/serviceConstants.dart';
+import '../constant/serviceConstants.dart';
 
 import '../models/commentModdels.dart';
 import '../models/service_requestModels.dart';
@@ -257,54 +256,13 @@ class ServiceDetailsProvider extends ChangeNotifier {
     }
 
     try {
-      // Determinar rol y nombre del usuario actual
-      final currentUser = FirebaseAuth.instance.currentUser;
-      String rol = 'desconocido';
-      String nombre = 'Anónimo';
-
-      if (currentUser != null) {
-        // Verificar en “users/{uid}”
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-        if (userDoc.exists) {
-          rol = 'cliente';
-          nombre = userDoc.data()?['displayName'] as String? ?? 'Cliente';
-        } else {
-          // Verificar en “workers/{uid}”
-          final workerDoc = await FirebaseFirestore.instance
-              .collection('workers')
-              .doc(currentUser.uid)
-              .get();
-          if (workerDoc.exists) {
-            rol = 'trabajador';
-            nombre =
-                workerDoc.data()?['displayName'] as String? ?? 'Trabajador';
-          }
-        }
-      }
-
-      final now = TimeOfDay.now();
-      final hora =
-          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
-      final nuevoComentario = CommentModel(
-        nombre: nombre,
-        mensaje: texto,
-        hora: hora,
-        rol: rol,
+      // Llamada al backend REST — el servidor valida, determina nombre/rol
+      // y escribe en Firestore con arrayUnion. El stream de Firestore detecta
+      // el cambio y actualiza la UI en tiempo real automaticamente.
+      await apiService2.postServiceComment(
+        serviceId,
+        {'mensaje': texto},
       );
-
-      _comments.add(nuevoComentario);
-      final commentsMapList =
-      _comments.map((c) => c.toMap()).toList(growable: false);
-
-      // Actualizar directamente el array “comments” en Firestore
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(serviceId)
-          .update({'comments': commentsMapList});
     } catch (e) {
       _setError('Error al agregar comentario: $e');
     }

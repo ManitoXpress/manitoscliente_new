@@ -33,6 +33,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final String workerId;
   final ApiService apiService;
   final String userId;
+  final bool workerInfoOnly;
 
   const ServiceFormWithTimeline({
     Key? key,
@@ -44,6 +45,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.workerId,
     required this.apiService,
     required this.userId,
+    this.workerInfoOnly = false,
   }) : super(key: key);
 
   @override
@@ -57,12 +59,26 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
   late Animation<Offset> _bounceAnimation;
   final RestorableDouble _scrollOffset = RestorableDouble(0.0);
 
+  // ── Provider creado UNA SOLA VEZ en initState ──────────────────────────────
+  // Si se crea dentro de build(), se recrea en cada rebuild del padre,
+  // abriendo suscripciones Firestore duplicadas y disparando notifyListeners()
+  // en cascada → causa inestabilidad de estado y parpadeo.
+  late final ServiceDetailsProvider _serviceProvider;
+
   @override
   String? get restorationId => 'service_timeline_screen';
 
   @override
   void initState() {
     super.initState();
+    // Crear el provider aquí garantiza que solo existe una instancia
+    _serviceProvider = ServiceDetailsProvider(
+      serviceId: widget.serviceId,
+      workerId: widget.workerId,
+      apiService2: ApiService2(),
+    );
+    _serviceProvider.init();
+
     _scrollController.addListener(_onScroll);
     _scrollController.addListener(_saveScrollOffset);
     _animationController = AnimationController(
@@ -85,6 +101,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
     _scrollController.dispose();
     _animationController.dispose();
     _scrollOffset.dispose();
+    _serviceProvider.dispose(); // limpia suscripción Firestore
     super.dispose();
   }
 
@@ -116,16 +133,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ServiceDetailsProvider>(
-      create: (_) {
-        final prov = ServiceDetailsProvider(
-            serviceId: widget.serviceId,
-            workerId: widget.workerId,
-            apiService2: ApiService2()
-        );
-        prov.init();
-        return prov;
-      },
+    // Usa el provider ya creado en initState — no se recrea en cada rebuild
+    return ChangeNotifierProvider<ServiceDetailsProvider>.value(
+      value: _serviceProvider,
       child: Consumer<ServiceDetailsProvider>(
         builder: (context, prov, _) {
           if (prov.isLoading) {
@@ -163,8 +173,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
           return Scaffold(
             appBar: AppBar(
               iconTheme: const IconThemeData(color: Colors.white),
-              title: const Text(
-                'Detalles del Servicio',
+              title: Text(
+                widget.workerInfoOnly ? 'Información del Trabajador' : 'Detalles del Servicio',
                 style: MyTextStyles.buttonTextStyle,
               ),
               backgroundColor: const Color(0xFF1A819A),
@@ -192,40 +202,63 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Sección de información del servicio
-                              ServiceInfoSection(serviceData: serviceData),
-                              
-                              const SizedBox(height: 16),
+                              if (!widget.workerInfoOnly) ...[
+                                // Sección de información del servicio
+                                ServiceInfoSection(serviceData: serviceData),
+                                
+                                const SizedBox(height: 16),
 
-                              // Informe de Pago
-                              if (workerOfferedPrice != null && workerOfferedPrice > 0)
-                                PaymentReportSection.buildPaymentReport(workerOfferedPrice)
-                              else if (workerDet != null || 
-                                       serviceData.status == ServiceStatus.inProgress || 
-                                       serviceData.status == ServiceStatus.completed)
-                                PaymentReportSection.buildPaymentReportPlaceholder(),
+                                // Informe de Pago
+                                if (workerOfferedPrice != null && workerOfferedPrice > 0)
+                                  PaymentReportSection.buildPaymentReport(workerOfferedPrice)
+                                else if (workerDet != null || 
+                                         serviceData.status == ServiceStatus.inProgress || 
+                                         serviceData.status == ServiceStatus.completed)
+                                  PaymentReportSection.buildPaymentReportPlaceholder(),
 
-                              const SizedBox(height: 16),
+                                const SizedBox(height: 16),
+                              ],
 
                               // Detalles del trabajador
-                              if (workerDet != null || serviceData.status == ServiceStatus.inProgress)
+                              // En modo workerInfoOnly, siempre se muestra la sección
+                              // (con placeholder si aún carga) para que el botón
+                              // "Ver Mensajes" siempre esté disponible.
+                              if (widget.workerInfoOnly)
+                                workerDet != null
+                                    ? WorkerDetailsSection(
+                                        worker: workerDet,
+                                        serviceData: serviceData,
+                                        workerId: widget.workerId,
+                                      )
+                                    : const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 32),
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                              color: Color(0xFF1A819A)),
+                                        ),
+                                      )
+                              else if (workerDet != null ||
+                                  serviceData.status == ServiceStatus.inProgress)
                                 WorkerDetailsSection(
                                   worker: workerDet!,
                                   serviceData: serviceData,
+                                  workerId: widget.workerId,
                                 ),
 
-                              const SizedBox(height: 16),
+                              if (!widget.workerInfoOnly) ...[
+                                const SizedBox(height: 16),
 
-                              // Botones de acción
-                              ActionButtonsSection(
-                                context: context,
-                                prov: prov,
-                                serviceData: serviceData,
-                                workerId: widget.workerId,
-                                offeredPrice: workerOfferedPrice,
-                                commentCount: comentarios.length,
-                                onStatusChanged: widget.onStatusChanged,
-                              ),
+                                // Botones de acción
+                                ActionButtonsSection(
+                                  context: context,
+                                  prov: prov,
+                                  serviceData: serviceData,
+                                  workerId: widget.workerId,
+                                  offeredPrice: workerOfferedPrice,
+                                  commentCount: comentarios.length,
+                                  onStatusChanged: widget.onStatusChanged,
+                                ),
+                              ],
                             ],
                           ),
                         ),

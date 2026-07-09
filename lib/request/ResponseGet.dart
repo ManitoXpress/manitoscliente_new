@@ -5,10 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
-import 'package:manitoscliente_new/request/requestExpertise.dart';
-import 'package:manitoscliente_new/request/requestServiceType.dart';
-import 'package:manitoscliente_new/request/requestWoker.dart';
-import 'package:manitoscliente_new/request/resquest.dart';
+import 'requestExpertise.dart';
+import 'requestServiceType.dart';
+import 'requestWoker.dart';
+import 'resquest.dart';
 
 import '../controller/auth_utils.dart';
 import '../controller/baseurl.dart';
@@ -134,7 +134,77 @@ class ApiService2 {
       null;
     }
   }
+  /// POST /conversations
+  /// Crea o devuelve la conversación entre cliente y trabajador
+  Future<Map<String, dynamic>> createConversation(String serviceId, String workerId) async {
+    await _initializeToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/conversations'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'serviceId': serviceId,
+        'workerId': workerId,
+      }),
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Error al iniciar conversación: ${response.statusCode}');
+    }
+  }
+
   /// POST /services/{serviceId}/comments
+  /// POST /conversations/{id}/messages
+  Future<void> sendConversationMessage(String convId, String text) async {
+    await _initializeToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/conversations/$convId/messages'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'text': text}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al enviar mensaje: ${response.statusCode}');
+    }
+  }
+
+  /// GET /conversations/{id}/messages
+  Future<List<Map<String, dynamic>>> getConversationMessages(String convId) async {
+    await _initializeToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/conversations/$convId/messages?limit=100'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Error al obtener mensajes: ${response.statusCode}');
+    }
+  }
+
+  /// PATCH /conversations/{id}/read
+  Future<void> markConversationAsRead(String convId) async {
+    await _initializeToken();
+    final response = await http.patch(
+      Uri.parse('$baseUrl/conversations/$convId/read'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+      },
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al marcar leido: ${response.statusCode}');
+    }
+  }
+
   Future<void> postServiceComment(
       String serviceId,
       Map<String, String> comment,
