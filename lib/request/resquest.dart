@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'requestExpertise.dart';
-import 'requestServiceType.dart';
-import 'requestStatus.dart';
-import 'requestWoker.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestStatus.dart';
+import 'package:manitoscliente_new/request/requestWoker.dart';
 
 class Offer {
   final String id;
@@ -199,7 +199,7 @@ class ServiceRequest {
     return ServiceRequest(
       createdAt: _parseDateTime(map['createdAt']),
       serviceDateTime: map['serviceDateTime'] ?? '',
-      id: map['serviceId'] ?? '',
+      id: map['id'] ?? map['serviceId'] ?? '',
       devicesId: map['devicesId'] ?? '',
       description: map['description'] ?? '',
       images: List<String>.from(map['images'] ?? []),

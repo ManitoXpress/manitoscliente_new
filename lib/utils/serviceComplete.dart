@@ -51,24 +51,11 @@ class ServiceRepositoryComplete {
   }
 
   Future<List<String>> _getValidStatusesFromFirestore() async {
-    try {
-      final snapshot = await firestore.collection('services').get();
-      final statusSet = <String>{};
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        if (data.containsKey('status')) {
-          statusSet.add(data['status'] as String);
-        }
-      }
-      null;
-      if (statusSet.isEmpty) {
-        throw Exception('No se encontraron estados válidos en Firestore.');
-      }
-      return statusSet.toList();
-    } catch (e) {
-      null;
-      rethrow;
-    }
+    // Usar lista estática para evitar escanear toda la colección
+    return [
+      'available', 'offer', 'in_progress', 'pending_confirmation',
+      'pending_confirmation2', 'completed', 'cancelled',
+    ];
   }
 
   Future<List<ServiceRequest>> _fetchServicesByStatus(
@@ -78,15 +65,7 @@ class ServiceRepositoryComplete {
     String token,
   ) async {
     try {
-      // 1. Cache local
-      final cached = await LocalCacheService.getCachedServiceRequest(userId);
-      if (cached != null &&
-          (cached.status.id == 'in_progress' ||
-              cached.status.id == 'pending_confirmation' ||
-              cached.status.id == 'pending_confirmation2')) {
-        null;
-        return [cached];
-      }
+      // No usar caché local para completed — siempre traer datos frescos del servidor
 
       // 2. Llamada al backend
       final deviceId = await obtenerDeviceId();
@@ -203,9 +182,11 @@ class ServiceRepositoryComplete {
       await Future.wait(futures);
       null;
 
-      // Cache y retorno
+      // Cache y retorno de todos los completados (con o sin ofertas)
       validServices.forEach(LocalCacheService.cacheServiceRequest);
-      return validServices;
+      // Si validServices está vacío (porque ninguno tenía ofertas), devolver el original
+      final result = validServices.isNotEmpty ? validServices : serviceRequestsList;
+      return result;
     } catch (e) {
       null;
       return [];

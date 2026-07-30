@@ -8,6 +8,7 @@ class WorkerDetailsModel {
   final String imagePath;
   final String idDocumentImagePath;
   final String phoneNumber;
+  final String? verificationStatus;
 
   WorkerDetailsModel({
     required this.displayName,
@@ -17,6 +18,7 @@ class WorkerDetailsModel {
     required this.imagePath,
     required this.idDocumentImagePath,
     required this.phoneNumber,
+    this.verificationStatus,
   });
 
   factory WorkerDetailsModel.fromMap(Map<String, dynamic> map) {
@@ -32,6 +34,7 @@ class WorkerDetailsModel {
         idDocumentImagePath:
         map['idDocumentImagePath'] as String? ?? '',
         phoneNumber: map['phoneNumber'] as String? ?? '',
+        verificationStatus: map['verificationStatus'] as String? ?? '',
         );
     }
 }

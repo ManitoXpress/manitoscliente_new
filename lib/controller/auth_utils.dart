@@ -3,27 +3,42 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-
-import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-
 class AuthUtils {
-  /// Método para obtener el token del usuario
+  // Caché en memoria del token para evitar llamadas repetidas a Firebase Auth
+  static String? _cachedToken;
+  static DateTime? _tokenExpiry;
+
+  /// Obtiene el token del usuario con caché en memoria (55 minutos de validez).
+  /// Los tokens de Firebase duran 1 hora, así que 55 min es seguro.
   static Future<String?> getToken() async {
+    // Si tenemos un token cacheado y sigue vigente, retornarlo directamente
+    if (_cachedToken != null &&
+        _tokenExpiry != null &&
+        DateTime.now().isBefore(_tokenExpiry!)) {
+      return _cachedToken;
+    }
+
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        String? idToken = await user.getIdToken(); // No forzar actualización siempre para evitar rate limits
-        null;
-        return idToken;
+        // Forzar renovación solo cuando el caché expiró
+        final bool forceRefresh = _cachedToken == null;
+        _cachedToken = await user.getIdToken(forceRefresh);
+        _tokenExpiry = DateTime.now().add(const Duration(minutes: 55));
+        return _cachedToken;
       } catch (e) {
-        null;
+        _cachedToken = null;
+        _tokenExpiry = null;
         return null;
       }
     }
-    null;
     return null;
+  }
+
+  /// Invalida el caché del token (llamar al cerrar sesión o al detectar 401)
+  static void invalidateToken() {
+    _cachedToken = null;
+    _tokenExpiry = null;
   }
 
   /// Método para obtener el ID del dispositivo
@@ -34,19 +49,13 @@ class AuthUtils {
     try {
       if (Platform.isAndroid) {
         AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        deviceId = androidInfo.id; // Usa `id` para obtener el ID único en Android
+        deviceId = androidInfo.id;
       } else if (Platform.isIOS) {
         IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        deviceId = iosInfo.identifierForVendor; // ID único para iOS
-      } else {
-        null;
-      }
-
-      if (deviceId != null) {
-        null;
+        deviceId = iosInfo.identifierForVendor;
       }
     } catch (e) {
-      null;
+      // ignore
     }
 
     return deviceId;
@@ -59,16 +68,10 @@ class AuthUtils {
 
     if (token != null && deviceId != null) {
       try {
-        // Aquí realizarías la llamada a tu API o sincronización con Firestore
-        null;
-        null;
-        null;
         // Implementa la lógica de sincronización según tu backend
       } catch (e) {
-        null;
+        // ignore
       }
-    } else {
-      null;
     }
   }
 }

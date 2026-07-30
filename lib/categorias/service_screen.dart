@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para HapticFeedback
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../controller/auth_utils.dart';
 import '../provider/dataProvider.dart';
@@ -46,8 +47,20 @@ class _ServiceScreenState extends State<ServiceScreen> {
     _loadAllServices();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showWelcomeDialog();
+      _showWelcomeDialogIfNeeded();
     });
+  }
+
+  Future<void> _showWelcomeDialogIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alreadySeen = prefs.getBool('welcome_dialog_seen') ?? false;
+    if (!alreadySeen && mounted) {
+      await prefs.setBool('welcome_dialog_seen', true);
+      _showWelcomeDialog();
+    } else if (mounted && RemoteConfigService().maintenanceEnabled) {
+      // Si ya vio el welcome, mostrar solo el aviso de mantenimiento si está activo
+      _showMaintenanceNotice();
+    }
   }
 
   void _showWelcomeDialog() {
@@ -200,10 +213,17 @@ class _ServiceScreenState extends State<ServiceScreen> {
        filtered = filtered.where((s) => s.parentId == _selectedParentId).toList();
      }
      
-     // Filtrar por texto
+     // Filtrar por texto: nombre del servicio O nombre de alguno de sus tipos
      final query = _searchController.text.toLowerCase();
      if (query.isNotEmpty) {
-       filtered = filtered.where((s) => s.name.toLowerCase().contains(query)).toList();
+       filtered = filtered.where((s) {
+         // Coincide con el nombre principal del servicio
+         if (s.name.toLowerCase().contains(query)) return true;
+         // Coincide con alguno de los tipos de servicio (ej: "Instalación Calefón")
+         return s.serviceTypes.any(
+           (type) => type.name.toLowerCase().contains(query),
+         );
+       }).toList();
      }
      
      setState(() {

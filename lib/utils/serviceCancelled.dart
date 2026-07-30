@@ -51,23 +51,11 @@ class ServiceRepositoryCancelled {
   }
 
   Future<List<String>> _getValidStatusesFromFirestore() async {
-    try {
-      final snapshot = await firestore.collection('services').get();
-      final statusSet = <String>{};
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        if (data.containsKey('status')) {
-          statusSet.add(data['status'] as String);
-        }
-      }
-      if (statusSet.isEmpty) {
-        throw Exception('No se encontraron estados válidos en Firestore.');
-      }
-      return statusSet.toList();
-    } catch (e) {
-      null;
-      rethrow;
-    }
+    // Usar lista estática para evitar escanear toda la colección
+    return [
+      'available', 'offer', 'in_progress', 'pending_confirmation',
+      'pending_confirmation2', 'completed', 'cancelled',
+    ];
   }
 
   Future<List<ServiceRequest>> _fetchServicesByStatus(

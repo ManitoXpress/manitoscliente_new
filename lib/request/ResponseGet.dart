@@ -5,10 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
-import 'requestExpertise.dart';
-import 'requestServiceType.dart';
-import 'requestWoker.dart';
-import 'resquest.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestServiceType.dart';
+import 'package:manitoscliente_new/request/requestWoker.dart';
+import 'package:manitoscliente_new/request/resquest.dart';
 
 import '../controller/auth_utils.dart';
 import '../controller/baseurl.dart';
@@ -295,7 +295,7 @@ class ApiService2 {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $getToken',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         null;
@@ -386,7 +386,7 @@ class ApiService2 {
         headers: <String, String>{
           'Authorization': 'Bearer $authTokenValue',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
 
       null;
       if (response.statusCode == 200) {
@@ -509,7 +509,7 @@ class ApiService2 {
       final response = await http.get(
         Uri.parse('$baseUrl/users/$userId'),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 30));
 
       null;
       null;
@@ -653,7 +653,7 @@ class ApiService2 {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -744,12 +744,12 @@ class ApiService2 {
     try {
       final String? authToken = await AuthUtils.getToken();
       final response = await http.get(
-        Uri.parse('$baseUrl/categories/parent/h3ZOnJLzLTKldW8Py7wC'),
+        Uri.parse('$baseUrl/categories/parent/$parentId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);

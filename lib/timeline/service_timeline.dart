@@ -166,6 +166,38 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
             );
           }
 
+          // Guard: si aún no llegó el servicio (stream pendiente)
+          if (prov.service == null) {
+            return Scaffold(
+              appBar: AppBar(
+                iconTheme: const IconThemeData(color: Colors.white),
+                title: const Text(
+                  'Detalles del Servicio',
+                  style: TextStyle(
+                    fontFamily: 'Xpress Heavy',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: AppColors.primary,
+              ),
+              body: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Color(0xFF1A819A)),
+                    SizedBox(height: 16),
+                    Text(
+                      'Cargando detalles...',
+                      style: TextStyle(color: Color(0xFF1A819A)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           final serviceData = prov.service!;
           final workerDet = prov.workerDetails;
           final comentarios = prov.comments;
@@ -239,11 +271,19 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> with 
                                       )
                               else if (workerDet != null ||
                                   serviceData.status == ServiceStatus.inProgress)
-                                WorkerDetailsSection(
-                                  worker: workerDet!,
-                                  serviceData: serviceData,
-                                  workerId: widget.workerId,
-                                ),
+                                workerDet != null
+                                    ? WorkerDetailsSection(
+                                        worker: workerDet,
+                                        serviceData: serviceData,
+                                        workerId: widget.workerId,
+                                      )
+                                    : const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 32),
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                              color: Color(0xFF1A819A)),
+                                        ),
+                                      ),
 
                               if (!widget.workerInfoOnly) ...[
                                 const SizedBox(height: 16),

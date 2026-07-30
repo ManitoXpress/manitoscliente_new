@@ -1,7 +1,7 @@
 name: manitoscliente_new
 description: "APP DE CLIENTE ManitosXpress."
 publish_to: 'none'
-version: 2.2.0+1
+version: 2.2.1+1
 
 
 environment:

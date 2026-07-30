@@ -1,13 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:manitoscliente_new/request/ResponsePost.dart';
 import 'package:manitoscliente_new/request/dataprofile.dart';
 import 'package:manitoscliente_new/utils/fcmToken.dart';
 import 'package:manitoscliente_new/widgets/maps.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,8 +16,6 @@ import 'menu/Referido.dart';
 import 'menu/UserProfile.dart';
 import 'menu/help.dart';
 import 'controller/RegisController.dart';
-import 'provider/providerService.dart';
-import 'package:provider/provider.dart';
 import 'services/historial_preload_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -140,8 +136,11 @@ class _HomeScreenState extends State<HomeScreen> with RestorationMixin {
                   Container(
                     constraints:
                         const BoxConstraints(maxWidth: 200, maxHeight: 200),
-                    child: Image.network("https://i.imgur.com/AWrWerE.png"),
                     margin: const EdgeInsets.only(top: 70, bottom: 40),
+                    child: Image.asset(
+                      'assets/images/LOGO1_Blanco.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(height: 1.0),
                 ],
@@ -348,16 +347,15 @@ class _HomeScreenState extends State<HomeScreen> with RestorationMixin {
 
   List<Widget> _buildScreens() {
     return [
-      ServiceScreen(),
-      MapScreen(), // Pantalla del mapa
-      ChangeNotifierProvider<HistorialProvider>(
-        create: (_) => HistorialProvider(),
-        child: HistorialScreen(
-          onTabTapped: () {
-            _refreshHistorial();
-          },
-          userData: UserData.empty(),
-        ),
+      const ServiceScreen(),
+      MapScreen(),
+      // Usa el HistorialProvider global (definido en main.dart MultiProvider)
+      // para que los datos precargados en background sean visibles aquí
+      HistorialScreen(
+        onTabTapped: () {
+          _refreshHistorial();
+        },
+        userData: UserData.empty(),
       ),
     ];
   }

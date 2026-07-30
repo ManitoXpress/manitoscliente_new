@@ -2,32 +2,48 @@ import 'package:flutter/material.dart';
 import 'Styles/stilo.dart';
 
 class ModernBadge extends StatelessWidget {
+  final bool isDot;
   final int count;
-  final Color? color;
-  const ModernBadge({required this.count, this.color, super.key});
+  const ModernBadge({required this.count, this.isDot = true, super.key});
   @override
   Widget build(BuildContext context) {
     if (count <= 0) return const SizedBox.shrink();
+    
+    // Si es un simple punto rojo, como pide el boceto:
+    if (isDot) {
+      return Container(
+        width: 10,
+        height: 10,
+        decoration: const BoxDecoration(
+          color: Colors.redAccent,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1)),
+          ],
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
-        color: color ?? MyColors.badge,
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: [
+        color: Colors.redAccent,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: const [
           BoxShadow(
-            color: (color ?? MyColors.badge).withOpacity(0.10),
+            color: Colors.black12,
             blurRadius: 2,
-            offset: const Offset(0, 1),
+            offset: Offset(0, 1),
           ),
         ],
       ),
       constraints: const BoxConstraints(
-        minWidth: 12,
-        minHeight: 12,
+        minWidth: 16,
+        minHeight: 16,
       ),
       child: Text(
-        '$count',
-        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold, height: 1),
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, height: 1.2),
         textAlign: TextAlign.center,
       ),
     );
@@ -40,6 +56,7 @@ class ModernTabBar extends StatelessWidget {
   final int inProgressCount;
   final int completedCount;
   final Color mainColor;
+
   const ModernTabBar({
     super.key,
     required this.controller,
@@ -55,28 +72,28 @@ class ModernTabBar extends StatelessWidget {
       controller: controller,
       isScrollable: false,
       indicator: BoxDecoration(
-        color: mainColor.withOpacity(0.15), // Un poco más visible
-        borderRadius: BorderRadius.circular(12), // Bordes curveados
+        color: mainColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
       ),
       labelColor: mainColor,
-      unselectedLabelColor: Colors.black54,
-      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+      unselectedLabelColor: Colors.grey,
+      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       unselectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
+          const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
       tabs: [
         _buildTab(
-          icon: Icons.task_alt_outlined,
-          text: 'Pendientes',
+          icon: Icons.hourglass_empty_rounded,
+          text: 'En espera',
           count: waitCount,
         ),
         _buildTab(
-          icon: Icons.assignment_ind_outlined,
-          text: 'Asignados',
+          icon: Icons.construction_rounded,
+          text: 'En proceso',
           count: inProgressCount,
         ),
         _buildTab(
-          icon: Icons.check_circle_outline,
-          text: 'Completados',
+          icon: Icons.check_circle_outline_rounded,
+          text: 'Finalizados',
           count: completedCount,
         ),
       ],
@@ -89,9 +106,8 @@ class ModernTabBar extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
-          // Ajusta el tamaño según el ancho disponible
-          double iconSize = width > 90 ? 24 : (width > 70 ? 20 : 18);
-          double fontSize = width > 90 ? 13 : (width > 70 ? 11 : 10);
+          double iconSize = width > 90 ? 24 : 20;
+          double fontSize = width > 90 ? 13 : 11;
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -101,22 +117,19 @@ class ModernTabBar extends StatelessWidget {
                 children: [
                   Icon(icon, size: iconSize),
                   if (count > 0)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: ModernBadge(count: count, color: mainColor),
+                    const Positioned(
+                      right: -2,
+                      top: -2,
+                      child: ModernBadge(count: 1, isDot: true),
                     ),
                 ],
               ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: fontSize, height: 1.1),
-                ),
+              const SizedBox(height: 4),
+              Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: fontSize, height: 1.1),
               ),
             ],
           );
@@ -124,4 +137,4 @@ class ModernTabBar extends StatelessWidget {
       ),
     );
   }
-}
+}

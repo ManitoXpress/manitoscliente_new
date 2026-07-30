@@ -1,6 +1,6 @@
 
-import 'requestExpertise.dart';
-import 'requestLocation.dart';
+import 'package:manitoscliente_new/request/requestExpertise.dart';
+import 'package:manitoscliente_new/request/requestLocation.dart';
 class WorkerDetails {
   final String id;
   final List<String> certificateImagePaths;   // ← Ahora es lista

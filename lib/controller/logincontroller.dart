@@ -18,7 +18,7 @@ import 'RegisController.dart';
 class LoginScreenController {
   static final ApiService apiService = ApiService();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static const String _tokenCollection = '';
+
   late UserData userData;
 
   /// Almacena datos del usuario en Firestore si no existen
@@ -101,7 +101,7 @@ class LoginScreenController {
         // aunque no lo uses en HomeScreen
       );
     } catch (e) {
-      print('Error durante el inicio de sesión anónima: $e');
+      print('Error durante el inicio de sesión anónima: \$e');
       _showErrorDialog(context, 'No se pudo iniciar sesión como invitado.');
     }
   }
@@ -115,11 +115,11 @@ class LoginScreenController {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       final userData = await _fetchUserData(uid);
       VoidCallback onTabTapped = () {
-        // Ejemplo: refrescar historial
-        context.read<HistorialProvider>().refresh(
+        final provider = context.read<HistorialProvider>();
+        provider.refresh(
           userId: userData.userId,
-          token: '',     // si lo guardas, recupera aquí
-          deviceId: '',  // idem
+          token: provider.currentToken,
+          deviceId: provider.currentDeviceId,
         );
       };
       _navigateToHomeScreen(context, userData, onTabTapped);

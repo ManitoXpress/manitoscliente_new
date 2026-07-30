@@ -1,11 +1,6 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
-
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
 import '../controller/serviceFetcher.dart';
@@ -70,27 +65,9 @@ class OfferRepository {
     return await fetchOffersForUser(status, userId, token, service, deviceId);
   }
 
-  /// Obtiene la lista de estados válidos desde la colección "offers" en Firestore.
+  /// Retorna la lista de estados válidos (hardcodeada para evitar lectura completa de Firestore).
   Future<List<String>> _getValidStatusesFromFirestore() async {
-    try {
-      QuerySnapshot querySnapshot = await firestore.collection('offers').get();
-      Set<String> statusSet = {};
-
-      for (var doc in querySnapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        if (data.containsKey('status')) {
-          statusSet.add(data['status'] as String);
-        }
-      }
-
-      if (statusSet.isNotEmpty) {
-        return statusSet.toList();
-      } else {
-        throw Exception('No se encontraron estados válidos en Firestore.');
-      }
-    } catch (e) {
-      throw Exception('Error al obtener estados desde Firestore: $e');
-    }
+    return const ['available', 'offer', 'in_progress', 'completed', 'cancelled'];
   }
 
   /// Método que obtiene los servicios y, para cada uno, sus ofertas filtradas por el userId.
@@ -115,7 +92,6 @@ class OfferRepository {
 
       debugPrint('🔍 [OfferRepo] Buscando servicios tipo=$type para userId=$userId');
       debugPrint('🔍 [OfferRepo] HTTP status: ${response.statusCode}');
-      debugPrint('🔍 [OfferRepo] Cuerpo respuesta: ${response.body}');
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
@@ -123,9 +99,6 @@ class OfferRepository {
 
           if (servicesData.isNotEmpty) {
             debugPrint('🔍 [OfferRepo] Total documentos en respuesta: ${servicesData.length}');
-            for (var item in servicesData) {
-              debugPrint('   → id=${item['id']} status=${item['status']} userId=${item['userId']}');
-            }
             try {
               // Mapeo de la respuesta para crear una lista de ServiceRequest.
               // Se filtran aquellos que tengan status 'available' y userId igual al autenticado.
@@ -179,9 +152,6 @@ class OfferRepository {
                   .toList();
 
               debugPrint('✅ [OfferRepo] Servicios filtrados como offer: ${serviceRequestsList.length}');
-              for (var s in serviceRequestsList) {
-                debugPrint('   → serviceId=${s.id} status=${s.status.id}');
-              }
 
               // Cacheamos las solicitudes de servicio para este usuario.
               for (var request in serviceRequestsList) {

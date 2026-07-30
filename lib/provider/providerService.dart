@@ -42,6 +42,8 @@ class HistorialProvider extends ChangeNotifier {
   Timer? _autoRefreshTimer;
   Timer? _smartRefreshTimer;
   String? _currentUserId;
+  String _currentToken = '';
+  String _currentDeviceId = '';
   bool _isInitialized = false;
   
   // 🚀 OPTIMIZADO: Configuración de caché mejorada desde constantes
@@ -107,6 +109,8 @@ class HistorialProvider extends ChangeNotifier {
   int get inProgressCount => list('in_progress').length;
   int get completedCount => list('completed').length;
   int get cancelledCount => list('cancelled').length;
+  String get currentToken => _currentToken;
+  String get currentDeviceId => _currentDeviceId;
 
   /// Carga todo el historial con optimizaciones avanzadas
   Future<void> loadAll({
@@ -119,6 +123,8 @@ class HistorialProvider extends ChangeNotifier {
     }
 
     _currentUserId = userId;
+    _currentToken = token;
+    _currentDeviceId = deviceId;
     _isInitialized = false;
 
     // 1. Cargar desde caché local inmediatamente (más rápido)
@@ -293,9 +299,6 @@ class HistorialProvider extends ChangeNotifier {
       }
       final result = unique.values.toList();
       debugPrint('✅ [ProviderService] Total unificado (available + offer): ${result.length}');
-      for (var s in result) {
-        debugPrint('   → serviceId=${s.id} offers.length=${s.offers.length}');
-      }
       return result;
     } catch (e) {
       return <ServiceRequest>[];
@@ -314,7 +317,12 @@ class HistorialProvider extends ChangeNotifier {
   }
 
   void iniciarTemporizadorCancelacion(String userId, String token) {
-    Timer.periodic(const Duration(seconds: 30), (_) async {
+    // Cada 5 minutos (antes era 30s — muy agresivo para un proceso que rara vez cancela)
+    Timer.periodic(const Duration(minutes: 5), (_) async {
+      // Solo ejecutar si hay servicios en estado 'available' para no hacer requests innecesarios
+      final serviciosActuales = _byStatus['available'] ?? [];
+      if (serviciosActuales.isEmpty) return;
+
       final servicios = await _loadAvailableServices(userId, token);
 
       null;
@@ -457,15 +465,10 @@ class HistorialProvider extends ChangeNotifier {
     }
   }
 
-  /// Configura actualización automática inteligente
+  /// Configura actualización automática inteligente (consolidada, sin timer duplicado)
   void _setupSmartRefresh(String userId, String token, String deviceId) {
-    _smartRefreshTimer?.cancel();
-    _smartRefreshTimer = Timer.periodic(const Duration(seconds: _smartRefreshSeconds), (timer) {
-      if (_currentUserId == userId && !isRefreshing) {
-        // Solo actualizar si no se está refrescando actualmente
-        _loadFromServer(userId, token, deviceId);
-      }
-    });
+    // Ya no usamos _smartRefreshTimer — el _autoRefreshTimer cubre esta función.
+    // Mantener esta función para no romper la API pero sin crear timer duplicado.
   }
 
   /// Configura actualización automática (método público)
@@ -477,12 +480,11 @@ class HistorialProvider extends ChangeNotifier {
     _setupAutoRefresh(userId, token, deviceId);
   }
 
-  /// Configura actualización automática tradicional
+  /// Configura actualización automática tradicional (cada 5 minutos)
   void _setupAutoRefresh(String userId, String token, String deviceId) {
     _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = Timer.periodic(const Duration(minutes: _autoRefreshMinutes), (timer) {
+    _autoRefreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (_currentUserId == userId && !isRefreshing) {
-        // Solo actualizar si no se está refrescando actualmente
         _loadFromServer(userId, token, deviceId);
       }
     });

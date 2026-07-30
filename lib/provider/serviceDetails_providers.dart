@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../constant/serviceConstants.dart';
+import 'package:manitoscliente_new/constant/serviceConstants.dart';
 
 import '../models/commentModdels.dart';
 import '../models/service_requestModels.dart';
@@ -47,20 +47,33 @@ class ServiceDetailsProvider extends ChangeNotifier {
     _isLoading = true;
     _notifyIfNeeded();
 
-    // 1) Suscribirse al documento en Firestore
+    // 1) Esperar el PRIMER evento del stream de Firestore antes de continuar.
+    //    Esto evita el estado inconsistente isLoading=false + service=null.
     final docRef = FirebaseFirestore.instance.collection('services').doc(serviceId);
+    bool firstEventReceived = false;
+
     _serviceSub = docRef.snapshots().listen(
-          (docSnap) {
+      (docSnap) {
         if (!docSnap.exists) {
           _setError('El servicio no existe.');
+          firstEventReceived = true;
           return;
         }
         _parseService(docSnap);
+        firstEventReceived = true;
       },
       onError: (e) {
         _setError('Error al escuchar el servicio: $e');
+        firstEventReceived = true;
       },
     );
+
+    // Esperar hasta que llegue el primer evento (máx. 10 segundos)
+    int waitMs = 0;
+    while (!firstEventReceived && waitMs < 10000) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitMs += 100;
+    }
 
     // 2) Si workerId llegó no vacío, cargar detalles del trabajador
     if (workerId.isNotEmpty) {

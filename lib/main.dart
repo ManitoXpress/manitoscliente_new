@@ -204,30 +204,44 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> _checkLoginStatus() async {
-    // Verificamos si hay un usuario autenticado en Firebase
-    User? user = FirebaseAuth.instance.currentUser;
-    bool loggedIn = user != null;
+    null;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+    null;
 
     if (loggedIn) {
-      try {
-        userData = await fetchUserData(user!.uid);
-        registrationData = userData?.registrationData;
+      User? user = FirebaseAuth.instance.currentUser;
+      null;
+      if (user != null) {
+        try {
+          userData = await fetchUserData(user.uid);
+          null;
+          registrationData = userData?.registrationData;
 
-        // 🚀 PRECARGA: Iniciar carga del historial en background
-        _preloadHistorialData(user.uid);
-      } catch (e) {
-        loggedIn = false; // Fallback so we don't crash
+          // 🚀 PRECARGA: Iniciar carga del historial en background
+          _preloadHistorialData(user.uid);
+        } catch (e) {
+          null;
+          loggedIn = false; // Fallback so we don't crash
+        }
+      } else {
+        loggedIn = false;
       }
     }
 
     // Reducir tiempo de carga inicial
+    null;
     await Future.delayed(const Duration(seconds: 2));
+    null;
 
     if (mounted) {
       setState(() {
         isLoggedIn = loggedIn && userData != null;
         isLoading = false;
       });
+      null;
+    } else {
+      null;
     }
   }
 
@@ -290,6 +304,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           await Permission.locationAlways.request();
         }
       } else if (status.isPermanentlyDenied) {
+        openAppSettings();
       }
     } catch (e) {
       null;

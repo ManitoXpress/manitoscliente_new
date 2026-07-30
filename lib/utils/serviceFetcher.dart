@@ -42,29 +42,18 @@ class ServiceRepository {
     return await _fetchServicesByStatus(status, column, userId, token, offers);
   }
 
-  // Método privado para obtener los estados válidos desde Firestore
+  // Método privado para obtener los estados válidos
+  // (Optimizacion: se devuelve lista estática en lugar de descargar toda la BDD)
   Future<List<String>> _getValidStatusesFromFirestore() async {
-    try {
-      QuerySnapshot querySnapshot =
-          await firestore.collection('services').get();
-
-      Set<String> statusSet = {};
-
-      for (var doc in querySnapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        if (data.containsKey('status')) {
-          statusSet.add(data['status'] as String);
-        }
-      }
-
-      if (statusSet.isNotEmpty) {
-        return statusSet.toList();
-      } else {
-        throw Exception('No se encontraron estados válidos en Firestore.');
-      }
-    } catch (e) {
-      throw Exception('Error al obtener estados desde Firestore: $e');
-    }
+    return [
+      'available',
+      'offer',
+      'pending',
+      'accepted',
+      'in_progress',
+      'completed',
+      'cancelled'
+    ];
   }
 
   // Método privado para obtener los servicios por estado

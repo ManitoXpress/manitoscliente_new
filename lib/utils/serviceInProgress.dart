@@ -33,22 +33,11 @@ class ServiceRepositoryInProgress {
   }
 
   Future<List<String>> _getValidStatusesFromFirestore() async {
-    try {
-      QuerySnapshot querySnapshot =
-          await firestore.collection('services').get();
-      Set<String> statusSet = {};
-
-      for (var doc in querySnapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        if (data.containsKey('status')) {
-          statusSet.add(data['status'] as String);
-        }
-      }
-
-      return statusSet.toList();
-    } catch (e) {
-      throw Exception('Error al obtener estados desde Firestore: $e');
-    }
+    // Usar lista estática para evitar escanear toda la colección
+    return [
+      'available', 'offer', 'in_progress', 'pending_confirmation',
+      'pending_confirmation2', 'completed', 'cancelled',
+    ];
   }
 
   Future<List<ServiceRequest>> _fetchServicesByInProgress(
@@ -58,15 +47,7 @@ class ServiceRepositoryInProgress {
     String token,
   ) async {
     try {
-      // Revisar si hay datos en caché para el usuario con el estado in_progress o pending_confirmation
-      final cachedRequest =
-          await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null &&
-          (cachedRequest.status.id == 'in_progress' ||
-              cachedRequest.status.id == 'pending_confirmation')) {
-        null;
-        return [cachedRequest];
-      }
+      // No usar caché local para in_progress — siempre traer datos frescos del servidor
 
       final deviceId = await obtenerDeviceId();
       final response = await apiService.getAllServices(
@@ -138,14 +119,15 @@ class ServiceRepositoryInProgress {
 
       // Para cada servicio, obtener las ofertas correspondientes y mapearlas a objetos Offer
       for (var service in serviceRequestsList) {
-        // Aquí getOffers devuelve List<ServiceRequest>
+        // Buscar ofertas sin filtro de status para encontrar tanto
+        // las que quedaron en 'accepted' como las que están en 'in_progress'
         final List<ServiceRequest> offersResponse = await apiService.getOffers(
-          "userId", // Columna por la que filtrar
-          userId, // Valor del usuario autenticado
-          "in_progress", // Tipo de filtro
+          "userId",   // Columna por la que filtrar
+          userId,     // Valor del usuario autenticado
+          "in_progress", // Tipo de filtro del servicio
           deviceId,
           [service],
-          "in_progress", // Filtrar solo ofertas en estado in_progress
+          "",         // Sin filtro de status en la oferta → trae 'accepted' e 'in_progress'
         );
 
         // Mapear cada objeto ServiceRequest a un objeto Offer
@@ -175,12 +157,18 @@ class ServiceRepositoryInProgress {
           service.workerId = offers.first.workerId;
           service.hasOffer = true;
           service.offers = offers;
+          // Actualizar el precio mostrado con el de la oferta aceptada
+          // (el offeredPrice del servicio puede ser el precio base original del cliente)
+          if (service.offeredPrice <= 0) {
+            service.offeredPrice = offers.first.offeredPrice;
+          }
         }
         validServices.add(service);
       }
 
       validServices.forEach(LocalCacheService.cacheServiceRequest);
-      return validServices.where((s) => s.workerId.isNotEmpty).toList();
+      // Devolver todos los servicios in_progress, con o sin workerId
+      return validServices;
     } catch (e) {
       null;
       return [];

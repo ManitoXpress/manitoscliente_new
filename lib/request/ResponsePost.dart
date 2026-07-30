@@ -144,7 +144,7 @@ class ApiService {
     });
 
     // PATCH directo a /offer/{offerId}
-    final url = Uri.parse('$baseUrl/offer/$offerId');
+    final url = Uri.parse('$baseUrl/offers/$offerId');
     final response = await http.patch(
       url,
       headers: {
